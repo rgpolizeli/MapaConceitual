@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width; initial-scale=1.0; user-scalable=1; target-densitydpi=device-dpi;"/>
+<title>Editar Mapa</title>
+
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
+<script src="../js/leanModal.js"></script>
+<script src="../js/mapaConceitual.js"></script>
+<script src="../js/usuario.js"></script>
+<script src="../js/conceito.js"></script>
+<script src="../js/ligacao.js"></script>
+<script src="../js/semiLigacao.js"></script>
+<script src="../js/interfaceCriarConceito.js"></script>
+<script src="../js/interfaceCriarLigacao.js"></script>
+<link rel="stylesheet" href="../css/estilos.css">
+
+<script>
+function main(){
+	
+	var usuario = new Usuario("localhost",9000);
+	var mapa = new MapaConceitual("mapa",null,usuario,null);
+	usuario.setMapaAtual(mapa); 
+}
+</script>
+
+</head>
+<body onload="main()">
+<!-- Modal Window -->
+	<div id="background"></div>
+	<div id="modal">
+		<p>Digite o texto:</p>
+		<input id="txtBox" type="text">
+		<button id="btnOK">OK</button>
+		<button class="btnFechar" id="btnFechar">X</button>
+	</div>
+<div id="lista" style="display:none"></div>
+	<div>
+		<a href="#modal" id="abrirModal" style="display:none" rel="leanModal"></a>
+		<button type="button" id="handButton">Hand Tool</button>
+		<button type="button" id="editarButton">Editar Mapa</button>
+		<button  type="button" id="criarConceitoButton">Novo Conceito</button>
+		<button  type="button" id="novaLigacao" style="display:none">Nova Ligação</button>
+		<button  type="button" id="excluir" style="display:none">Excluir</button>
+	</div>
+	
+<div>
+	<canvas id="demoCanvas"  width="500" height="500"  style="display: inline-block;border: 2px solid black"></canvas>
+</div>
+
+</body>
+</html>
