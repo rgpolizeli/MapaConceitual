@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="../../assets/ico/favicon.ico">
+
+    <title>Login</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./stylesheets/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="./stylesheets/signin.css" rel="stylesheet">
+	
+	
+	<script src="./javascripts/jquery-2.1.1.min.js"></script>
+	<script src="./javascripts/bootstrap.min.js"></script>
+	<script src="./javascripts/login.js"></script>
+
+    <!-- Just for debugging purposes. Don't actually copy this line! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+	<div id="recuperarSenhaModal" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
+			<h4 class="modal-title">Recuperar Senha</h4>
+		  </div>
+		  <div class="modal-body">
+			<form method="post" role="form">
+				<p>E-mail:</p>
+				<input type="email" class="form-control" placeholder="Email address" required autofocus>
+				<button type="submit" id="submit" class="btn btn-primary">Enviar</button>
+				<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar</button>
+				<div class="alert alert-error hide" ></div>
+				<button data-dismiss="alert" class="close"></button>
+			</form>
+		  </div>
+		  <div class="modal-footer"></div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+  
+  
+    <div class="container">
+
+      <form method="post" class="form-signin" role="form" action="/autenticar">
+        <h2 class="form-signin-heading">Please sign in</h2>
+        <input type="username" class="form-control" name="usuario" placeholder="Usuário" required autofocus>
+        <input type="password" name="password" class="form-control" placeholder="Password" required>
+        <label class="checkbox">
+          <input type="checkbox" value="remember-me">Lembrar-me</label>
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+		<a id="cadastrar" href="./cadastrar">Cadastre-se</a> | <a id="recuperarSenha" href="#">Recuperar senha</a> 
+      </form>
+		
+		
+		
+    </div> <!-- /container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+  </body>
+</html>

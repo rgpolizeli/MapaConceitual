@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="../../assets/ico/favicon.ico">
+
+    <title>Mapas Disponíveis</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./stylesheets/bootstrap.min.css" rel="stylesheet">
+
+  </head>
+
+  <body>
+	  
+	  <div class="container">
+
+		<div class="col-sm-6 col-sm-offset-3">
+
+			<h1><span class="fa fa-sign-in"></span> Mapas</h1>
+
+			<!-- LOGIN FORM -->
+			<form action="/abrir" method="post">
+				
+				<div class="col-lg-6">
+					<div class="input-group">
+						
+						<!-- show any messages that come back with authentication -->
+						<% for (var i=0; i < mensagem.length; i++) { %>
+							<% var item = mensagem[i].idMapa +  " - " + mensagem[i].nomeMapa;%>
+							
+							
+							<div class="radio">
+								<label>
+									<input type="radio" name="optionsRadios" id="optionsRadios1" value="<%= mensagem[i].idMapa %>" checked>
+									<%= item %>
+								</label>
+							</div>
+							
+						<% } %>
+						
+					</div><!-- /input-group  -->
+				</div><!-- /.col-lg-6 -->
+				
+				<button type="submit" class="btn btn-lg btn-primary btn-block">Abrir</button>
+			</form>
+
+		</div>
+
+	</div>
+	  
+	  
+	
+  </body>
+
+</html>

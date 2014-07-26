@@ -1,0 +1,58 @@
+<mapaConceitual>
+	<nome>insetos</nome>
+	<idMapa>1</idMapa>
+	<conceito>
+		<id>0</id>
+		<x>10</x>
+		<y>10</y>
+		<texto>aaa</texto>
+		<fonte>Arial</fonte>
+		<tamanhoFonte>12px</tamanhoFonte>
+		<corFonte>white</corFonte>
+		<corFundo>blue</corFundo>
+		<idLigacao>2</idLigacao>
+	</conceito>
+
+	<palavraLigacao>
+		<id>2</id>
+		<qtdFilhos>1</qtdFilhos>
+		<idLinhaPai>3</idLinhaPai>
+		<idLinhaFilho1>4</idLinhaFilho1>
+		<idConceitoPai>0</idConceitoPai>
+		<idConceitoFilho1>1</idConceitoFilho1>
+		<x>50</x>
+		<y>50</y>
+		<texto>i</texto>
+		<fonte>Arial</fonte>
+		<tamanhoFonte>12px</tamanhoFonte>
+		<corFonte>white</corFonte>
+		<corFundo>blue</corFundo>
+		<idLinhaFilho2>5</idLinhaFilho2>
+		<idConceitoFilho2>9</idConceitoFilho2>
+	</palavraLigacao>
+	
+	<conceito>
+		<id>1</id>
+		<x>100</x>
+		<y>100</y>
+		<texto>ccc</texto>
+		<fonte>Arial</fonte>
+		<tamanhoFonte>12px</tamanhoFonte>
+		<corFonte>white</corFonte>
+		<corFundo>blue</corFundo>
+		<idLigacao>2</idLigacao>
+	</conceito>
+	
+	<conceito>
+		<id>9</id>
+		<x>300</x>
+		<y>300</y>
+		<texto>ddd</texto>
+		<fonte>Arial</fonte>
+		<tamanhoFonte>12px</tamanhoFonte>
+		<corFonte>white</corFonte>
+		<corFundo>blue</corFundo>
+		<idLigacao>2</idLigacao>
+	</conceito>
+
+</mapaConceitual>
