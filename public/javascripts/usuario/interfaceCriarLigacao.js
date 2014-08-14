@@ -15,7 +15,7 @@ function InterfaceCriarLigacao(usuario,mapa){
 	
 	 /*this.construirModal = function(){
 		
-		//Altura e largura de todo o documento html, não soh o pedaço que o usuario ve
+		//Altura e largura de todo o documento html, nï¿½o soh o pedaï¿½o que o usuario ve
 		backgroundAltura = $(document).height();
 		backgroundLargura = $(document).width();
     
@@ -40,13 +40,13 @@ function InterfaceCriarLigacao(usuario,mapa){
         $('#modal').fadeIn(2000); 
     
     
-	    //se o botao fechar for clicado as duas divs são ocultadas
+	    //se o botao fechar for clicado as duas divs sao ocultadas
 	    $('#btnFechar').click(function (e){
 	        $('#modal').hide();
 	        $('#divBackground').hide();
 	    });        
 	    
-	    //se a div background for clicada, as duas divs são ocultadas
+	    //se a div background for clicada, as duas divs sao ocultadas
 	    $('#divBackground').click(function (){
 	    	$('#modal').hide();
 	        $('#divBackground').hide();

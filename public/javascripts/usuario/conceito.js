@@ -32,7 +32,8 @@ function Conceito(origem, textoConceito, fonteP, tamanhoFonteP, corFonteP, corFu
     		mapaConceitual.renderizar();
     		
     		//atualiza posicao do conceito ao mover conceito
-    		mapaConceitual.getGerenciadorLista().atualizarConceitoNaListaAoMoverConceito(0,conceito.getId(conceitoContainer), novoX, novoY);
+    		var idMapa = mapaConceitual.getId();
+    		mapaConceitual.getGerenciadorLista().atualizarConceitoNaListaAoMoverConceito(0,conceito.getId(conceitoContainer), idMapa, novoX, novoY);
         });
     };
     
@@ -164,8 +165,40 @@ function Conceito(origem, textoConceito, fonteP, tamanhoFonteP, corFonteP, corFu
     /**
      * 
      */
-    this.setId = function(conceitoContainer,novoId) {
-    	mapaConceitual.getStageCanvas().setChildIndex(conceitoContainer,novoId);
+    this.setId = function(objetoContainer,novoId) {
+    	var stage = mapaConceitual.getStageCanvas();
+    	
+    	//kids sao os elementos do stageCanvas
+    	var kids = stage.children, l = kids.length;
+		if (objetoContainer.parent != stage || novoId < 0) { return; }
+		
+		//procura conceitoContainer ate o fim de kids
+		for (var i=0;i<l;i++) {
+			if (kids[i] == objetoContainer) { break; }
+		}
+		
+		//se nao achou ou se o novo id for igual ao velho retorna sem nada fazer
+		if (i==l || i == novoId) { return; }
+		
+		//se a posicao de conceitoContainer em kids for maior que a nova posicao
+		//necessario preencher com um container vazio para a funcao update nao dar erro
+		if(i < novoId){
+			for(var j = i; j <= novoId; j++){
+				if(!kids[j]){
+					kids[j] = new createjs.Container();
+				}
+			}
+		}
+		else{ //se a posicao de conceitoContainer em kids for menor que a nova posicao
+			for(var j=i; j >= novoId; j--){
+				if(!kids[j])
+					kids[j] = new createjs.Container();
+			}
+		}
+		
+		kids[i] = kids[novoId];
+		kids[novoId] = objetoContainer;
+    	
     };
     
     /**

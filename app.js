@@ -17,7 +17,6 @@ function Servidor(Ip,Porta){
 	var logger = require('morgan');
 	var cookieParser = require('cookie-parser');
 	var bodyParser = require('body-parser');
-	var io = require('socket.io')(http);
 	
 	var mysql = require('mysql');
 	var connection = mysql.createConnection({
@@ -174,15 +173,23 @@ function Servidor(Ip,Porta){
 				adicionarUsuario(idUsuario, socket);
 				
 				//abrindo arquivo XML
-				if(gerenciadorArquivos.buscarMapaNaLista( idMapa ) == -1){
+				if(gerenciadorArquivos.buscarPosicaoMapaNaLista( idMapa ) == -1){
 					gerenciadorArquivos.abrirMapa(idMapa);
 	    		}
 				
 				//adicionando sincronizador
-				if(buscarPosicaoSincronizadorNaLista(idMapa) == -1){
+				var posicao = buscarPosicaoSincronizadorNaLista(idMapa);
+				
+				//se for o primeiro usuario a abrir o mapa
+				if( posicao == -1){
 					var sincronizador = new Sincronizador(idMapa);
+					sincronizador.inserirUsuarioNaLista(idUsuario);
 	    			adicionarSincronizador(idMapa, sincronizador);
 				}
+				else{ //se algum outro usuario ja estiver ativo no mapa
+					listaSincronizadores[ posicao ].sincronizador.inserirUsuarioNaLista(idUsuario);
+				}
+				
 				
 				//lista estruturada em html para o usuario carregar o mapa
 				var msg = montarListaHtml(gerenciadorArquivos.getMapa(idMapa));
@@ -196,11 +203,9 @@ function Servidor(Ip,Porta){
 					switch(mensagem[1]){
 						case "1": //novo conceito criado por um usuario
 				    		
-				    		mensagem = mensagem.replace("1","");
-				    		
+				    		mensagem = mensagem.replace("<1ul","<ul");
 				    		var idMapa = $(mensagem).children("li[title='idMapa']").text();
 				    		idMapa = parseInt(idMapa);
-				    		msg = msg.replace("<li title='idMapa'>" + idMapa + "</li>","");
 				    		
 				    		var conceito = {
 				    				idConceito : gerenciadorArquivos.buscarIdDisponivel(idMapa),
@@ -213,99 +218,167 @@ function Servidor(Ip,Porta){
 				    		
 							//inserir no arquivo xml
 				    		gerenciadorArquivos.adicionarConceito(idMapa, conceito);
+				    		
+				    		
+				    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
+				    		mensagem = mensagem.replace("<ul>", ("<1ul id='" + conceito.idConceito + "'>") );
+				    		
+				    		//manda para todos os usuarios, inclusive quem criou o conceito
+				    		enviarParaTodosUsuariosAtivos(idMapa, mensagem);
+						break;
+						
+						case "2": //conceito movido por algum usuario
+							mensagem = mensagem.replace("<2ul","<ul");
 							
-					        socket.broadcast.send(msg); //manda para todos menos para socket
-					        socket.send(msg);
+							var idMapa = $(mensagem).children("li[title='idMapa']").text();
+				    		idMapa = parseInt(idMapa);
+				    		
+				    		var conceito = {
+				    				idConceito : parseInt( $(mensagem).attr("id") ),
+									novoX : $(mensagem).children("li[title='x']").val(),
+									novoY : $(mensagem).children("li[title='y']").val()
+				    		};
+				    		
+							//inserir no arquivo xml
+				    		gerenciadorArquivos.alterarPosicaoConceito(idMapa, conceito);
+				    		
+				    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
+				    		mensagem = mensagem.replace("<ul","<2ul");
+				    		
+				    		//manda para todos os usuarios, inclusive quem criou o conceito
+				    		enviarBroadcastParaUsuariosAtivos(idMapa, mensagem, socket);
 						break;
-						/*
-						case "*": //conceito movido por algum usuario
-							mensagem = mensagem.replace("*","");
-							usuario.atualizarPosicaoConceito(mensagem);
-						break;
-						case "!": //ligacao criada por algum usuario
-							mensagem = mensagem.replace("!","");
-							var idLigacao = parseInt($(mensagem).attr("id"));
-							var idLinhaPai = $(mensagem).children("li[title='idLinhaPai']").val();
-							var idLinhaFilho = $(mensagem).children("li[title='idLinhaFilho1']").val();
-							var idConceitoPai = $(mensagem).children("li[title='idConceitoPai']").val();
-							var idConceitoFilho = $(mensagem).children("li[title='idConceitoFilho1']").val();
-							var texto = $(mensagem).children("li[title='texto']").text();
-							var fonte = $(mensagem).children("li[title='fonte']").text();
-							var tamanhoFonte = $(mensagem).children("li[title='tamanhoFonte']").text();
-							var corFonte = $(mensagem).children("li[title='corFonte']").text();
-							var corFundo = $(mensagem).children("li[title='corFundo']").text();
-							usuario.criarLigacao(1, mapaAtual, texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai,idLinhaFilho, idConceitoPai, idConceitoFilho, mensagem);
+						
+						case "3": //ligacao criada por algum usuario
+							mensagem = mensagem.replace("<3ul","<ul");
+							
+							var idMapa = $(mensagem).children("li[title='idMapa']").text();
+				    		idMapa = parseInt(idMapa);
+				    		
+				    		var ligacao = {
+				    				idLigacao : gerenciadorArquivos.buscarIdDisponivel(idMapa),
+				    				idLinhaPai : gerenciadorArquivos.buscarIdDisponivel(idMapa),
+				    				idLinhaFilho1 :  gerenciadorArquivos.buscarIdDisponivel(idMapa),
+				    				idConceitoPai : $(mensagem).children("li[title='idConceitoPai']").val(), 
+				    				idConceitoFilho1 : $(mensagem).children("li[title='idConceitoFilho1']").val(), 
+									texto : $(mensagem).children("li[title='texto']").text(),
+									fonte : $(mensagem).children("li[title='fonte']").text(),
+									tamanhoFonte : $(mensagem).children("li[title='tamanhoFonte']").text(),
+									corFonte : $(mensagem).children("li[title='corFonte']").text(),
+									corFundo : $(mensagem).children("li[title='corFundo']").text()
+				    		};
+				    		
+				    		//inserir no arquivo xml
+				    		gerenciadorArquivos.adicionarLigacao(idMapa, ligacao);
+				    		
+				    		
+				    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
+				    		mensagem = mensagem.replace("<ul>", ("<3ul id='" + ligacao.idLigacao + "' title='ligacao'>") );
+				    		mensagem += "<li title='idLinhaPai' value='" + ligacao.idLinhaPai + "'></li>";
+				    		mensagem += "<li title='idLinhaFilho1' value='" + ligacao.idLinhaFilho1 + "'></li>";
+				    		
+				    		
+				    		//manda para todos os usuarios, inclusive quem criou o conceito
+				    		enviarParaTodosUsuariosAtivos(idMapa, mensagem);
 					        
 						break;
-						case "(": //nova SemiLigacao
-							mensagem = mensagem.replace("(","");
-							var qtdFilhos =  $(mensagem).children("li[title='qtdFilhos']").val();
-							var idConceito = $(mensagem).children("li[title='idConceitoFilho"+ qtdFilhos +"']").val();
-							var idLigacao = parseInt($(mensagem).attr("id"));
-							var idLinha = $(mensagem).children("li[title='idLinhaFilho"+ qtdFilhos +"']").val();
-							usuario.criarSemiLigacao(1, mapaAtual, idConceito, idLigacao, idLinha, mensagem);
+						case "4": //palavra de ligacao movida por algum usuario +
+							mensagem = mensagem.replace("<4ul","<ul");
+							
+							var idMapa = $(mensagem).children("li[title='idMapa']").text();
+				    		idMapa = parseInt(idMapa);
+							
+				    		var ligacao = {
+				    				idLigacao : parseInt( $(mensagem).attr("id") ),
+									novoX : $(mensagem).children("li[title='x']").val(),
+									novoY : $(mensagem).children("li[title='y']").val()
+				    		};
+				    		
+							//inserir no arquivo xml
+				    		gerenciadorArquivos.alterarPosicaoLigacao(idMapa, ligacao);
+				    		
+				    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
+				    		mensagem = mensagem.replace("<ul","<4ul");
+				    		
+				    		//manda para todos os usuarios, exceto para quem criou a ligacao
+				    		enviarBroadcastParaUsuariosAtivos(idMapa, mensagem, socket);
 						break;
-						case "+": //palavra de ligacao movida por algum usuario
-							mensagem = mensagem.replace("+","");
-							usuario.atualizarPosicaoLigacao(mensagem);
+						
+						case "5": //nova SemiLigacao
+							mensagem = mensagem.replace("<5ul","<ul");
+							
+							var idMapa = $(mensagem).children("li[title='idMapa']").text();
+				    		idMapa = parseInt(idMapa);
+				    		
+				    		var novaQtdFilhos =  $(mensagem).children("li[title='qtdFilhos']").val();
+				    		
+				    		var semiLigacao = {
+				    				idLigacao : parseInt($(mensagem).attr("id")),
+				    				idConceito : $(mensagem).children("li[title='idConceitoFilho"+ novaQtdFilhos +"']").val(),
+				    				idLinha :  gerenciadorArquivos.buscarIdDisponivel(idMapa),
+				    				novaQtdFilhos : novaQtdFilhos
+				    		};
+				    		
+				    		//inserir no arquivo xml
+				    		gerenciadorArquivos.adicionarSemiLigacao(idMapa, semiLigacao);
+							
+				    		mensagem += "<li title='idLinhaFilho" + novaQtdFilhos +"' value = '" + semiLigacao.idLinha + "'></li>";
+				    		mensagem = mensagem.replace("<ul","<5ul");
+				    		
+				    		//manda para todos os usuarios, inclusive quem criou o conceito
+				    		enviarParaTodosUsuariosAtivos(idMapa, mensagem);
 						break;
-						case "5": //exclusao
-							mensagem = mensagem.replace("5","");
-							usuario.excluir($(mensagem).val(), 1);
+						
+						case "6": //exclusao Linha Ligacao (por enquanto ao excluir um conceito - palavraLigacao com mais de um conceito filho)
+							
+							//problema: ao excluir conceito ligado a uma palavraLigacao com apenas um conceito filho, a linha vai sumir antes da palavra ligacao e o usuario podera ver uma palavra de ligacao so com conceito pai
+							//solucao: fazer uma funcao que exclui a palavra de ligacao e todas as suas linhas de uma vez
+							
+							// a mesma solucao pode ser aplicada se o conceito pai for removido - primeiro deleta-se a ligacao e suas linhas de uma vez e depois o conceito
+							
+							//outra solucao: alterar carregar mapa para nao deixar isso visivel
+							mensagem = mensagem.replace("<6ul","<ul");
+							
+							var idMapa = $(mensagem).children("li[title='idMapa']").text();
+				    		idMapa = parseInt(idMapa);
+				    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
+				    		
+				    		var exclusao = new Array(); 
+				    		var id;
+				    		var tipo;
+				    		var listaElementos = $(mensagem).children("li");
+				    		
+				    		for(var i=0; listaElementos.get(i) != undefined; i++){
+				    			id = $(listaElementos.get(i)).attr('id');
+				    			tipo = $(listaElementos.get(i)).attr('title');
+				    			exclusao[i] = {id: id, tipo: tipo};
+				    		}
+				    		
+				    		//remover no arquivo xml
+				    		gerenciadorArquivos.excluir(idMapa, exclusao);
+							
+				    		mensagem = mensagem.replace("<ul","<6ul");
+				    		
+				    		//manda para todos os usuarios, inclusive quem criou o conceito
+				    		enviarParaTodosUsuariosAtivos(idMapa, mensagem);
 						break;
-						*/
 					}
 				}
 			});
 			
-			socket.on('novoConceito', function (msg){ 
-				var idConceito = msg.idConceito;
-				var texto = msg.texto;
-				var fonte = msg.fonte;
-				var tamanhoFonte = msg.tamanhoFonte;
-				var corFonte = msg.corFonte;
-				var corFundo = msg.corFundo;
-		        
-				var resultado = true;//inserirConceito(idConceito, texto, fonte, tamanhoFonte, corFonte, corFundo);
-				
-				if(resultado){
-					socket.emit('ok');
-					socket.broadcast.emit('novoConceito', msg);
-				}
-				else
-					socket.emit('erro');
-			});
-			
-			socket.on('novaLigacao', function (msg){ 
-				
-				var idConceitoPai = msg.idConceitoPai;
-				var idConceitoFilho = msg.idConceitoFilho;
-				var idLigacao = msg.idLigacao;
-				var idLinhaPai = msg.idLinhaPai;
-				var idLinhaFilho = msg.idLinhaFilho;
-				var texto = msg.texto;
-				var fonte = msg.fonte;
-				var tamanhoFonte = msg.tamanhoFonte;
-				var corFonte = msg.corFonte;
-				var corFundo = msg.corFundo;
-		        
-				var resultado = true;//inserirLigacao(idConceito, texto, fonte, tamanhoFonte, corFonte, corFundo);
-				
-				if(resultado){
-					socket.emit('ok');
-					socket.broadcast.emit('novaLigacao', msg);
-				}
-				else
-					socket.emit('erro');
-			});
-			
-			socket.on('novaSemiLigacao', function (msg){ 
-				
-			});
-			
-			
 			socket.on('disconnect', function () { 
 				var id = removerUsuario(socket);
+				var idsMapas = buscarIdsMapasDoUsuario(id);
+				
+				for(var i=0; i < idsMapas.length; i++){
+					var posicao = buscarPosicaoSincronizadorNaLista(idsMapas[i]);
+					listaSincronizadores[ posicao ].sincronizador.removerUsuarioAtivo(id);
+					var usuariosAtivos = listaSincronizadores[ posicao ].sincronizador.getUsuariosAtivos();
+					if(usuariosAtivos.length == 0){
+						gerenciadorArquivos.fecharMapa(idsMapas[i]);
+					}
+				}
+				
 				console.log("Usuario #" + id + " desconectou-se.");
 			});
 			
@@ -332,8 +405,8 @@ function Servidor(Ip,Porta){
 			
 			var itemLista = 
 				"<ul id='" + idConceito + "' title='conceito'>" + 
-				"<li title='x'>" + x + "</li>" +
-				"<li title='y'>" + y + "</li>" +
+				"<li title='x' value='" + x + "'></li>" +
+				"<li title='y' value='" + y + "'></li>" +
 				"<li title='texto'>" + texto + "</li>" +
 				"<li title='fonte'>" + fonte + "</li>" +
 				"<li title='tamanhoFonte'>" + tamanhoFonte + "</li>" +
@@ -361,15 +434,13 @@ function Servidor(Ip,Porta){
 			var tamanhoFonte = $( element ).find( 'tamanhoFonte' ).text();
 			var corFonte = $( element ).find( 'corFonte' ).text();
 			var corFundo = $( element ).find( 'corFundo' ).text();
-			var qtdFilhos = $( element ).find('qtdFilhos').val();
+			var qtdFilhos = $( element ).find('qtdFilhos').text();
 			
 			var itemLista = 
 				"<ul id='" + idLigacao + "' title='ligacao'>" + 
 				"<li title='qtdFilhos' value='" + qtdFilhos + "'></li>" +
 				"<li title='idLinhaPai' value='" + idLinhaPai + "'></li>" +
-				"<li title='idLinhaFilho1' value='" + idLinhaFilho + "'></li>" +
 				"<li title='idConceitoPai' value='" + idConceitoPai + "'></li>" +
-				"<li title='idConceitoFilho1' value='" + idConceitoFilho + "'></li>" +
 				"<li title='x' value='" + x + "'></li>" +
 				"<li title='y' value='" + y + "'></li>" +
 				"<li title='texto'>" + texto + "</li>" +
@@ -379,16 +450,20 @@ function Servidor(Ip,Porta){
 				"<li title='corFundo'>" + corFundo + "</li>" 
 			;
 			
-			for(var j = 2; j <= qtdFilhos; j++){
-				idLinhaFilho = $( element ).find('idLinhaFilho' + i).val();
-				idConceitoFilho = $( element ).find('idConceitoFilho' + i).val();
-				
-				mensagem += "<li title='idLinhaFilho"+ i +"' value='" + idLinhaFilho + "'></li>" + 
-					"<li title='idConceitoFilho" + i + "' value='" + idConceitoFilho + "'></li>";
-				
-				i++;		
-			}
 			
+			$( element).children().each( function( index, subElement ){
+				
+				if( $(subElement).prop("tagName").indexOf("IDCONCEITOFILHO") != -1 ){
+					var papelConceito = verificarPapelConceito( $(subElement).prop("tagName") );
+					idLinhaFilho = $( element ).find('idLinhaFilho' + papelConceito).text();
+					idConceitoFilho = $( element ).find('idConceitoFilho' + papelConceito).text();
+					
+					itemLista += "<li title='idLinhaFilho"+ papelConceito +"' value='" + idLinhaFilho + "'></li>" + 
+					"<li title='idConceitoFilho" + papelConceito + "' value='" + idConceitoFilho + "'></li>";
+				}
+			});
+			
+			itemLista += "</ul>";
 			lista += itemLista;
 			
 		});
@@ -399,12 +474,19 @@ function Servidor(Ip,Porta){
 		
 	}
 	
+	function verificarPapelConceito(tagConceito){
+		var papelConceito;
+		papelConceito = tagConceito.replace('IDCONCEITOFILHO','');
+		return parseInt( papelConceito );
+	}
+	
 	
 	
 	function removerUsuario(socket){
 		var i = buscarPosicaoUsuarioNaLista(null, socket);
 		var id = listaUsuarios[i].idUsuario;
-		listaUsuarios[i] = undefined;
+		
+		listaUsuarios.splice(i,1);
 		
 		return id;
 	}
@@ -452,6 +534,8 @@ function Servidor(Ip,Porta){
 		
 	}
 	
+	//busca tanto a posicao do sincronizador como a do id do mapa
+	
 	function buscarPosicaoSincronizadorNaLista(idMapa){
 		var i = 0;
 		
@@ -469,6 +553,46 @@ function Servidor(Ip,Porta){
 		}
 		
 		return i;
+	}
+	
+	
+	function enviarParaTodosUsuariosAtivos(idMapa,msg){
+		var i = buscarPosicaoSincronizadorNaLista(idMapa,null);
+		var usuariosAtivos = listaSincronizadores[i].sincronizador.getUsuariosAtivos();
+		
+		
+		for(var j=0; j < usuariosAtivos.length; j++){
+			i = buscarPosicaoUsuarioNaLista(usuariosAtivos[j]);
+			listaUsuarios[i].socket.send(msg);
+		}
+	}
+	
+	function enviarBroadcastParaUsuariosAtivos(idMapa, msg, socket){
+		var i = buscarPosicaoSincronizadorNaLista(idMapa,null);
+		var usuariosAtivos = listaSincronizadores[i].sincronizador.getUsuariosAtivos();
+		
+		var posicaoUsuarioExcluidoNaLista = buscarPosicaoUsuarioNaLista (null, socket);
+		
+		for(var j=0; j < usuariosAtivos.length; j++){
+			i = buscarPosicaoUsuarioNaLista(usuariosAtivos[j], null);
+			if(i != posicaoUsuarioExcluidoNaLista)
+				listaUsuarios[i].socket.send(msg);
+		}
+	}
+	
+	
+	function buscarIdsMapasDoUsuario(idUsuario){
+		var i = 0;
+		var idsMapas = new Array();
+		
+		while(i < listaSincronizadores.length){
+			var j = listaSincronizadores[i].sincronizador.buscarPosicaoNaLista(idUsuario, 1);
+			if(j != -1){
+				idsMapas.push(listaSincronizadores[i].idMapa);
+			}
+			i++;
+		}
+		return idsMapas;
 	}
 	
 	

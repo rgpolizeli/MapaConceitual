@@ -56,7 +56,7 @@ function SemiLigacao(origem, mapaConceitual, idConceitoP, idLigacaoP){
     };
     
     /**
-     * calcula os novos pontos de interconexão entre conceitos e palavras de ligacao conectados
+     * calcula os novos pontos de interconexao entre conceitos e palavras de ligacao conectados
      */
     
     function calcularNovaPonta(conceitoContainer, ligacaoContainer){
@@ -123,7 +123,7 @@ function SemiLigacao(origem, mapaConceitual, idConceitoP, idLigacaoP){
     	coordenadas.ligacao[7].y = ligacaoY + 15;
     	
     	
-    	if(ligacaoY >= coordenadas.conceito[6].y){ //pontaLigacao[1] à pontaConceito[5]
+    	if(ligacaoY >= coordenadas.conceito[6].y){ //pontaLigacao[1] ï¿½ pontaConceito[5]
     		
     		coordenadasFinais.conceito.x = coordenadas.conceito[5].x;
     		coordenadasFinais.conceito.y = coordenadas.conceito[5].y;
@@ -131,7 +131,7 @@ function SemiLigacao(origem, mapaConceitual, idConceitoP, idLigacaoP){
     		coordenadasFinais.ligacao.y = coordenadas.ligacao[1].y;
     		return coordenadasFinais;
     	}
-    	if(ligacaoY < coordenadas.conceito[6].y && coordenadas.ligacao[4].x <= conceitoX){ //pontaLigacao[3] à pontaConceito[7]
+    	if(ligacaoY < coordenadas.conceito[6].y && coordenadas.ligacao[4].x <= conceitoX){ //pontaLigacao[3] ï¿½ pontaConceito[7]
     		
     		coordenadasFinais.conceito.x = coordenadas.conceito[7].x;
     		coordenadasFinais.conceito.y = coordenadas.conceito[7].y;
@@ -139,7 +139,7 @@ function SemiLigacao(origem, mapaConceitual, idConceitoP, idLigacaoP){
     		coordenadasFinais.ligacao.y = coordenadas.ligacao[3].y;
     		return coordenadasFinais;
     	}
-    	if(coordenadas.ligacao[5].y <= conceitoY){ //pontaLigacao[5] à pontaConceito[1]
+    	if(coordenadas.ligacao[5].y <= conceitoY){ //pontaLigacao[5] ï¿½ pontaConceito[1]
     		
     		coordenadasFinais.conceito.x = coordenadas.conceito[1].x;
     		coordenadasFinais.conceito.y = coordenadas.conceito[1].y;
@@ -147,7 +147,7 @@ function SemiLigacao(origem, mapaConceitual, idConceitoP, idLigacaoP){
     		coordenadasFinais.ligacao.y = coordenadas.ligacao[5].y;
     		return coordenadasFinais;
     	}
-    	if(coordenadas.ligacao[6].y > conceitoY && coordenadas.ligacao[4].x >= conceitoX){ //pontaLigacao[3] à pontaConceito[7]
+    	if(coordenadas.ligacao[6].y > conceitoY && coordenadas.ligacao[4].x >= conceitoX){ //pontaLigacao[3] ï¿½ pontaConceito[7]
     		
     		coordenadasFinais.conceito.x = coordenadas.conceito[3].x;
     		coordenadasFinais.conceito.y = coordenadas.conceito[3].y;
@@ -184,10 +184,41 @@ function SemiLigacao(origem, mapaConceitual, idConceitoP, idLigacaoP){
     };
     
     
-    this.setIdLinha = function(linhaContainer,novoId) {
-    	mapaConceitual.getStageCanvas().setChildIndex(linhaContainer,novoId);
+    this.setId = function(objetoContainer,novoId) {
+    	var stage = mapaConceitual.getStageCanvas();
+    	
+    	//kids sao os elementos do stageCanvas
+    	var kids = stage.children, l = kids.length;
+		if (objetoContainer.parent != stage || novoId < 0) { return; }
+		
+		//procura conceitoContainer ate o fim de kids
+		for (var i=0;i<l;i++) {
+			if (kids[i] == objetoContainer) { break; }
+		}
+		
+		//se nao achou ou se o novo id for igual ao velho retorna sem nada fazer
+		if (i==l || i == novoId) { return; }
+		
+		//se a posicao de conceitoContainer em kids for maior que a nova posicao
+		//necessario preencher com um container vazio para a funcao update nao dar erro
+		if(i < novoId){
+			for(var j = i; j <= novoId; j++){
+				if(!kids[j]){
+					kids[j] = new createjs.Container();
+				}
+			}
+		}
+		else{ //se a posicao de conceitoContainer em kids for menor que a nova posicao
+			for(var j=i; j >= novoId; j--){
+				if(!kids[j])
+					kids[j] = new createjs.Container();
+			}
+		}
+		
+		kids[i] = kids[novoId];
+		kids[novoId] = objetoContainer;
+    	
     };
-    
     
     semiLigacao = this;
     

@@ -50,7 +50,8 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     		mapaConceitual.renderizar();
     		
     		//atualiza a posicao da palavra de ligacao e envia para o servidor se local
-    		mapaConceitual.getGerenciadorLista().atualizarLigacaoNaListaAoMoverLigacao(0,ligacao.getId(ligacaoContainer), novoX, novoY);
+    		var idMapa = mapaConceitual.getId();
+    		mapaConceitual.getGerenciadorLista().atualizarLigacaoNaListaAoMoverLigacao(0,ligacao.getId(ligacaoContainer), idMapa, novoX, novoY);
         });
     };
 
@@ -68,27 +69,7 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     	var itemLista;
     	var conceito = new Conceito();
     	
-    	//linha referente ao conceito pai
-    	papelConceito = 0;
     	
-    	idConceito = $('ul#' + idLigacao).children("li[title='idConceitoPai']").val();
-    	idLinha = $('ul#' + idLigacao).children("li[title='idLinhaPai']").val();
-    	
-    	conceitoContainer = conceito.getConceitoContainerViaId(idConceito, mapa);
-		linhaContainer = ligacao.getLinhaContainerViaId(idLinha, mapa);
-		 
-		 coordenadas = calcularNovaPonta(conceitoContainer, ligacaoContainer);
-		 graphic = new createjs.Graphics();
-		 graphic.setStrokeStyle(3,"round").beginStroke("#000");
-		 
-		 graphic.moveTo(coordenadas.conceito.x,coordenadas.conceito.y);
-		 graphic.lineTo(coordenadas.ligacao.x,coordenadas.ligacao.y);
-		 linhaContainer.graphics.clear();
-		 linhaContainer.graphics = graphic;
-		 
-		 mapa.getGerenciadorLista().atualizarLigacaoNaListaAoMoverConceito(origem, papelConceito, coordenadas, idLigacao);
-		 
-		 
     	//linhas referentes aos outros conceitos
 		 
 		var listaConceitosFilhos = $('ul#' + idLigacao + " li[title^='idConceitoFilho']");
@@ -104,15 +85,36 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     		 
     		coordenadas = calcularNovaPonta(conceitoContainer, ligacaoContainer);
     		graphic = new createjs.Graphics();
-    		graphic.setStrokeStyle(3,"round").beginStroke("#000");
+    		graphic.setStrokeStyle(1,"round").beginStroke("#000");
     		
     		graphic.moveTo(coordenadas.conceito.x,coordenadas.conceito.y);
     		graphic.lineTo(coordenadas.ligacao.x,coordenadas.ligacao.y);
     		linhaContainer.graphics.clear();
     		linhaContainer.graphics = graphic;
-    		 
-    		mapa.getGerenciadorLista().atualizarLigacaoNaListaAoMoverConceito(origem, papelConceito, coordenadas, idLigacao);
     	}
+    	
+    	
+    	
+    	//linha referente ao conceito pai
+    	papelConceito = 0;
+    	
+    	idConceito = $('ul#' + idLigacao).children("li[title='idConceitoPai']").val();
+    	idLinha = $('ul#' + idLigacao).children("li[title='idLinhaPai']").val();
+    	
+    	conceitoContainer = conceito.getConceitoContainerViaId(idConceito, mapa);
+		linhaContainer = ligacao.getLinhaContainerViaId(idLinha, mapa);
+		 
+		 coordenadas = calcularNovaPonta(conceitoContainer, ligacaoContainer);
+		 graphic = new createjs.Graphics();
+		 graphic.setStrokeStyle(1,"round").beginStroke("#000");
+		 
+		 graphic.moveTo(coordenadas.conceito.x,coordenadas.conceito.y);
+		 graphic.lineTo(coordenadas.ligacao.x,coordenadas.ligacao.y);
+		 linhaContainer.graphics.clear();
+		 linhaContainer.graphics = graphic;
+		 
+		 
+    	
     };
     
     
@@ -126,7 +128,6 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     	var coordenadas;
     	var ligacaoContainer;
     	var graphic;
-    	var papelConceito; //pai eh 0 e filho eh 1
     	var listaConceitosFilhos;
     	
     	var conteudoLista = $('ul#' + idConceito).children("li[title='idLigacao']");
@@ -156,14 +157,12 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     		 
     		 coordenadas = calcularNovaPonta(conceitoContainer, ligacaoContainer);
     		 graphic = new createjs.Graphics();
-    		 graphic.setStrokeStyle(3,"round").beginStroke("#000");
+    		 graphic.setStrokeStyle(1,"round").beginStroke("#000");
     		 
     		 graphic.moveTo(coordenadas.conceito.x,coordenadas.conceito.y);
     		 graphic.lineTo(coordenadas.ligacao.x,coordenadas.ligacao.y);
     		 linhaContainer.graphics.clear();
     		 linhaContainer.graphics = graphic;
-    		 
-    		 mapa.getGerenciadorLista().atualizarLigacaoNaListaAoMoverConceito(origem, papelConceito, coordenadas, idLigacao);
     	}
 
     };
@@ -242,7 +241,7 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     };
     
     /**
-     * calcula os novos pontos de interconexão entre conceitos ou palavras de ligacao conectados
+     * calcula os novos pontos de interconexao entre conceitos ou palavras de ligacao conectados
      */
     
     function calcularNovaPonta(conceitoContainer, ligacaoContainer){
@@ -309,7 +308,7 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     	coordenadas.ligacao[7].y = ligacaoY + 15;
     	
     	
-    	if(ligacaoY >= coordenadas.conceito[6].y){ //pontaLigacao[1] à pontaConceito[5]
+    	if(ligacaoY >= coordenadas.conceito[6].y){ //pontaLigacao[1] ï¿½ pontaConceito[5]
     		
     		coordenadasFinais.conceito.x = coordenadas.conceito[5].x;
     		coordenadasFinais.conceito.y = coordenadas.conceito[5].y;
@@ -317,7 +316,7 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     		coordenadasFinais.ligacao.y = coordenadas.ligacao[1].y;
     		return coordenadasFinais;
     	}
-    	if(ligacaoY < coordenadas.conceito[6].y && coordenadas.ligacao[4].x <= conceitoX){ //pontaLigacao[3] à pontaConceito[7]
+    	if(ligacaoY < coordenadas.conceito[6].y && coordenadas.ligacao[4].x <= conceitoX){ //pontaLigacao[3] ï¿½ pontaConceito[7]
     		
     		coordenadasFinais.conceito.x = coordenadas.conceito[7].x;
     		coordenadasFinais.conceito.y = coordenadas.conceito[7].y;
@@ -325,7 +324,7 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     		coordenadasFinais.ligacao.y = coordenadas.ligacao[3].y;
     		return coordenadasFinais;
     	}
-    	if(coordenadas.ligacao[5].y <= conceitoY){ //pontaLigacao[5] à pontaConceito[1]
+    	if(coordenadas.ligacao[5].y <= conceitoY){ //pontaLigacao[5] ï¿½ pontaConceito[1]
     		
     		coordenadasFinais.conceito.x = coordenadas.conceito[1].x;
     		coordenadasFinais.conceito.y = coordenadas.conceito[1].y;
@@ -333,7 +332,7 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     		coordenadasFinais.ligacao.y = coordenadas.ligacao[5].y;
     		return coordenadasFinais;
     	}
-    	if(coordenadas.ligacao[6].y > conceitoY && coordenadas.ligacao[4].x >= conceitoX){ //pontaLigacao[3] à pontaConceito[7]
+    	if(coordenadas.ligacao[6].y > conceitoY && coordenadas.ligacao[4].x >= conceitoX){ //pontaLigacao[3] ï¿½ pontaConceito[7]
     		
     		coordenadasFinais.conceito.x = coordenadas.conceito[3].x;
     		coordenadasFinais.conceito.y = coordenadas.conceito[3].y;
@@ -536,22 +535,40 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     /**
      * 
      */
-    this.setIdLigacao = function(ligacaoContainer,novoId) {
-    	mapaConceitual.getStageCanvas().setChildIndex(ligacaoContainer,novoId);
-    };
-    
-    /**
-     * 
-     */
-    this.setIdLinhaPai = function(linhaPaiContainer,novoId) {
-    	mapaConceitual.getStageCanvas().setChildIndex(linhaPaiContainer,novoId);
-    };
-    
-    /**
-     * 
-     */
-    this.setIdLinhaFilho = function(linhaFilhoContainer,novoId) {
-    	mapaConceitual.getStageCanvas().setChildIndex(linhaFilhoContainer,novoId);
+    this.setId = function(objetoContainer,novoId) {
+    	var stage = mapaConceitual.getStageCanvas();
+    	
+    	//kids sao os elementos do stageCanvas
+    	var kids = stage.children, l = kids.length;
+		if (objetoContainer.parent != stage || novoId < 0) { return; }
+		
+		//procura conceitoContainer ate o fim de kids
+		for (var i=0;i<l;i++) {
+			if (kids[i] == objetoContainer) { break; }
+		}
+		
+		//se nao achou ou se o novo id for igual ao velho retorna sem nada fazer
+		if (i==l || i == novoId) { return; }
+		
+		//se a posicao de conceitoContainer em kids for maior que a nova posicao
+		//necessario preencher com um container vazio para a funcao update nao dar erro
+		if(i < novoId){
+			for(var j = i; j <= novoId; j++){
+				if(!kids[j]){
+					kids[j] = new createjs.Container();
+				}
+			}
+		}
+		else{ //se a posicao de conceitoContainer em kids for menor que a nova posicao
+			for(var j=i; j >= novoId; j--){
+				if(!kids[j])
+					kids[j] = new createjs.Container();
+			}
+		}
+		
+		kids[i] = kids[novoId];
+		kids[novoId] = objetoContainer;
+    	
     };
     
     

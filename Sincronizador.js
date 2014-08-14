@@ -15,8 +15,9 @@ function Sincronizador(id){
 	
 	var listaSincronizacao = new ListaSincronizacao();
 
+	var sincronizador = this;
 	
-	var buscarPosicaoNaLista = function(id, tipoBusca){
+	this.buscarPosicaoNaLista = function(id, tipoBusca){
 		
 		var posicao;
 		
@@ -33,12 +34,12 @@ function Sincronizador(id){
 	};
 	
 	
-	var inserirUsuarioNaLista = function(idUsuario){
+	this.inserirUsuarioNaLista = function(idUsuario){
 		
 		var i;
 		
 		i = 0;
-		while(!listaSincronizacao.idsUsuarios[i]){
+		while(listaSincronizacao.idsUsuarios[i]){
 			i++;
 		}
 		
@@ -102,17 +103,14 @@ function Sincronizador(id){
 		var posicaoObjeto;
 		
 		posicaoUsuario = buscarPosicaoNaLista(idUsuario,1);
-		if(posicaoUsuario == -1){
-			posicaoUsuario = inserirUsuarioNaLista(idUsuario);
-		}
 		
 		posicaoObjeto = buscarPosicaoNaLista(idObjeto,2);
 		if(posicaoObjeto == -1){
 			
 			for(var i = posicaoObjeto; i < listaSincronizacao.objetosBloqueados.length; i++){
 				//verificar o tipo de operacao
-				//se for exclusao, verificar cada objeto imediatamente ligado a este para ver se estao sendo modificados ou nao
-				//senao negar o bloqueio pois ha outro usuario modificando o objeto em questao.
+				//se for exclusao, verificar cada objeto imediatamente ligado a este para ver se estao sendo modificados ou nao, se, estiverem, negar o bloqueio pois ha outro usuario modificando o objeto em questao.
+				
 			}
 			
 			listaSincronizacao.objetosBloqueados[posicaoUsuario] = idObjeto;
@@ -131,6 +129,19 @@ function Sincronizador(id){
 		//informe ao servidor o sucesso.
 		
 	};
+	
+	this.getUsuariosAtivos = function(){
+		return listaSincronizacao.idsUsuarios;
+	};
+	
+	this.removerUsuarioAtivo = function(idUsuario){
+		var posicao = sincronizador.buscarPosicaoNaLista(idUsuario, 1);
+		
+		listaSincronizacao.idsUsuarios.splice(posicao,1);
+		listaSincronizacao.objetosBloqueados.splice(posicao,1);
+		listaSincronizacao.operacoes.splice(posicao,1);
+	};
+	
 	
 	
 }

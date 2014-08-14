@@ -19,9 +19,10 @@
 
 <script>
 function main(idUsuario,idMapa){
-	var usuario = new Usuario(idUsuario,idMapa, "localhost", 3000);
-	var mapa = new MapaConceitual(idMapa, usuario, null);
-	usuario.setMapaAtual(mapa); 
+	var mapa = new MapaConceitual(idMapa, new Usuario(), null);
+	var usuario = new Usuario(idUsuario, mapa, "localhost", 3000);
+	mapa.setUsuario(usuario);
+	usuario.conectarServidor();
 }
 </script>
 

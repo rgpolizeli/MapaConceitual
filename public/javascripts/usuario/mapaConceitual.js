@@ -316,106 +316,108 @@ function GerenciadorLista(listaElementos,mapaConceitual){
 	
 	
 	
-	var montarMensagemAoMoverConceito = function (idConceito,novoX, novoY){
+	var montarMensagemAoMoverConceito = function (idConceito, idMapa, novoX, novoY){
 		var mensagem = 
-			"<*ul id='" + idConceito + "' title='conceito'>" + 
+			"<2ul id='" + idConceito + "' title='conceito'>" + 
 				"<li title='x' value='" + novoX + "'></li>" +
-				"<li title='y' value='" + novoY + "'></li>" 
+				"<li title='y' value='" + novoY + "'></li>" +
+				"<li title='idMapa'>" + idMapa + "</li>"
 			;
 		return mensagem;
 	};
 	
-	var montarMensagemAoMoverLigacao = function(idLigacao, novoX, novoY){
+	var montarMensagemAoMoverLigacao = function(idLigacao, idMapa, novoX, novoY){
 		var mensagem = 
-			"<+ul id='" + idLigacao + "' title='ligacao'>" + 
+			"<4ul id='" + idLigacao + "' title='ligacao'>" + 
 				"<li title='x' value='" + novoX + "'></li>" +
-				"<li title='y' value='" + novoY + "'></li>" 
+				"<li title='y' value='" + novoY + "'></li>" +
+				"<li title='idMapa'>" + idMapa + "</li>"
 		;
 		return mensagem;
 	};
 	
-	this.atualizarConceitoNaListaAoMoverConceito = function(origem,idConceito,novoX, novoY){
+	this.atualizarConceitoNaListaAoMoverConceito = function(origem,idConceito, idMapa, novoX, novoY){
 		$('ul#' + idConceito).children("li[title='x']").val(novoX);
 		$('ul#' + idConceito).children("li[title='y']").val(novoY);
 		
 		if(origem==0){ //atualizacao local
-			var msg = montarMensagemAoMoverConceito(idConceito,novoX, novoY);
+			var msg = montarMensagemAoMoverConceito(idConceito, idMapa, novoX, novoY);
 			mapaConceitual.usuarioAtual.enviarMensagemAoServidor(msg);
 		}
 	};
 	
-	this.atualizarLigacaoNaListaAoMoverLigacao = function(origem,idLigacao,novoX, novoY){
+	this.atualizarLigacaoNaListaAoMoverLigacao = function(origem,idLigacao, idMapa, novoX, novoY){
 		$('ul#' + idLigacao).children("li[title='x']").val(novoX);
 		$('ul#' + idLigacao).children("li[title='y']").val(novoY);
 		
 		if(origem==0){ //atualizacao local
-			var msg = montarMensagemAoMoverLigacao(idLigacao,novoX, novoY);
+			var msg = montarMensagemAoMoverLigacao(idLigacao, idMapa, novoX, novoY);
 			mapaConceitual.usuarioAtual.enviarMensagemAoServidor(msg);
 		}
 		
 	};
 	
-	this.atualizarLigacaoNaListaAoMoverConceito = function (origem, papelConceito, coordenadas, idLigacao){
-		if(papelConceito == 0){
-			$('ul#' + idLigacao).children("li[title='pontaConceitoPaiX']").val(coordenadas.conceito.x);
-			$('ul#' + idLigacao).children("li[title='pontaConceitoPaiY']").val(coordenadas.conceito.y);
-			$('ul#' + idLigacao).children("li[title='pontaLigacaoPaiX']").val(coordenadas.ligacao.x);
-			$('ul#' + idLigacao).children("li[title='pontaLigacaoPaiY']").val(coordenadas.ligacao.y);
-		}
-		else{
-			$('ul#' + idLigacao).children("li[title='pontaConceitoFilho" + papelConceito + "X']").val(coordenadas.conceito.x);
-			$('ul#' + idLigacao).children("li[title='pontaConceitoFilho" + papelConceito + "Y']").val(coordenadas.conceito.y);
-			$('ul#' + idLigacao).children("li[title='pontaLigacaoFilho" + papelConceito + "X']").val(coordenadas.ligacao.x);
-			$('ul#' + idLigacao).children("li[title='pontaLigacaoFilho" + papelConceito + "Y']").val(coordenadas.ligacao.y);
-		}
-		
-	};
 	
-	this.excluirConceitoDaLista = function(idConceito, origem){
-		$('ul#'+idConceito).remove();
-		if(origem==0){
-			var msg = montarMensagemExclusao(idConceito);
-			mapaConceitual.usuarioAtual.enviarMensagemAoServidor(msg);
-		}
-	};
-	
-	this.excluirLigacaoDaLista = function(idLigacao, origem){
-		$('ul#'+idLigacao).remove();
-		if(origem==0){
-			var msg = montarMensagemExclusao(idLigacao);
-			mapaConceitual.usuarioAtual.enviarMensagemAoServidor(msg);
-		}
-	};
-	
-	function montarMensagemExclusao(id){
-		var mensagem = "<5li value="+ id +"></li>";
-		return mensagem;
-	}
-	
-	this.excluirLigacaoDosConceitos = function(idLigacao){
-		var id;
-		var listaConceitosFilhos;
-		
-		listaConceitosFilhos = $('ul#' + idLigacao + " li[title^='idConceitoFilho']");
-		
-		//deleta no conceito pai
-		id = $('ul#' + idLigacao).children("li[title='idConceitoPai']").val();
-		$('ul#' + id + " li[title='idLigacao'][value='"+ idLigacao +"']").remove();
-		
-		//deleta nos conceitos filhos
-		for(var i=0; listaConceitosFilhos.get(i) != undefined; i++){
-			id = listaConceitosFilhos.get(i).value;
-			$('ul#' + id + " li[title='idLigacao'][value='"+ idLigacao +"']").remove();
+	//verifica verifica o papel do conceito na ligacao
+    function verificarPapelConceito(idConceito,idLigacao){
+    	var papelConceito;
+    	
+    	if($('ul#'+ idLigacao).children("li[title='idConceitoPai']").val()  == idConceito)
+    		return 0;
+    	else{
+    		for(var i=1; papelConceito == undefined; i++){
+    			if($('ul#'+ idLigacao).children("li[title='idConceitoFilho"+ i +"']").val() == idConceito){
+    				papelConceito = i;
+    			}
+    		}
+    		return papelConceito;
     	}
-
+    }
+	
+	this.excluirConceitoDaLista = function(idConceito){
+		
+		var listaLigacoes = new Array();
+		
+		$( 'ul#'+idConceito ).children( "li[title='idLigacao']" ).each( function( index, element ){
+			listaLigacoes.push( $( element ).val() );
+		});
+		
+		for(var i=0; i < listaLigacoes.length; i++){
+			
+			var papelConceito = verificarPapelConceito(idConceito, listaLigacoes[i]);
+			
+			if(papelConceito == 0){ //nao precisa atualizar a quantidade de filhos se for o conceito pai, pois a ligacao tambem sera eliminada futuramente
+				$( 'ul#' + listaLigacoes[i] ).children( "li[title='idConceitoPai']" ).remove();
+				$( 'ul#' + listaLigacoes[i] ).children( "li[title='idLinhaPai']").remove();
+			}
+			else{
+				$( 'ul#' + listaLigacoes[i] ).children("li[title='idConceitoFilho"+ papelConceito +"']" ).remove();
+				$( 'ul#' + listaLigacoes[i] ).children( "li[title='idLinhaFilho"+ papelConceito +"']").remove();
+				
+				var qtdFilhos =  $( 'ul#' + listaLigacoes[i] ).children("li[title='qtdFilhos']").val() ;
+				qtdFilhos--;
+				$( 'ul#' + listaLigacoes[i] ).children("li[title='qtdFilhos']").val(qtdFilhos);
+			}
+		}
+		
+		$('div#lista ul#'+idConceito).remove();
 	};
 	
-	this.excluirLinhaLigacaoDaLista = function (idConceito, idLigacao, papelConceito){
-		$('ul#'+idLigacao).children("li[title='idConceitoFilho" + papelConceito + "']").remove();
-		$('ul#'+idLigacao).children("li[title='idLinhaFilho" + papelConceito + "']").remove();
+	this.excluirLigacaoDaLista = function(idLigacao){
+		var listaConceitos = new Array();
+		
+		listaConceitos.push( $( 'div#lista ul#' + idLigacao ).children( "li[title='idConceitoPai']").val() );
+		
+		$( 'div#lista ul#' + idLigacao ).children("li[title^='idConceitoFilho']").each( function( index, element ){
+			listaConceitos.push( $( element ).val() );
+		});
+		
+		for(var i=0; i < listaConceitos.length; i++){
+			$('div#lista ul#' + listaConceitos[i]).children("li[title='idLigacao'][value='"+ idLigacao +"']").remove();
+		}
+		
+		$('div#lista ul#'+idLigacao).remove();
 	};
-	
-	
 }
 
 
@@ -632,19 +634,13 @@ function MapaConceitual(id, usuario, lista){
     var idMapa = id;
     
     var stageCanvas = new createjs.Stage("demoCanvas");
-   createjs.Touch.enable(stageCanvas);
+    createjs.Touch.enable(stageCanvas);
     this.usuarioAtual = usuario;
-    const handTool = new HandTool(stageCanvas, this);
+    var handTool = new HandTool(stageCanvas, this);
     this.conceitosSelecionados = new Array();
     this.ligacaoSelecionada;
     var mapa = this;
     var criarLigacao;
-
-    function CacheId(){
-    	var idVelho;
-    	var idNovo;
-    }
-    
     
     /**
      * ativa botao de criar ligacao ao selecionar conceito ou palavraLigacao
@@ -791,6 +787,11 @@ function MapaConceitual(id, usuario, lista){
     };
     
     
+    this.setUsuario = function(usuario){
+    	mapa.usuarioAtual = usuario;
+    };
+    
+    
     /**
      * verificar se ha ligacao entre conceito e palavra de ligacao
      */
@@ -842,7 +843,7 @@ function MapaConceitual(id, usuario, lista){
     if($("#criarConceitoButton")){ 
     	
     	$("#criarConceitoButton").click(function (){
-    				new InterfaceCriarConceito(usuario, mapa);
+    				new InterfaceCriarConceito(mapa.usuarioAtual, mapa);
     				$("#abrirModal").click();
     			}
     	);
@@ -852,7 +853,7 @@ function MapaConceitual(id, usuario, lista){
     if($("#excluir")){ 
     	
     	$("#excluir").click(function (){
-    				usuario.excluir(mapa.conceitosSelecionados[0], 0);
+    		mapa.usuarioAtual.excluir(0, mapa.conceitosSelecionados[0]);
     			}
     	);
     }
@@ -863,12 +864,12 @@ function MapaConceitual(id, usuario, lista){
 		var y = evt.stageY - stageCanvas.y;
     	var objetoSelecionado = stageCanvas.getObjectUnderPoint(x,y); //se clicar no canvas vazio retorna null para objetoSelecionado
 		
-		usuario.desselecionar(mapa);
+		mapa.usuarioAtual.desselecionar(mapa);
 		
 		if(objetoSelecionado){
 			if(objetoSelecionado.parent.name == "conceito"){
 				if(mapa.conceitosSelecionados[0] == undefined){
-					usuario.selecionarConceito(objetoSelecionado, mapa);
+					mapa.usuarioAtual.selecionarConceito(objetoSelecionado, mapa);
 				}
 				else{
 					
@@ -877,14 +878,14 @@ function MapaConceitual(id, usuario, lista){
 						mapa.conceitosSelecionados[1] = stageCanvas.getChildIndex(objetoSelecionado.parent);
 						//verificar o que eh o conceito selecionado 0
 						if(objeto0.name == "conceito"){
-							new InterfaceCriarLigacao(usuario, mapa);
+							new InterfaceCriarLigacao(mapa.usuarioAtual, mapa);
 							$("#abrirModal").click();
 							$("#lean_modal").show();
 						}
 						else{ // eh ligacao
 							//verificar se jah nao estao ligados
 							if(!verificarLigacao(mapa.conceitosSelecionados[0], mapa.conceitosSelecionados[1])){ //se nao estiverem
-								usuario.criarSemiLigacao(0, mapa, mapa.conceitosSelecionados[1], mapa.conceitosSelecionados[0],null,null);
+								mapa.usuarioAtual.criarSemiLigacao(0, mapa, mapa.conceitosSelecionados[1], mapa.conceitosSelecionados[0],null,null);
 							}
 						}
 					}
@@ -892,7 +893,7 @@ function MapaConceitual(id, usuario, lista){
 			}
 			if(objetoSelecionado.parent.name == "ligacao"){
 				if(mapa.conceitosSelecionados[0] == undefined){
-					usuario.selecionarLigacao(objetoSelecionado, mapa);
+					mapa.usuarioAtual.selecionarLigacao(objetoSelecionado, mapa);
 				}
 				else{
 					
@@ -901,7 +902,7 @@ function MapaConceitual(id, usuario, lista){
 						mapa.conceitosSelecionados[1] = stageCanvas.getChildIndex(objetoSelecionado.parent);
 						//verificar o que eh o conceito selecionado 0
 						if(objeto0.name == "conceito" && !verificarLigacao(mapa.conceitosSelecionados[1], mapa.conceitosSelecionados[0])){
-							usuario.criarSemiLigacao(0, mapa, mapa.conceitosSelecionados[0], mapa.conceitosSelecionados[1],null,null);
+							mapa.usuarioAtual.criarSemiLigacao(0, mapa, mapa.conceitosSelecionados[0], mapa.conceitosSelecionados[1],null,null);
 						}
 					}
 				}

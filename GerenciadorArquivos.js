@@ -1,5 +1,6 @@
-function MapaAberto(idMapa, arqXml){
+function MapaAberto(idMapa, interval, arqXml){
 	this.idMapa = idMapa;
+	this.interval = interval;
 	this.arqXml = arqXml;
 }
 
@@ -19,37 +20,82 @@ function GerenciadorArquivos(){
 	
 	this.abrirMapa = function ( idMapa ){
 		var path = './public/mapas/' + idMapa + '.xml';
-		var arqXml = fs.readFileSync(path, "utf8");
+		var xmlStr = fs.readFileSync(path, "utf8");
+		var arqXml = $(xmlStr);
 		
 		adicionarMapaNaLista( idMapa, arqXml );
 	};
+	
+	this.fecharMapa = function ( idMapa ){
+		salvar(idMapa);
+		pararSalvamento(idMapa);
+		removerMapaDaLista( idMapa );
+	};
+	
+	
+	function pararSalvamento(idMapa){
+		var posicaoNaLista = gerenciador.buscarPosicaoMapaNaLista(idMapa);
+		clearInterval(listaMapasAbertos[ posicaoNaLista ].interval);
+	}
 	
 
 	this.carregarMapa = function (idMapa){
 		
 		var path = './public/mapas/' + idMapa + '.xml';
 		var arqXml = fs.readFileSync(path, "utf8");
-		//console.log( $(arqXml).find('first_name').text() );
 	};
 	
-	function adicionarMapaNaLista(idMapa, arqXml){
-		var mapaAberto = new MapaAberto(idMapa,arqXml); 
-		var i = 0;
+	
+	function getXmlString(xmlObj)
+	{   
+	    var xmlString="";
+	    $(xmlObj).children().each(function(){
+	        xmlString+="<"+this.nodeName.toLowerCase()+">";
+	        if($(this).children().length>0){
+	            xmlString+=getXmlString($(this));
+	        }
+	        else
+	            xmlString+=$(this).text();
+	        xmlString+="</"+this.nodeName.toLowerCase()+">";
+	    });
+	    return xmlString;
+	}
+	
+	function salvar(idMapa){
+		console.log('salvou');
+		var path = './public/mapas/' + idMapa + '.xml';
+		var posicaoNaLista = gerenciador.buscarPosicaoMapaNaLista(idMapa);
+		var xmlString = getXmlString(listaMapasAbertos[ posicaoNaLista ].arqXml);
 		
+		xmlString = "<?xml version='1.0' encoding='us-ascii'?><mapaConceitual>" + xmlString + "</mapaConceitual>";
+		fs.writeFileSync(path, xmlString);
+	}
+	
+	
+	
+	function adicionarMapaNaLista(idMapa, arqXml){
+		var mapaAberto;
+		var interval;
+		var tempoSalvamento;
+		var i;
+		
+		tempoSalvamento = 60000;
+		interval = new setInterval(salvar, tempoSalvamento, idMapa);
+		mapaAberto = new MapaAberto(idMapa, interval, arqXml); 
+		
+		i=0;
 		while(listaMapasAbertos[i]!= undefined)
 			i++;
 		listaMapasAbertos[i] = mapaAberto;
 	}
 	
-	this.adicionarConceito = function(idMapa, conceito){
-		var posicaoNaLista = gerenciador.buscarMapaNaLista(idMapa);
-		
-		
-		
-	};
+	function removerMapaDaLista( idMapa ){
+		var posicaoNaLista = gerenciador.buscarPosicaoMapaNaLista(idMapa);
+		listaMapasAbertos.splice(posicaoNaLista, 1);
+	}
 	
 	
-	this.buscarMapaNaLista = function (idMapa){
+	this.buscarPosicaoMapaNaLista = function (idMapa){
 		var i = 0;
 		
 		//se estiver vazia
@@ -69,13 +115,12 @@ function GerenciadorArquivos(){
 	};
 	
 	this.getMapa = function (idMapa){
-		var posicaoNaLista = gerenciador.buscarMapaNaLista(idMapa);
-		console.log(posicaoNaLista);
+		var posicaoNaLista = gerenciador.buscarPosicaoMapaNaLista(idMapa);
 		return listaMapasAbertos[ posicaoNaLista ].arqXml;
 	};
 	
 	this.buscarIdDisponivel = function (idMapa){
-		var posicaoNaLista = gerenciador.buscarMapaNaLista(idMapa);
+		var posicaoNaLista = gerenciador.buscarPosicaoMapaNaLista(idMapa);
 		
 		var stochator = new Stochator({
 		    kind: "integer",
@@ -83,7 +128,7 @@ function GerenciadorArquivos(){
 		    max: 500
 		}, "roll");
 		
-		var idsUtilizados = obterIdsUtilizados(arqXml);
+		var idsUtilizados = obterIdsUtilizados(listaMapasAbertos[ posicaoNaLista ].arqXml);
 		
 		
 		var id = stochator.roll();
@@ -124,7 +169,218 @@ function GerenciadorArquivos(){
 		return idsUtilizados;
 	}
 	
+	//conceito aqui nao e o da classe Conceito
+	this.adicionarConceito = function (idMapa, conceito){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(idMapa);
+		
+		var estruturaConceito = 
+			"<conceito>" +
+			"<id>" + conceito.idConceito + "</id>" +
+			"<x>" + 0 + "</x>" +
+			"<y>" + 0 + "</y>" +
+			"<texto>" + conceito.texto + "</texto>" +
+			"<fonte>" + conceito.fonte + "</fonte>" + 
+			"<tamanhoFonte>" + conceito.tamanhoFonte + "</tamanhoFonte>" + 
+			"<corFonte>" + conceito.corFonte + "</corFonte>" + 
+			"<corFundo>" + conceito.corFundo + "</corFundo>" +
+			"</conceito>"
+		;
+		
+		listaMapasAbertos[posicaoMapa].arqXml.append( $(estruturaConceito) );
+	};
 	
+	
+	this.adicionarLigacao = function (idMapa, ligacao){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(idMapa);
+		
+		var estruturaLigacao = 
+			"<palavraLigacao>" +
+			"<id>" + ligacao.idLigacao + "</id>" +
+			"<qtdFilhos>"+ 1 + "</qtdFilhos>" +
+			"<idLinhaPai>" + ligacao.idLinhaPai + "</idLinhaPai>" +
+			"<idLinhaFilho1>" + ligacao.idLinhaFilho1 + "</idLinhaFilho1>" +
+			"<idConceitoPai>" + ligacao.idConceitoPai + "</idConceitoPai>" +
+			"<idConceitoFilho1>" + ligacao.idConceitoFilho1 + "</idConceitoFilho1>" +
+			"<x>" + 'default' + "</x>" +
+			"<y>" + 'default' + "</y>" +
+			"<texto>" + ligacao.texto + "</texto>" +
+			"<fonte>" + ligacao.fonte + "</fonte>" + 
+			"<tamanhoFonte>" + ligacao.tamanhoFonte + "</tamanhoFonte>" + 
+			"<corFonte>" + ligacao.corFonte + "</corFonte>" + 
+			"<corFundo>" + ligacao.corFundo + "</corFundo>" +
+			"</palavraLigacao>"
+		;
+		
+		listaMapasAbertos[posicaoMapa].arqXml.append( $(estruturaLigacao) );
+	};
+	
+	
+	//
+	this.alterarPosicaoConceito = function (idMapa, conceito){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(idMapa);
+		
+		listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == conceito.idConceito ){
+				$( element ).find('x').text(conceito.novoX);
+				$( element ).find('y').text(conceito.novoY);
+			}
+		});
+	};
+	
+	
+	this.alterarPosicaoLigacao = function (idMapa, ligacao){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(idMapa);
+		
+		listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == ligacao.idLigacao ){
+				$( element ).find('x').text(ligacao.novoX);
+				$( element ).find('y').text(ligacao.novoY);
+			}
+		});
+	};
+	
+	this.adicionarSemiLigacao = function (idMapa, semiLigacao){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(idMapa);
+		
+		listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == semiLigacao.idLigacao ){
+				$( element ).find('qtdFilhos').text(semiLigacao.novaQtdFilhos);
+				var novaLinha = 
+					"<idLinhaFilho" + semiLigacao.novaQtdFilhos + ">" + semiLigacao.idLinha + "</idLinhaFilho" + 
+						+ semiLigacao.novaQtdFilhos +">"
+				;
+				var novoConceito = 
+					"<idConceitoFilho" + semiLigacao.novaQtdFilhos + ">" + semiLigacao.idConceito + "</idConceitoFilho" + 
+						+ semiLigacao.novaQtdFilhos +">"
+				;
+				
+				$( element ).append( $(novaLinha) );
+				$( element ).append( $(novoConceito) );
+			}
+		});
+		
+		listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == semiLigacao.idConceito ){
+				var novaLigacao = "<idLigacao>" + semiLigacao.idLigacao + "</idLigacao>";
+				$( element ).append( $(novaLigacao) );
+			}
+		});
+	};
+	
+	this.excluir = function (idMapa, exclusao){
+		
+		for(var i=0; exclusao[i] != undefined; i++){
+			switch(exclusao[i].tipo){
+				case 'ligacao':
+					excluirLigacao(idMapa, exclusao[i].id);
+				break;
+				case 'conceito': 
+					excluirConceito(idMapa, exclusao[i].id);
+				break;
+			}
+		}
+	};
+	
+	function excluirConceito(idMapa, idConceito){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(idMapa);
+		
+		listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == idConceito ){
+				var listaLigacoes = new Array();
+				
+				$( element ).find( "idLigacao" ).each( function( index, element ){
+					listaLigacoes.push(parseInt( $( element ).text() ));
+				});
+				
+				if(listaLigacoes.length != 0){
+					listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, element ){
+						var idLigacao = parseInt( $( element ).find( "id" ).text() );
+						for(var i=0; i < listaLigacoes.length; i++){
+							if(idLigacao == listaLigacoes[i]){
+								var papelConceito = verificarPapelConceito(element, idConceito);
+								
+								if(papelConceito == 0){ //nao precisa atualizar a quantidade de filhos se for o conceito pai, pois a ligacao tambem sera eliminada futuramente
+									$( element ).find( "idConceitoPai").remove();
+									$( element ).find( "idLinhaPai").remove();
+								}
+								else{
+									$( element ).find( "idConceitoFilho" + papelConceito).remove();
+									$( element ).find( "idLinhaFilho" + papelConceito).remove();
+									
+									var qtdFilhos = parseInt( $( element ).find('qtdFilhos').text() );
+									qtdFilhos--;
+									$( element ).find('qtdFilhos').text(qtdFilhos);
+								}
+							}
+						}
+					});
+				}
+				
+				$( element ).remove();
+			}
+		});
+	}
+	
+	function verificarPapelConceito(palavraLigacao, idConceito){
+		var id;
+		var papelConceito;
+		
+		id = parseInt( $( palavraLigacao ).find( "idConceitoPai" ).text() );
+		if(id==idConceito){
+			papelConceito = 0;
+		}
+		else{
+			$( palavraLigacao ).children().each( function( index, subElement ){
+				if( $(subElement).prop("tagName").indexOf("IDCONCEITOFILHO") != -1 ){
+					id = parseInt( $(subElement).text() );
+					if(id == idConceito){
+						papelConceito = $(subElement).prop("tagName").replace('IDCONCEITOFILHO','');
+						papelConceito = parseInt(papelConceito);
+					}
+				}
+			});
+		}
+		
+		return papelConceito;
+		
+	}
+	
+	
+	function excluirLigacao(idMapa, idLigacao){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(idMapa);
+		
+		listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == idLigacao ){
+				var listaConceitos = new Array();
+				
+				listaConceitos.push(parseInt( $( element ).find( "idConceitoPai" ).text() ));
+				
+				$( element ).children().each( function( index, subElement ){
+					if( $(subElement).prop("tagName").indexOf("IDCONCEITOFILHO") != -1 ){
+						listaConceitos.push( parseInt( $(subElement).text() ) );
+					}
+				});
+				
+				
+				listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
+					var idConceito = parseInt( $( element ).find( "id" ).text() );
+					for(var i=0; i < listaConceitos.length; i++){
+						if(idConceito == listaConceitos[i]){
+							$( element ).find( "idLigacao").remove();
+						}
+					}
+				});
+				
+				$( element ).remove();
+			}
+		});
+	}
 	
 	
 }
