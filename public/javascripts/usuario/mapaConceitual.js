@@ -447,7 +447,6 @@ function HandTool(stage, mapa){
      */
      this.desenharRetangulo = function(x,y){
     	retangulo.graphics.clear();
-    	console.log("desenhou");
 		retangulo.graphics.beginFill("blue").drawRect(x,
 					y, 80, 80);
 		stageCanvas.addChild(retangulo);
@@ -734,16 +733,6 @@ function MapaConceitual(id, usuario, lista){
     this.habilitarBotaoExcluir = function(){
     	$("#excluir").show();
     };
-
-    /**
-     * 
-     */
-    this.moverConceito = function(evt, idConceito){;};
-
-    /**
-     * 
-     */
-    this.moverLigacao = function(){;};
     
     /**
      * preenche a div id lista com o que veio do servidor ou com null no caso de um novo mapa
@@ -857,6 +846,8 @@ function MapaConceitual(id, usuario, lista){
     			}
     	);
     }
+    
+    
     
     
     stageCanvas.on("stagemousedown", function(evt) {

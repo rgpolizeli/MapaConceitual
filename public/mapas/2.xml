@@ -1,8 +1,1 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<phonebook>
-<person>
-    <first_name>Sarah</first_name>
-    <department>Sales</department>
-    <code>78</code>
-</person>
-</phonebook>
+<?xml version='1.0' encoding='us-ascii'?><mapaConceitual><person><first_name>Sarah</first_name><department>Sales</department><code>78</code></person></mapaConceitual>

@@ -44,7 +44,6 @@ function Servidor(Ip,Porta){
 
 	
 	var events = require('events');
-	//var eventEmitter = new events.EventEmitter();
 
 	var Passport = require('./Passport.js');
 	var passport;
@@ -276,7 +275,7 @@ function Servidor(Ip,Porta){
 				    		mensagem = mensagem.replace("<ul>", ("<3ul id='" + ligacao.idLigacao + "' title='ligacao'>") );
 				    		mensagem += "<li title='idLinhaPai' value='" + ligacao.idLinhaPai + "'></li>";
 				    		mensagem += "<li title='idLinhaFilho1' value='" + ligacao.idLinhaFilho1 + "'></li>";
-				    		
+				    		mensagem += "<li title='qtdFilhos' value='1'></li>";
 				    		
 				    		//manda para todos os usuarios, inclusive quem criou o conceito
 				    		enviarParaTodosUsuariosAtivos(idMapa, mensagem);
@@ -598,7 +597,7 @@ function Servidor(Ip,Porta){
 	
 }
 
-	var servidor = new Servidor('localhost',3000);
+	var servidor = new Servidor('192.168.0.102',3000);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);

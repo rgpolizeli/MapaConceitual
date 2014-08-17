@@ -7,7 +7,6 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 	var socket;
 	var usuario = this;
 	var mapaAtual = mapa;
-	this.idU = idUsuarioP;
 	
 	function carregarMapa(msg){
 		
@@ -131,7 +130,7 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 	
 	this.conectarServidor = function(){ //conecta com o servidor atraves de socket e adiciona respostas a eventos
 		
-		socket = io('http://localhost');
+		socket = io(ipServidor);
 		
 		socket.on('connect', function(){
 			socket.emit('conexao', idUsuario, mapaAtual.getId());
@@ -144,46 +143,53 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 	};
 	
 	this.atualizarPosicaoConceito = function (mensagem){
-		var idConceito = parseInt($(mensagem).attr("id"));
-	    var idMapa;
 		var conceito = new Conceito();
-		var novoX;
+		var idConceito = parseInt($(mensagem).attr("id"));
+		var conceitoContainer = conceito.getConceitoContainerViaId(idConceito, mapaAtual);
 		
-		novoX = $(mensagem).children("li[title='x']").val();
-		novoY = $(mensagem).children("li[title='y']").val();
-		idMapa = parseInt( $(mensagem).children( "li[title='idMapa']" ).text() );
-		
-		conceito.setX(idConceito, novoX, mapaAtual);
-		conceito.setY(idConceito, novoY, mapaAtual);
-		
-		new Ligacao().atualizarLigacoesAoMoverConceito(1, conceito.getConceitoContainerViaId(idConceito, mapaAtual),idConceito, mapaAtual);
-		
-		mapaAtual.renderizar();
-		
-		mapaAtual.getGerenciadorLista().atualizarConceitoNaListaAoMoverConceito(1,idConceito, idMapa, novoX, novoY);
+		if(conceitoContainer.parent){ //para o caso do conceito ter sido deletado por um usuario e mensagens para mover este conceito terem chegado logo em seguida.
+			var idMapa;
+			var novoX;
+			
+			novoX = $(mensagem).children("li[title='x']").val();
+			novoY = $(mensagem).children("li[title='y']").val();
+			idMapa = parseInt( $(mensagem).children( "li[title='idMapa']" ).text() );
+			
+			conceito.setX(idConceito, novoX, mapaAtual);
+			conceito.setY(idConceito, novoY, mapaAtual);
+			
+			new Ligacao().atualizarLigacoesAoMoverConceito(1, conceitoContainer,idConceito, mapaAtual);
+			
+			mapaAtual.renderizar();
+			
+			mapaAtual.getGerenciadorLista().atualizarConceitoNaListaAoMoverConceito(1,idConceito, idMapa, novoX, novoY);	
+		}
 	};
 	
 	this.atualizarPosicaoLigacao = function (mensagem){
-		var idLigacao = parseInt($(mensagem).attr("id"));
 		var ligacao = new Ligacao();
-		var idMapa;
-		var novoX;
-		var novoY;
-		
-		novoX = parseFloat( $(mensagem).children("li[title='x']").attr("value") );
-		novoY = parseFloat( $(mensagem).children("li[title='y']").attr("value") );
-		idMapa = parseInt( $(mensagem).children( "li[title='idMapa']" ).text() );
-		
-		ligacao.setX(idLigacao, novoX, mapaAtual);
-		ligacao.setY(idLigacao, novoY, mapaAtual);
-		
-		//atualiza a linhas de ligacao na tela
+		var idLigacao = parseInt($(mensagem).attr("id"));
 		var ligacaoContainer = ligacao.getLigacaoContainerViaId(idLigacao, mapaAtual);
-	    ligacao.atualizarLigacoesAoMoverLigacao(1, ligacaoContainer,idLigacao, mapaAtual);
 		
-		mapaAtual.renderizar();
-		
-		mapaAtual.getGerenciadorLista().atualizarLigacaoNaListaAoMoverLigacao(1,idLigacao, idMapa, novoX, novoY);
+		if(ligacaoContainer.parent){
+			var idMapa;
+			var novoX;
+			var novoY;
+			
+			novoX = $(mensagem).children("li[title='x']").val();
+			novoY = $(mensagem).children("li[title='y']").val() ;
+			idMapa = parseInt( $(mensagem).children( "li[title='idMapa']" ).text() );
+			
+			ligacao.setX(idLigacao, novoX, mapaAtual);
+			ligacao.setY(idLigacao, novoY, mapaAtual);
+			
+			//atualiza a linhas de ligacao na tela
+		    ligacao.atualizarLigacoesAoMoverLigacao(1, ligacaoContainer,idLigacao, mapaAtual);
+			
+			mapaAtual.renderizar();
+			
+			mapaAtual.getGerenciadorLista().atualizarLigacaoNaListaAoMoverLigacao(1,idLigacao, idMapa, novoX, novoY);
+		}
 	};
 	
 	     
@@ -336,8 +342,8 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
     	if(origem == 0 ){
     		usuario.desselecionar(mapaAtual);
     		var listaExcluidos = montarListaExcluidos(idObjeto);
-    		var msg = montarMensagemExclusao(mapaAtual.getId(), listaExcluidos);
-    		usuario.enviarMensagemAoServidor(msg);
+    		var mensagem = montarMensagemExclusao(mapaAtual.getId(), listaExcluidos);
+    		usuario.enviarMensagemAoServidor(mensagem);
     	}
     	else{ //excluir fisicamente  e atualizar a lista
     		$(msg).children().each( function(index, element){
@@ -351,6 +357,10 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
     						mapaAtual.removerFilho(mapaAtual.getStageCanvas(), idLinha);
     					});
     					
+    					
+    					var conceitoContainer = mapaAtual.getStageCanvas().getChildAt( idConceito );
+    					conceitoContainer.removeAllEventListeners("pressmove");
+    					usuario.desselecionar(mapaAtual);
     					mapaAtual.removerFilho(mapaAtual.getStageCanvas(), idConceito);
     					mapaAtual.renderizar();
     					mapaAtual.getGerenciadorLista().excluirConceitoDaLista( idConceito );
@@ -365,6 +375,9 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
     						mapaAtual.removerFilho(mapaAtual.getStageCanvas(), idLinha);
     					});
     					
+    					var ligacaoContainer = mapaAtual.getStageCanvas().getChildAt( idLigacao );
+    					ligacaoContainer.removeAllEventListeners("pressmove");
+    					usuario.desselecionar(mapaAtual);
     					mapaAtual.removerFilho(mapaAtual.getStageCanvas(), idLigacao);
     					mapaAtual.renderizar();
     					mapaAtual.getGerenciadorLista().excluirLigacaoDaLista( idLigacao );
