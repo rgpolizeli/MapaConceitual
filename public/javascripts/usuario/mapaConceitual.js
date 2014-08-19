@@ -424,14 +424,19 @@ function GerenciadorLista(listaElementos,mapaConceitual){
 
 function HandTool(stage, mapa){
 	
+	var handTool = this;
+	
 	var stageCanvas = stage;
 	
 	var mapaConceitual = mapa;
 	
 	var posicaoAntiga = new Object();
+	
     
 	var retangulo = new createjs.Shape();
 	retangulo.name = "retanguloHandTool";
+	var hit = new createjs.Shape();
+	
 	
 	retangulo.addEventListener("pressmove", function(evt) {
 		posicaoAntiga = moverCanvas(evt, posicaoAntiga.x, posicaoAntiga.y);
@@ -440,16 +445,25 @@ function HandTool(stage, mapa){
 	retangulo.addEventListener("pressup", function(evt) {
 		posicaoAntiga.x = undefined;
 		posicaoAntiga.y = undefined;
+		
+		var canvasWidth = parseFloat( stage.canvas.getAttribute('width') );
+    	var canvasHeight = parseFloat( stage.canvas.getAttribute('height') );
+    	handTool.desenharRetangulo(0 - stage.x, 0 - stage.y, canvasHeight, canvasWidth);
 	});
 	
     /**
      * desenha e adiciona ao stageCanvas
      */
-     this.desenharRetangulo = function(x,y){
+     this.desenharRetangulo = function(x,y, altura, largura){
     	retangulo.graphics.clear();
-		retangulo.graphics.beginFill("blue").drawRect(x,
-					y, 80, 80);
+		retangulo.graphics.beginFill().drawRect(x,
+					y, largura, altura);
+		hit.graphics.beginFill("#000").rect(x,
+				y, largura, altura);
+		retangulo.hitArea = hit;
+		
 		stageCanvas.addChild(retangulo);
+		
 		mapaConceitual.renderizar();	
     };
 
@@ -484,14 +498,12 @@ function HandTool(stage, mapa){
     			stageCanvas.setTransform(stageCanvas.x + (evt.stageX - novaPosicaoAntiga.x) );
     			mapaConceitual.renderizar();
     			novaPosicaoAntiga.x = evt.stageX;
-    			console.log("Indo para direita");
     			return novaPosicaoAntiga;
     		}
     		if (novaPosicaoAntiga.x > evt.stageX) {
     			stageCanvas.setTransform(stageCanvas.x - (novaPosicaoAntiga.x-evt.stageX));
     			mapaConceitual.renderizar();
     			novaPosicaoAntiga.x = evt.stageX;
-    			console.log("Indo para a esquerda");
     			return novaPosicaoAntiga;
     		}
     		
@@ -506,14 +518,12 @@ function HandTool(stage, mapa){
     			stageCanvas.setTransform(novaPosicaoAntiga.x,stageCanvas.y - (evt.stageY - novaPosicaoAntiga.y) );
     			mapaConceitual.renderizar();
     			novaPosicaoAntiga.y = evt.stageY;
-    			console.log("Indo para baixo");
     			return novaPosicaoAntiga;
     		}
     		if (novaPosicaoAntiga.y > evt.stageY) {
     			stageCanvas.setTransform(novaPosicaoAntiga.x, stageCanvas.y + (novaPosicaoAntiga.y - evt.stageY));
     			mapaConceitual.renderizar();
     			novaPosicaoAntiga.y = evt.stageY;
-    			console.log("Indo para cima");
     			return novaPosicaoAntiga;
     		}
     		return novaPosicaoAntiga; //se X for igual a evt.stageX
@@ -529,7 +539,6 @@ function HandTool(stage, mapa){
     			novaPosicaoAntiga.x = evt.stageX;
     			novaPosicaoAntiga.y = evt.stageY;
     			
-    			console.log("Indo para baixo e para a direita, x = " + novaPosicaoAntiga.x + " , y = "+novaPosicaoAntiga.y);
     			return novaPosicaoAntiga;
     		}
     		
@@ -541,7 +550,6 @@ function HandTool(stage, mapa){
     			novaPosicaoAntiga.y = evt.stageY;
     			novaPosicaoAntiga.x = evt.stageX;
     			
-    			console.log("Indo para cima e para a esquerda, x = " + novaPosicaoAntiga.x + " , y = "+novaPosicaoAntiga.y);
     			return novaPosicaoAntiga;
     		}
     		
@@ -553,7 +561,6 @@ function HandTool(stage, mapa){
     			novaPosicaoAntiga.y = evt.stageY;
     			novaPosicaoAntiga.x = evt.stageX;
     			
-    			console.log("Indo para baixo e para a esquerda, x = " + novaPosicaoAntiga.x + " , y = "+novaPosicaoAntiga.y);
     			return novaPosicaoAntiga;
     		}
     		
@@ -565,7 +572,6 @@ function HandTool(stage, mapa){
     			novaPosicaoAntiga.y = evt.stageY;
     			novaPosicaoAntiga.x = evt.stageX;
     			
-    			console.log("Indo para cima e para direita, x = " + novaPosicaoAntiga.x + " , y = "+novaPosicaoAntiga.y);
     			return novaPosicaoAntiga;
     		}
     		
@@ -577,7 +583,6 @@ function HandTool(stage, mapa){
     			
     			novaPosicaoAntiga.x = evt.stageX;
     			
-    			console.log("Indo para direita, x = " + novaPosicaoAntiga.x + " , y = "+novaPosicaoAntiga.y);
     			return novaPosicaoAntiga;
     		}
     		
@@ -589,7 +594,6 @@ function HandTool(stage, mapa){
     			
     			novaPosicaoAntiga.x = evt.stageX;
     			
-    			console.log("Indo para a esquerda, x = " + novaPosicaoAntiga.x + " , y = "+novaPosicaoAntiga.y);
     			return novaPosicaoAntiga;
     		}
     		
@@ -601,7 +605,6 @@ function HandTool(stage, mapa){
     			novaPosicaoAntiga.y = evt.stageY;
     			
     			
-    			console.log("Indo para cima, x = " + novaPosicaoAntiga.x + " , y = "+novaPosicaoAntiga.y);
     			return novaPosicaoAntiga;
     		}
     		
@@ -613,7 +616,6 @@ function HandTool(stage, mapa){
     			novaPosicaoAntiga.y = evt.stageY;
     			
     			
-    			console.log("Indo para baixo, x = " + novaPosicaoAntiga.x + " , y = "+novaPosicaoAntiga.y);
     			return novaPosicaoAntiga;
     		}
     		
@@ -632,7 +634,8 @@ function MapaConceitual(id, usuario, lista){
     const gerenciadorLista = new GerenciadorLista(listaElementos,this);
     var idMapa = id;
     
-    var stageCanvas = new createjs.Stage("demoCanvas");
+    var idCanvas = "demoCanvas";
+    var stageCanvas = new createjs.Stage(idCanvas);
     createjs.Touch.enable(stageCanvas);
     this.usuarioAtual = usuario;
     var handTool = new HandTool(stageCanvas, this);
@@ -653,19 +656,11 @@ function MapaConceitual(id, usuario, lista){
      * adicionarStageMouseMove so e necessaria pois a funcao removeEventListener so funciona quando o handler e o mesmo do addEventListener
      */
     
-    var adicionarStageMouseMove = function(evt){
-    	handTool.desenharRetangulo(evt.stageX - 40 - stageCanvas.x, evt.stageY - 40 - stageCanvas.y);
-    };
-    
     var ativarHandTool = function() {
-    	stageCanvas.addEventListener("stagemousemove", adicionarStageMouseMove);
+    	var canvasWidth = parseFloat( stageCanvas.canvas.getAttribute('width') );
+    	var canvasHeight = parseFloat( stageCanvas.canvas.getAttribute('height') );
+    	handTool.desenharRetangulo(0 - stageCanvas.x, 0 - stageCanvas.y, canvasHeight, canvasWidth);
     };
-    
-    
-    /**
-     * Ao mover conceito ou ligacao, os pontos da linha de ligacao podem mudar
-     */
-    var calcularNovaPontaConexao = function(conceito,ligacao){;};
 
     /**
      * 
@@ -687,7 +682,6 @@ function MapaConceitual(id, usuario, lista){
      * remove o evento do movimento do mouse sobre o stageCanvas e pede para destruir o retangulo da handTool.
      */
     var desativarHandTool = function() {
-    	stageCanvas.removeEventListener("stagemousemove",adicionarStageMouseMove);
     	handTool.destruirRetangulo();
     };
 
@@ -709,12 +703,6 @@ function MapaConceitual(id, usuario, lista){
     this.getId = function(){
     	return idMapa;
     };
-    
-    
-    /**
-     * 
-     */
-    this.getPontasConexao = function(conceito, ligacao){;};
 
     /**
      * 

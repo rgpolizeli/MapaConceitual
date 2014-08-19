@@ -32,6 +32,12 @@ function GerenciadorArquivos(){
 		removerMapaDaLista( idMapa );
 	};
 	
+	this.criarMapa = function ( idMapa, nomeMapa ){
+		var path = './public/mapas/' + idMapa + '.xml';
+		var xmlStr = "<?xml version='1.0'?><mapaConceitual><nome>"+ nomeMapa +"</nome><idmapa>"+ idMapa +"</idmapa></mapaConceitual>";
+		fs.writeFileSync(path, xmlStr);
+	};
+	
 	
 	function pararSalvamento(idMapa){
 		var posicaoNaLista = gerenciador.buscarPosicaoMapaNaLista(idMapa);
@@ -67,7 +73,7 @@ function GerenciadorArquivos(){
 		var posicaoNaLista = gerenciador.buscarPosicaoMapaNaLista(idMapa);
 		var xmlString = getXmlString(listaMapasAbertos[ posicaoNaLista ].arqXml);
 		
-		xmlString = "<?xml version='1.0' encoding='us-ascii'?><mapaConceitual>" + xmlString + "</mapaConceitual>";
+		xmlString = "<?xml version='1.0'?><mapaConceitual>" + xmlString + "</mapaConceitual>";
 		fs.writeFileSync(path, xmlString);
 	}
 	

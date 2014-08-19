@@ -129,11 +129,20 @@ function Servidor(Ip,Porta){
 		
 		app.post('/abrir', function(req,res){
 			var msg = {
-					idUsuario:req.user.id, 
+					idUsuario: req.user.id, 
 					idMapa: req.body.optionsRadios
 			};
 			routes.pagina(req,res,'editarMapa', msg);
 		});
+		
+		app.post('/criarMapa', function(req,res){
+			gerenciadorBanco.inserirNovoMapa(req.body.nomeMapa, req.user.id);
+			gerenciadorBanco.eventEmitter.once('mapaCriado', function(idMapa){ 
+				gerenciadorArquivos.criarMapa(idMapa, req.body.nomeMapa);
+				return res.redirect('mapas');
+			});
+		});
+		
 		
 		app.post(
 			'/autenticar',

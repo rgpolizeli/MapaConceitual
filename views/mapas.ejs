@@ -11,7 +11,16 @@
     <title>Mapas Disponíveis</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="./stylesheets/bootstrap.min.css" rel="stylesheet">
+    <link href="../stylesheets/bootstrap.min.css" rel="stylesheet">
+    <link href="../stylesheets/mapas.css" rel="stylesheet">
+    
+    <script src="../javascripts/jquery-2.1.1.min.js"></script>
+    <script src="../javascripts/bootstrap.min.js"></script>
+    <script>
+    	function abrirModal(){
+			$('#criarMapa').modal('show');
+		}
+    </script>
 
   </head>
 
@@ -47,11 +56,33 @@
 				</div><!-- /.col-lg-6 -->
 				
 				<button type="submit" class="btn btn-lg btn-primary btn-block">Abrir</button>
+				<button id="criarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="abrirModal()">Criar novo Mapa</button>
 			</form>
-
+			
 		</div>
 
 	</div>
+	
+	
+	<div id="criarMapa" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
+			<h4 class="modal-title">Criar novo mapa</h4>
+		  </div>
+		  <div class="modal-body">
+			<form method="post" action="/criarMapa" role="form">
+				<p>Nome:</p>
+				<input name="nomeMapa" type="text" class="form-control" required autofocus>
+				<button type="submit" id="submit" class="btn btn-primary">Criar</button>
+				<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar</button>
+			</form>
+		  </div>
+		  <div class="modal-footer"></div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
 	  
 	  
 	
