@@ -26,20 +26,14 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     var corLinha;
     var ligacao;
     
-    var coordenadasPontaConceitoPai = new Object();
-	var coordenadasPontaLigacaoPai = new Object(); 
-    
-	var coordenadasPontaConceitoFilho = new Object();
-	var coordenadasPontaLigacaoFilho = new Object();
-    
     /**
      * 
      */
     var adicionarDragDrop = function(ligacao){
     	ligacaoContainer.addEventListener("pressmove", function(evt){
     		
-    		var novoX = (evt.stageX - 50 - mapaConceitual.getStageCanvas().x); //a nova posicao do conceitoContainer eh a posicao do mouse para onde foi arrastado - o deslocamento do stageCanvas
-    		var novoY = (evt.stageY - 25 - mapaConceitual.getStageCanvas().y);
+    		var novoX = (evt.stageX - (largura/2) - mapaConceitual.getStageCanvas().x); //a nova posicao do conceitoContainer eh a posicao do mouse para onde foi arrastado - o deslocamento do stageCanvas
+    		var novoY = (evt.stageY - (altura/2) - mapaConceitual.getStageCanvas().y);
     	    
     		evt.currentTarget.x = novoX;
     	    evt.currentTarget.y = novoY;
@@ -183,6 +177,10 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     	conceitoContainerPai = conceito.getConceitoContainerViaId(idConceitoPai, mapaConceitual);
     	conceitoContainerFilho = conceito.getConceitoContainerViaId(idConceitoFilho, mapaConceitual);
     	
+    	altura = label.getMeasuredHeight();
+    	largura = label.getMeasuredWidth();
+    	
+    	
     	label.textAlign = "center";
     	label.textBaseline = "middle";
     	label.x = (largura/2);
@@ -207,6 +205,19 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     	mapaConceitual.getStageCanvas().addChild(ligacaoContainer); //adiciona o container no stageCanvas
     	mapaConceitual.renderizar();
     };
+    
+    
+    this.redesenharLigacao = function(ligacaoContainer) {
+    	var cor = ligacao.getCorFundoViaId(mapaConceitual.conceitosSelecionados[0]);
+    	var altura = ligacao.getAltura(ligacaoContainer);
+		var largura = ligacao.getLargura(ligacaoContainer);
+		var rect = ligacaoContainer.getChildByName("retangulo");
+		
+		rect.graphics.clear();
+		rect.graphics.beginFill(cor).drawRoundRect( //adiciona na posicao zero,zero
+				0,0,largura,altura,3);
+		mapaConceitual.renderizar();
+    };
 
     
     /**
@@ -219,9 +230,6 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     	//desenhando linha Pai
     	coordenadasLinhaPai = calcularNovaPonta(conceitoContainerPai,ligacaoContainer);
     	
-    	coordenadasPontaConceitoPai = coordenadasLinhaPai.conceito;
-    	coordenadasPontaLigacaoPai = coordenadasLinhaPai.ligacao;
-    	
     	graphicPai.moveTo(coordenadasLinhaPai.conceito.x,coordenadasLinhaPai.conceito.y);
     	graphicPai.lineTo(coordenadasLinhaPai.ligacao.x,coordenadasLinhaPai.ligacao.y);
     	linhaPai.graphics = graphicPai;
@@ -230,15 +238,16 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     	//desenhando linha Filho
     	coordenadasLinhaFilho = calcularNovaPonta(conceitoContainerFilho,ligacaoContainer);
     	
-    	coordenadasPontaConceitoFilho = coordenadasLinhaFilho.conceito;
-    	coordenadasPontaLigacaoFilho = coordenadasLinhaFilho.ligacao;
-    	
     	graphicFilho.moveTo(coordenadasLinhaFilho.conceito.x,coordenadasLinhaFilho.conceito.y);
     	graphicFilho.lineTo(coordenadasLinhaFilho.ligacao.x,coordenadasLinhaFilho.ligacao.y);
     	linhaFilho.graphics = graphicFilho;
     	mapaConceitual.getStageCanvas().addChild(linhaFilho);
     	
     };
+    
+    
+    
+    
     
     /**
      * calcula os novos pontos de interconexao entre conceitos ou palavras de ligacao conectados
@@ -252,6 +261,12 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     	var ligacaoX = parseFloat(ligacaoContainer.x);
     	var ligacaoY = parseFloat(ligacaoContainer.y);
     	
+    	var larguraConceito = conceitoContainer.getBounds().width;
+    	var alturaConceito = conceitoContainer.getBounds().height;
+    	var larguraLigacao = ligacaoContainer.getBounds().width;
+    	var alturaLigacao = ligacaoContainer.getBounds().height;
+    	
+    	
     	for(var i=0;i<8;i++){
     		coordenadas.conceito[i] = new Object();
     		coordenadas.ligacao[i] = new Object();
@@ -261,51 +276,51 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     	coordenadas.conceito[0].x = conceitoX;
     	coordenadas.conceito[0].y = conceitoY;
     	
-    	coordenadas.conceito[1].x = conceitoX + 50;
+    	coordenadas.conceito[1].x = conceitoX + (larguraConceito/2);
     	coordenadas.conceito[1].y = conceitoY;
     	
-    	coordenadas.conceito[2].x = conceitoX + 100;
+    	coordenadas.conceito[2].x = conceitoX + (larguraConceito);
     	coordenadas.conceito[2].y = conceitoY;
     	
-    	coordenadas.conceito[3].x = conceitoX + 100;
-    	coordenadas.conceito[3].y = conceitoY + 25;
+    	coordenadas.conceito[3].x = conceitoX + (larguraConceito);
+    	coordenadas.conceito[3].y = conceitoY + (alturaConceito/2);
     	
-    	coordenadas.conceito[4].x = conceitoX + 100;
-    	coordenadas.conceito[4].y = conceitoY + 50;
+    	coordenadas.conceito[4].x = conceitoX + (larguraConceito);
+    	coordenadas.conceito[4].y = conceitoY + (alturaConceito);
     	
-    	coordenadas.conceito[5].x = conceitoX + 50;
-    	coordenadas.conceito[5].y = conceitoY + 50;
+    	coordenadas.conceito[5].x = conceitoX + (larguraConceito/2);
+    	coordenadas.conceito[5].y = conceitoY + (alturaConceito);
     	
     	coordenadas.conceito[6].x = conceitoX;
-    	coordenadas.conceito[6].y = conceitoY + 50;
+    	coordenadas.conceito[6].y = conceitoY + (alturaConceito);
     	
     	coordenadas.conceito[7].x = conceitoX;
-    	coordenadas.conceito[7].y = conceitoY + 25;
+    	coordenadas.conceito[7].y = conceitoY + (alturaConceito/2);
     	
     	//para a ligacao
     	coordenadas.ligacao[0].x = ligacaoX;
     	coordenadas.ligacao[0].y = ligacaoY;
     	
-    	coordenadas.ligacao[1].x = ligacaoX + 40;
+    	coordenadas.ligacao[1].x = ligacaoX + (larguraLigacao/2);
     	coordenadas.ligacao[1].y = ligacaoY;
     	
-    	coordenadas.ligacao[2].x = ligacaoX + 80;
+    	coordenadas.ligacao[2].x = ligacaoX + (larguraLigacao);
     	coordenadas.ligacao[2].y = ligacaoY;
     	
-    	coordenadas.ligacao[3].x = ligacaoX + 80;
-    	coordenadas.ligacao[3].y = ligacaoY + 15;
+    	coordenadas.ligacao[3].x = ligacaoX + (larguraLigacao);
+    	coordenadas.ligacao[3].y = ligacaoY + (alturaLigacao/2);
     	
-    	coordenadas.ligacao[4].x = ligacaoX + 80;
-    	coordenadas.ligacao[4].y = ligacaoY + 30;
+    	coordenadas.ligacao[4].x = ligacaoX + (larguraLigacao);
+    	coordenadas.ligacao[4].y = ligacaoY + (alturaLigacao);
     	
-    	coordenadas.ligacao[5].x = ligacaoX + 40;
-    	coordenadas.ligacao[5].y = ligacaoY + 30;
+    	coordenadas.ligacao[5].x = ligacaoX + (larguraLigacao/2);
+    	coordenadas.ligacao[5].y = ligacaoY + (alturaLigacao);
     	
     	coordenadas.ligacao[6].x = ligacaoX;
-    	coordenadas.ligacao[6].y = ligacaoY + 30;
+    	coordenadas.ligacao[6].y = ligacaoY + (alturaLigacao);
     	
     	coordenadas.ligacao[7].x = ligacaoX;
-    	coordenadas.ligacao[7].y = ligacaoY + 15;
+    	coordenadas.ligacao[7].y = ligacaoY + (alturaLigacao/2);
     	
     	
     	if(ligacaoY >= coordenadas.conceito[6].y){ //pontaLigacao[1] � pontaConceito[5]
@@ -372,42 +387,6 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
     this.getCorFonte = function(){
         return corFonte;
     };
-    
-    var coordenadasPontaConceitoPai = new Object();
-	var coordenadasPontaLigacaoPai = new Object();
-    
-	/**
-     * 
-     */
-    this.getCoordenadasPontaConceitoPai = function(){
-        return coordenadasPontaConceitoPai;
-    };
-	
-    /**
-     * 
-     */
-    this.getCoordenadasPontaLigacaoPai = function(){
-        return coordenadasPontaLigacaoPai;
-    };
-	
-    /**
-     * 
-     */
-    this.getCoordenadasPontaConceitoFilho = function(){
-        return coordenadasPontaConceitoFilho;
-    };
-    
-    /**
-     * 
-     */
-    this.getCoordenadasPontaLigacaoFilho = function(){
-        return coordenadasPontaLigacaoFilho;
-    };
-	
-	
-	
-	
-    
     
     /**
      * 
@@ -620,7 +599,7 @@ function Ligacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFund
 	graphicPai = new createjs.Graphics(); //define as propriedades graficas da linhaPai
 	graphicFilho = new createjs.Graphics(); //define as propriedades graficas da linhaFilho
 	
-	espessuraLinha = 2;
+	espessuraLinha = 1;
 	corLinha = "#000";
 	
 	

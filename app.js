@@ -130,7 +130,9 @@ function Servidor(Ip,Porta){
 		app.post('/abrir', function(req,res){
 			var msg = {
 					idUsuario: req.user.id, 
-					idMapa: req.body.optionsRadios
+					idMapa: req.body.optionsRadios,
+					ip: ip,
+					porta: porta
 			};
 			routes.pagina(req,res,'editarMapa', msg);
 		});
@@ -170,6 +172,13 @@ function Servidor(Ip,Porta){
 				)(req,res,next);	
 			}
 		);
+		
+		
+		app.get('/logout', function(req, res){
+			  req.logout();
+			  res.redirect('/');
+		});
+		
 		
 		io.on('connection', function(socket){
 			
@@ -318,19 +327,23 @@ function Servidor(Ip,Porta){
 							var idMapa = $(mensagem).children("li[title='idMapa']").text();
 				    		idMapa = parseInt(idMapa);
 				    		
-				    		var novaQtdFilhos =  $(mensagem).children("li[title='qtdFilhos']").val();
+				    		var papelConceito = $(mensagem).children("li[title^='idConceitoFilho']").attr('title');
+				    		papelConceito = parseInt( papelConceito.replace("idConceitoFilho","") );
 				    		
 				    		var semiLigacao = {
 				    				idLigacao : parseInt($(mensagem).attr("id")),
-				    				idConceito : $(mensagem).children("li[title='idConceitoFilho"+ novaQtdFilhos +"']").val(),
+				    				idConceito : $(mensagem).children("li[title='idConceitoFilho"+ papelConceito +"']").val(),
 				    				idLinha :  gerenciadorArquivos.buscarIdDisponivel(idMapa),
-				    				novaQtdFilhos : novaQtdFilhos
+				    				novaQtdFilhos : $(mensagem).children("li[title='qtdFilhos']").val(),
+				    				papelConceito : papelConceito
 				    		};
 				    		
 				    		//inserir no arquivo xml
 				    		gerenciadorArquivos.adicionarSemiLigacao(idMapa, semiLigacao);
 							
-				    		mensagem += "<li title='idLinhaFilho" + novaQtdFilhos +"' value = '" + semiLigacao.idLinha + "'></li>";
+				    		mensagem += "<li title='idLinhaFilho" + papelConceito +"' value = '" + semiLigacao.idLinha + "'></li>";
+				    		mensagem += "<li title='papelConceito' value = '" + papelConceito + "'></li>";
+				    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
 				    		mensagem = mensagem.replace("<ul","<5ul");
 				    		
 				    		//manda para todos os usuarios, inclusive quem criou o conceito
@@ -384,7 +397,9 @@ function Servidor(Ip,Porta){
 					var usuariosAtivos = listaSincronizadores[ posicao ].sincronizador.getUsuariosAtivos();
 					if(usuariosAtivos.length == 0){
 						gerenciadorArquivos.fecharMapa(idsMapas[i]);
+						removerSincronizador(idsMapas[i]);
 					}
+					
 				}
 				
 				console.log("Usuario #" + id + " desconectou-se.");
@@ -528,7 +543,7 @@ function Servidor(Ip,Porta){
 	function removerSincronizador(idMapa){
 		var i = buscarPosicaoSincronizadorNaLista(idMapa);
 		var id = listaSincronizadores[i].idMapa;
-		listaSincronizadores[i] = undefined;
+		listaSincronizadores.splice(i,1);
 		
 		return id;
 	}

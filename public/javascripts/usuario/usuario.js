@@ -21,7 +21,7 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 			var corFonte = $(element).children("li[title='corFonte']").text();
 			var corFundo = $(element).children("li[title='corFundo']").text();
 			
-	        usuario.criarConceito(1, mapaAtual,texto, fonte, tamanhoFonte, corFonte, corFundo,id);
+	        usuario.criarConceito(1,texto, fonte, tamanhoFonte, corFonte, corFundo,id);
 	        
 	        var msgPosicaoConceito = 
 	        	"<ul id='" + id + "' title='conceito'>" + 
@@ -54,7 +54,7 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 				idLinhaFilho = $(element).find("li[title^='idLinhaFilho']").first().val();
 				idConceitoFilho = $(element).find("li[title^='idConceitoFilho']").first().val();
 				
-				usuario.criarLigacao(1, mapaAtual, texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai,idLinhaFilho, idConceitoPai, idConceitoFilho, element);
+				usuario.criarLigacao(1, texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai,idLinhaFilho, idConceitoPai, idConceitoFilho, element);
 				
 				//default e a posicao padrao (automatica) da ligacao
 				if(x != 'default'){
@@ -89,7 +89,7 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 						}
 				});
 				
-				usuario.criarLigacao(1, mapaAtual, texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai,idLinhaFilho, idConceitoPai, idConceitoFilho, listaLigacao);
+				usuario.criarLigacao(1, texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai,idLinhaFilho, idConceitoPai, idConceitoFilho, listaLigacao);
 				
 				if(x != 'default'){
 					var msgPosicaoLigacao = 
@@ -193,37 +193,37 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 	};
 	
 	     
-	this.criarConceito = function(origem, mapaConceitualAtual,texto, fonte, tamanhoFonte, corFonte, corFundo,idConceito) {
+	this.criarConceito = function(origem,texto, fonte, tamanhoFonte, corFonte, corFundo,idConceito) {
 		
 		if(origem == 0){ //se foi criado localmente, envia para o servidor
-			var idMapa = mapaConceitualAtual.getId();
+			var idMapa = mapaAtual.getId();
 			var msg = montarMensagemNovoConceito(idMapa, texto, fonte, tamanhoFonte, corFonte, corFundo);
 			usuario.enviarMensagemAoServidor(msg);
 		}
 		else{ //veio do servidor
-			var conceito = new Conceito(origem, texto, fonte, tamanhoFonte, corFonte, corFundo, mapaConceitualAtual);
+			var conceito = new Conceito(origem, texto, fonte, tamanhoFonte, corFonte, corFundo, mapaAtual);
 			conceito.desenharConceito();
 			conceito.setId(conceito.getConceitoContainer(), idConceito);
-			mapaConceitualAtual.getGerenciadorLista().adicionarConceitoNaLista(conceito,origem);
+			mapaAtual.getGerenciadorLista().adicionarConceitoNaLista(conceito,origem);
 		}
 	};
 	
 
-    this.criarLigacao = function(origem, mapaConceitualAtual, texto, fonte, tamanhoFonte, corFonte, corFundo,idLigacao,idLinhaPai,idLinhaFilho, idConceitoPai, idConceitoFilho, mensagem){
+    this.criarLigacao = function(origem, texto, fonte, tamanhoFonte, corFonte, corFundo,idLigacao,idLinhaPai,idLinhaFilho, idConceitoPai, idConceitoFilho, mensagem){
   
 		if(origem == 0){
-			mapaConceitualAtual.setCriarLigacao(false);
-			this.desselecionar(mapaConceitualAtual);
+			mapaAtual.setCriarLigacao(false);
+			this.desselecionar(mapaAtual);
 			
-			mapaConceitualAtual.conceitosSelecionados[0] == undefined;
-			mapaConceitualAtual.conceitosSelecionados[1] == undefined;
+			mapaAtual.conceitosSelecionados[0] == undefined;
+			mapaAtual.conceitosSelecionados[1] == undefined;
 			
-			var idMapa = mapaConceitualAtual.getId();
+			var idMapa = mapaAtual.getId();
 			var msg = montarMensagemNovaLigacao(idMapa, idConceitoPai, idConceitoFilho, texto, fonte, tamanhoFonte, corFonte, corFundo);
 			usuario.enviarMensagemAoServidor(msg);
 		}
 		else{
-			var ligacao = new Ligacao(origem, texto, fonte, tamanhoFonte, corFonte, corFundo, mapaConceitualAtual,idConceitoPai,idConceitoFilho);
+			var ligacao = new Ligacao(origem, texto, fonte, tamanhoFonte, corFonte, corFundo, mapaAtual,idConceitoPai,idConceitoFilho);
 			ligacao.desenharLigacao();
 			
 			ligacao.setId(ligacao.getLigacaoContainer(), idLigacao);
@@ -241,7 +241,7 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 				mensagem += "<li title='y' value='" + ligacaoY + "'></li>";
 			}
 			
-			mapaConceitualAtual.getGerenciadorLista().adicionarLigacaoNaLista(origem,ligacao,mensagem);
+			mapaAtual.getGerenciadorLista().adicionarLigacaoNaLista(origem,ligacao,mensagem);
 		}
     };
     
@@ -256,10 +256,10 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 			mapaConceitualAtual.conceitosSelecionados[1] == undefined;
 			
 			var idMapa = mapaConceitualAtual.getId();
-			var itemLista = $("ul#" + idLigacao); //item da lista
-			var NovaQtdFilhos = itemLista.children("li[title='qtdFilhos']").val() + 1;
+			var NovaQtdFilhos = $("ul#" + idLigacao).children("li[title='qtdFilhos']").val() + 1;
+			var papelConceito = buscarPapelConceitoDisponivel(idLigacao);
 			
-			var msg = montarMensagemNovaSemiLigacao(idMapa, idLigacao, idConceito, NovaQtdFilhos);
+			var msg = montarMensagemNovaSemiLigacao(idMapa, idLigacao, idConceito, papelConceito, NovaQtdFilhos);
 			usuario.enviarMensagemAoServidor(msg);
 		}
 		
@@ -274,6 +274,14 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 		
 		
     };
+    
+    
+    function buscarPapelConceitoDisponivel(idLigacao){
+    	var papelConceito = 1;
+    	while( $("ul#" + idLigacao).children("li[title='idConceitoFilho"+ papelConceito + "']").length != 0 )
+    		papelConceito++;
+    	return papelConceito;
+    }
     
 
     this.editarConceito = function() {};
@@ -310,11 +318,11 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 		return mensagem;
 	}
     
-    function montarMensagemNovaSemiLigacao(idMapa, idLigacao, idConceito, NovaQtdFilhos){
+    function montarMensagemNovaSemiLigacao(idMapa, idLigacao, idConceito, papelConceito, NovaQtdFilhos){
 		var mensagem = 
 			"<5ul id='" + idLigacao + "' title='ligacao'>" + 
 			"<li title='qtdFilhos' value='" + NovaQtdFilhos + "'></li>" +
-			"<li title='idConceitoFilho"+ NovaQtdFilhos +"' value='" + idConceito + "'></li>" +
+			"<li title='idConceitoFilho"+ papelConceito +"' value='" + idConceito + "'></li>" +
 			"<li title='idMapa'>" + idMapa + "</li>"
 		;
 		return mensagem;
@@ -502,15 +510,6 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 		}
     }
     
-
-    this.moverConceito = function() {};
-
-    this.moverLigacao = function() {};
-
-    this.pararPercorrerMapa = function() {};
-
-    this.percorrerMapa = function() {};
-    
   //encaminha mensagens vindas do servidor 
     //para atualizar a lista de elementos ou o nome dos mapas que podem ser abertos
    
@@ -532,7 +531,7 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 					var tamanhoFonte = $(mensagem).children("li[title='tamanhoFonte']").text();
 					var corFonte = $(mensagem).children("li[title='corFonte']").text();
 					var corFundo = $(mensagem).children("li[title='corFundo']").text();
-			        usuario.criarConceito(1, mapaAtual,texto, fonte, tamanhoFonte, corFonte, corFundo,id);
+			        usuario.criarConceito(1,texto, fonte, tamanhoFonte, corFonte, corFundo,id);
 				break;
 				case "2": //conceito movido por algum usuario
 					mensagem = mensagem.replace("<2ul","<ul");
@@ -550,7 +549,7 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 					var tamanhoFonte = $(mensagem).children("li[title='tamanhoFonte']").text();
 					var corFonte = $(mensagem).children("li[title='corFonte']").text();
 					var corFundo = $(mensagem).children("li[title='corFundo']").text();
-					usuario.criarLigacao(1, mapaAtual, texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, mensagem);
+					usuario.criarLigacao(1, texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, mensagem);
 			        
 				break;
 				case "4": //palavra de ligacao movida por algum usuario
@@ -559,10 +558,13 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 				break;
 				case "5": //nova SemiLigacao (
 					mensagem = mensagem.replace("<5ul","<ul");
-					var qtdFilhos =  $(mensagem).children("li[title='qtdFilhos']").val();
-					var idConceito = $(mensagem).children("li[title='idConceitoFilho"+ qtdFilhos +"']").val();
+					var papelConceito =  $(mensagem).children("li[title='papelConceito']").val();
+					var idConceito = $(mensagem).children("li[title='idConceitoFilho"+ papelConceito +"']").val();
 					var idLigacao = parseInt($(mensagem).attr("id"));
-					var idLinha = $(mensagem).children("li[title='idLinhaFilho"+ qtdFilhos +"']").val();
+					var idLinha = $(mensagem).children("li[title='idLinhaFilho"+ papelConceito +"']").val();
+					
+					mensagem = mensagem.replace("<li title='papelConceito' value = '" + papelConceito + "'></li>", "");
+					
 					usuario.criarSemiLigacao(1, mapaAtual, idConceito, idLigacao, idLinha, mensagem);
 				break;
 				
@@ -590,30 +592,16 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 			var objetoSelecionado = conceito.getConceitoContainerViaId(mapa.conceitosSelecionados[0], mapa);
 			
 			if(objetoSelecionado.name=="conceito"){
-				var rect = objetoSelecionado.getChildByName("retangulo");
-				rect.graphics.clear();
-				rect.graphics.beginFill("blue").drawRoundRect( //adiciona na posicao zero,zero
-						0,0,100,50,3);
-				mapa.renderizar();
-				mapa.conceitosSelecionados[0] = undefined;
 				
+				conceito.redesenharConceito(objetoSelecionado);
+				mapa.conceitosSelecionados[0] = undefined;
 				mapa.desabilitarBotaoNovaLigacao();
 				mapa.desabilitarBotaoExcluir();
-				
 			}
 			
 			if(objetoSelecionado.name=="ligacao"){
 				
-				var cor = conceito.getCorFundoViaId(mapa.conceitosSelecionados[0]);
-				var altura = conceito.getAltura(objetoSelecionado);
-				var largura = conceito.getLargura(objetoSelecionado);
-				var rect = objetoSelecionado.getChildByName("retangulo");
-				
-				rect.graphics.clear();
-				rect.graphics.beginFill(cor).drawRoundRect( //adiciona na posicao zero,zero
-						0,0,largura,altura,3);
-				mapa.renderizar();
-				
+				conceito.redesenharConceito(objetoSelecionado);
 				mapa.conceitosSelecionados[0] = undefined;
 				mapa.desabilitarBotaoNovaLigacao();
 				mapa.desabilitarBotaoExcluir();
@@ -631,14 +619,14 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
     	var rect = conceito.getRetangulo(objetoSelecionado.parent);
     	var corSelecao = "#F00";
     	var espessuraBorda = 6;
-    	
-    	
+    	var idConceito = conceito.getId(objetoSelecionado.parent);
+    	var corFundo = conceito.getCorFundoViaId(idConceito);
     	
 		rect.graphics.clear();
-		rect.graphics.setStrokeStyle(espessuraBorda,"round").beginStroke(corSelecao).beginFill("blue").drawRoundRect( //adiciona na posicao zero,zero
+		rect.graphics.setStrokeStyle(espessuraBorda,"round").beginStroke(corSelecao).beginFill(corFundo).drawRoundRect( //adiciona na posicao zero,zero
 				0,0,largura,altura,3);
 		mapa.renderizar();
-		mapa.conceitosSelecionados[0] = conceito.getId(objetoSelecionado.parent); //id do objeto no stage
+		mapa.conceitosSelecionados[0] = idConceito; //id do objeto no stage
 		
 		mapa.habilitarBotaoNovaLigacao();
 		mapa.habilitarBotaoExcluir();

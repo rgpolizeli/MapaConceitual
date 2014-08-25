@@ -11,8 +11,6 @@ function Conceito(origem, textoConceito, fonteP, tamanhoFonteP, corFonteP, corFu
     var corFonte;
     var corFundo;
     var conceito = this;
-
-    this.ligacoes;
     
     /**
      * 
@@ -20,8 +18,8 @@ function Conceito(origem, textoConceito, fonteP, tamanhoFonteP, corFonteP, corFu
     var adicionarDragDrop = function(conceito){
     	conceitoContainer.addEventListener("pressmove", function(evt){
     		
-    		var novoX = (evt.stageX - 50 - mapaConceitual.getStageCanvas().x); //a nova posicao do conceitoContainer eh a posicao do mouse para onde foi arrastado - o deslocamento do stageCanvas
-    		var novoY = (evt.stageY - 25 - mapaConceitual.getStageCanvas().y);
+    		var novoX = (evt.stageX - (largura/2) - mapaConceitual.getStageCanvas().x); //a nova posicao do conceitoContainer eh a posicao do mouse para onde foi arrastado - o deslocamento do stageCanvas
+    		var novoY = (evt.stageY - (altura/2) - mapaConceitual.getStageCanvas().y);
     	    
     		evt.currentTarget.x = novoX; 
     	    evt.currentTarget.y = novoY;
@@ -43,13 +41,18 @@ function Conceito(origem, textoConceito, fonteP, tamanhoFonteP, corFonteP, corFu
      * 
      */
     this.desenharConceito = function() {
-    	
-    	
-    	
+
     	label.textAlign = "center";
     	label.textBaseline = "middle";
-    	label.x = (100/2);
-    	label.y = (50/2);
+    	
+    	var paddingH = 12;
+    	var paddingW = 12;
+    	
+    	altura = label.getMeasuredHeight() + paddingH;
+    	largura = label.getMeasuredWidth() + paddingW;
+    	
+    	label.x = (largura/2);
+    	label.y = (altura/2);
     	
     	retangulo.graphics.beginFill(corFundo).drawRoundRect( //adiciona na posicao zero,zero
     			0,0,largura,altura,3);
@@ -63,6 +66,20 @@ function Conceito(origem, textoConceito, fonteP, tamanhoFonteP, corFonteP, corFu
     	mapaConceitual.getStageCanvas().addChild(conceitoContainer); //adiciona o container no stageCanvas
     	mapaConceitual.renderizar();
     };
+    
+    
+    this.redesenharConceito = function(conceitoContainer) {
+    	var cor = conceito.getCorFundoViaId(mapaConceitual.conceitosSelecionados[0]);
+    	var altura = conceito.getAltura(conceitoContainer);
+		var largura = conceito.getLargura(conceitoContainer);
+		var rect = conceitoContainer.getChildByName("retangulo");
+		
+		rect.graphics.clear();
+		rect.graphics.beginFill(cor).drawRoundRect( //adiciona na posicao zero,zero
+				0,0,largura,altura,3);
+		mapaConceitual.renderizar();
+    };
+    
 
     /**
      * 
@@ -218,9 +235,6 @@ function Conceito(origem, textoConceito, fonteP, tamanhoFonteP, corFonteP, corFu
     	conceitoContainer.y = novoY;
     };
     
-    
-    altura = 50;
-    largura = 100;
     texto = textoConceito;
     fonte = fonteP;
     tamanhoFonte = tamanhoFonteP;

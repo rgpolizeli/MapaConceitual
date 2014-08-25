@@ -12,14 +12,7 @@ function GerenciadorBanco(){
 	var gerenciadorBanco = this;
 	this.eventEmitter = new events.EventEmitter(); 
 	
-	/*
-	this.adicionarPermissao = function (idUsuario, idMapa){
-	};
-	*/
-	
-	
-	
-	
+
 	this.perquisarMapas = function (idUsuario){
 		
 		var mapas = new Array();

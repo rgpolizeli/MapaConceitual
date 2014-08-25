@@ -20,6 +20,12 @@
     	function abrirModal(){
 			$('#criarMapa').modal('show');
 		}
+		
+		function logout(){
+			var href = location.origin + "/" + "logout";
+			window.location = href;
+		}
+		
     </script>
 
   </head>
@@ -29,8 +35,9 @@
 	  <div class="container">
 
 		<div class="col-sm-6 col-sm-offset-3">
-
+			<button type="button" id="logout" style="float:right" onclick="logout()">Sair</button>
 			<h1><span class="fa fa-sign-in"></span> Mapas</h1>
+			
 
 			<!-- LOGIN FORM -->
 			<form action="/abrir" method="post">
@@ -45,7 +52,7 @@
 							
 							<div class="radio">
 								<label>
-									<input type="radio" name="optionsRadios" id="optionsRadios1" value="<%= mensagem[i].idMapa %>" checked>
+									<input type="radio" name="optionsRadios" id="optionsRadios1" value="<%= mensagem[i].idMapa %>" required autofocus>
 									<%= item %>
 								</label>
 							</div>
@@ -71,15 +78,17 @@
 			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
 			<h4 class="modal-title">Criar novo mapa</h4>
 		  </div>
+		  <form method="post" action="/criarMapa" role="form">
 		  <div class="modal-body">
-			<form method="post" action="/criarMapa" role="form">
 				<p>Nome:</p>
 				<input name="nomeMapa" type="text" class="form-control" required autofocus>
-				<button type="submit" id="submit" class="btn btn-primary">Criar</button>
-				<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar</button>
-			</form>
+			
 		  </div>
-		  <div class="modal-footer"></div>
+		  <div class="modal-footer">
+		  	<button type="submit" id="submit" class="btn btn-primary">Criar</button>
+			<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar</button>
+		  </div>
+		  </form>
 		</div><!-- /.modal-content -->
 	  </div><!-- /.modal-dialog -->
 	</div><!-- /.modal -->

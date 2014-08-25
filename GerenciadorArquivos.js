@@ -150,30 +150,31 @@ function GerenciadorArquivos(){
 	function obterIdsUtilizados(arqXml){
 		
 		var idsUtilizados = new Array();
-		var i = 0;
-		var qtdFilhos;
+		var id;
 		
 		$(arqXml).find('conceito').each( function( index, element ){
-			idsUtilizados[i] = $( element ).find( 'id' );
-			i++;
+			id = parseInt( $( element ).find( 'id' ).text() );
+			idsUtilizados.push( id );
 		});
 		
 		$(arqXml).find('palavraLigacao').each( function( index, element ){
-			idsUtilizados[i] = $( element ).find( 'id' );
-			i++;
+			id = parseInt( $( element ).find( 'id' ).text() );
+			idsUtilizados.push( id );
 			
-			idsUtilizados[i] = $( element ).find('idLinhaPai').val();
-			i++;
+			id = parseInt( $( element ).find( 'idLinhaPai' ).text() );
+			idsUtilizados.push( id );
 			
-			qtdFilhos = $( element ).find('qtdFilhos').val();
-			for(var j = 1; j <= qtdFilhos; j++){
-				idsUtilizados[i] = $( element ).find('idLinhaFilho' + i).val();
-				i++;		
-			}
+			$( element ).children().each( function( index, subElement ){
+				if( $(subElement).prop("tagName").indexOf("IDLINHAFILHO") != -1 ){
+					id = parseInt( $(subElement).text() );
+					idsUtilizados.push( id );
+				}
+			});
 		});
 		
 		return idsUtilizados;
 	}
+	
 	
 	//conceito aqui nao e o da classe Conceito
 	this.adicionarConceito = function (idMapa, conceito){
@@ -218,6 +219,15 @@ function GerenciadorArquivos(){
 		;
 		
 		listaMapasAbertos[posicaoMapa].arqXml.append( $(estruturaLigacao) );
+		
+		
+		listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == ligacao.idConceitoPai ||  id == ligacao.idConceitoFilho1){
+				var novaLigacao = "<idLigacao>" + ligacao.idLigacao + "</idLigacao>";
+				$( element ).append( $(novaLigacao) );
+			}
+		});
 	};
 	
 	
@@ -255,12 +265,12 @@ function GerenciadorArquivos(){
 			if( id == semiLigacao.idLigacao ){
 				$( element ).find('qtdFilhos').text(semiLigacao.novaQtdFilhos);
 				var novaLinha = 
-					"<idLinhaFilho" + semiLigacao.novaQtdFilhos + ">" + semiLigacao.idLinha + "</idLinhaFilho" + 
-						+ semiLigacao.novaQtdFilhos +">"
+					"<idLinhaFilho" + semiLigacao.papelConceito + ">" + semiLigacao.idLinha + "</idLinhaFilho" + 
+						+ semiLigacao.papelConceito +">"
 				;
 				var novoConceito = 
-					"<idConceitoFilho" + semiLigacao.novaQtdFilhos + ">" + semiLigacao.idConceito + "</idConceitoFilho" + 
-						+ semiLigacao.novaQtdFilhos +">"
+					"<idConceitoFilho" + semiLigacao.papelConceito + ">" + semiLigacao.idConceito + "</idConceitoFilho" + 
+						+ semiLigacao.papelConceito +">"
 				;
 				
 				$( element ).append( $(novaLinha) );
@@ -299,28 +309,28 @@ function GerenciadorArquivos(){
 			if( id == idConceito ){
 				var listaLigacoes = new Array();
 				
-				$( element ).find( "idLigacao" ).each( function( index, element ){
-					listaLigacoes.push(parseInt( $( element ).text() ));
+				$( element ).find( "idLigacao" ).each( function( index, subElement ){
+					listaLigacoes.push(parseInt( $( subElement ).text() ));
 				});
 				
 				if(listaLigacoes.length != 0){
-					listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, element ){
-						var idLigacao = parseInt( $( element ).find( "id" ).text() );
+					listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, subElement ){
+						var idLigacao = parseInt( $( subElement ).find( "id" ).text() );
 						for(var i=0; i < listaLigacoes.length; i++){
 							if(idLigacao == listaLigacoes[i]){
-								var papelConceito = verificarPapelConceito(element, idConceito);
+								var papelConceito = verificarPapelConceito(subElement, idConceito);
 								
 								if(papelConceito == 0){ //nao precisa atualizar a quantidade de filhos se for o conceito pai, pois a ligacao tambem sera eliminada futuramente
-									$( element ).find( "idConceitoPai").remove();
-									$( element ).find( "idLinhaPai").remove();
+									$( subElement ).find( "idConceitoPai").remove();
+									$( subElement ).find( "idLinhaPai").remove();
 								}
 								else{
-									$( element ).find( "idConceitoFilho" + papelConceito).remove();
-									$( element ).find( "idLinhaFilho" + papelConceito).remove();
+									$( subElement ).find( "idConceitoFilho" + papelConceito).remove();
+									$( subElement ).find( "idLinhaFilho" + papelConceito).remove();
 									
-									var qtdFilhos = parseInt( $( element ).find('qtdFilhos').text() );
+									var qtdFilhos = parseInt( $( subElement ).find('qtdFilhos').text() );
 									qtdFilhos--;
-									$( element ).find('qtdFilhos').text(qtdFilhos);
+									$( subElement ).find('qtdFilhos').text(qtdFilhos);
 								}
 							}
 						}

@@ -5,45 +5,309 @@
 <title>Editar Mapa</title>
 
 <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script src="../javascripts/bootstrap.min.js"></script>
 <script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
 <script src="https://cdn.socket.io/socket.io-1.0.6.js"></script>
-<script src="./javascripts/usuario/leanModal.js"></script>
 <script src="./javascripts/usuario/mapaConceitual.js"></script>
 <script src="./javascripts/usuario/usuario.js"></script>
 <script src="./javascripts/usuario/conceito.js"></script>
 <script src="./javascripts/usuario/ligacao.js"></script>
 <script src="./javascripts/usuario/semiLigacao.js"></script>
-<script src="./javascripts/usuario/interfaceCriarConceito.js"></script>
-<script src="./javascripts/usuario/interfaceCriarLigacao.js"></script>
+<script src="../javascripts/colorpicker/colpick.js"></script>
+
 <link rel="stylesheet" href="./stylesheets/usuario/estilos.css">
+<link href="../stylesheets/bootstrap.min.css" rel="stylesheet">
+<link href="../stylesheets/colorpicker/colpick.css" rel="stylesheet">
 
 <script>
+var ip = "<%=ip%>";
+var porta = <%=porta%>;
+
 function main(idUsuario,idMapa){
 	var mapa = new MapaConceitual(idMapa, new Usuario(), null);
-	var usuario = new Usuario(idUsuario, mapa, "192.168.0.102", 3000);
+	var usuario = new Usuario(idUsuario, mapa, ip, porta);
 	mapa.setUsuario(usuario);
 	usuario.conectarServidor();
+	
+	carregarEventos(usuario, mapa);
 }
+
+
+
+function carregarEventos(usuario, mapa){
+
+	$("#criarConceitoButton").on("click", function abrirModal(){
+		$('#interfaceCriarConceito').modal('show');
+	});
+	
+	$("#criarConceito").on("click", function abrirModal(){
+		var fonte = $("#fonte").text();
+		var corFonte = $("#corFonte").val();
+		var corFundo = $("#corFundo").val();
+		var tamanhoFonte = $("#tamanhoFonte").text();
+		var texto = $("#conceito").val();
+		
+		if(texto.length == 0){
+			$('#conceito').focus();
+		}
+		else{
+			$('#interfaceCriarConceito').modal('hide');
+			usuario.criarConceito(0, texto, fonte, tamanhoFonte, corFonte, corFundo);
+		}
+	});
+	
+	$("#criarLigacao").on("click", function abrirModal(){
+		var fonte = $("#fontel").text();
+		var corFonte = $("#corFontel").val();
+		var corFundo = $("#corFundol").val();
+		var tamanhoFonte = $("#tamanhoFontel").text();
+		var texto = $("#ligacao").val();
+		
+		if(texto.length == 0){
+			$('#ligacao').focus();
+		}
+		else{
+			$('#interfaceCriarLigacao').modal('hide');
+			usuario.criarLigacao(0, texto, fonte, tamanhoFonte, corFonte, corFundo,null,null,null,mapa.conceitosSelecionados[0], mapa.conceitosSelecionados[1], null);
+		}
+	});
+
+}
+
+function logout(){
+	var href = "http://" + ip + ":" + porta + "/" + "logout";
+	window.location = href;
+}
+
 </script>
 
 </head>
 <body onload="main(<%=idUsuario%>, <%=idMapa%>)">
-<!-- Modal Window -->
-	<div id="background"></div>
-	<div id="modal">
-		<p>Digite o texto:</p>
-		<input id="txtBox" type="text">
-		<button id="btnOK">OK</button>
-		<button class="btnFechar" id="btnFechar">X</button>
-	</div>
+
+	<!--Nova Modal-->
+	
+	<div id="interfaceCriarConceito" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
+			<h4 class="modal-title">Criar novo conceito</h4>
+		  </div>
+		  <div class="modal-body">
+		  
+				<div class="form-group">
+					 <label for="conceito">Novo Conceito</label>
+					<input id="conceito" name="conceito" type="text" class="form-control" placeholder="Digite o conceito" required autofocus>
+				</div>
+				<div class="form-group">
+					<label for="corFundo">Cor do Fundo</label>
+					<input id="corFundo" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
+					<script>
+						$('#corFundo').colpick({
+								layout:'hex',
+								submit:0,
+								onChange:function(hsb,hex,rgb,el,bySetColor) {
+									$(el).val('#' + hex);
+								}
+						});
+					</script>
+				</div>
+				<div class="form-group">
+					<div class="dropdown">
+					 <label for="fonte">Fonte</label>
+					  <button type="button" id="fonte" class="btn btn-default dropdown-toggle" data-toggle="dropdown" required autofocus>Arial</button>
+					  <ul class="dropdown-menu" role="menu">
+					    <% var listaFontes = [
+					    	"Arial",
+					    	"Times New Roman",
+					    	"Georgia",
+					    	"Tahoma",
+					    	"Verdana",
+					    	"Impact",
+					    	"Comic Sans"
+					    ];
+					     %>
+					    
+					    <% for(var i=0; i < listaFontes.length; i++){ %>
+					    
+					    	 <li onclick="$(fonte).text($(this).text())"><%=listaFontes[i]%></li>
+					    <%}%> 
+					  </ul>
+					  <!-- dropDown-->
+					  </div>
+				</div>
+				
+				<div class="form-group">
+					<label for="corFonte">Cor da Fonte</label>
+					<input id="corFonte" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
+					<script>
+						$('#corFonte').colpick({
+								layout:'hex',
+								submit:0,
+								onChange:function(hsb,hex,rgb,el,bySetColor) {
+									$(el).val('#' + hex);
+								}
+						});
+					</script>
+				</div>
+				
+				<div class="form-group">
+					<div class="dropdown">
+					 <label for="tamanhoFonte">Tamanho da Fonte</label>
+					  <button type="button" id="tamanhoFonte" class="btn btn-default dropdown-toggle" data-toggle="dropdown" required autofocus>9px</button>
+					  <ul class="dropdown-menu" role="menu">
+					    <% var listaTamanhoFontes = [
+					    	"8px",
+					    	"9px",
+					    	"10px",
+					    	"11px",
+					    	"12px",
+					    	"14px",
+					    	"18px",
+					    	"24px",
+					    	"30px"
+					    ];
+					     %>
+					    
+					    <% for(var i=0; i < listaTamanhoFontes.length; i++){ %>
+					    
+					    	 <li onclick="$(tamanhoFonte).text($(this).text())"><%=listaTamanhoFontes[i]%></li>
+					    <%}%> 
+					  </ul>
+					  <!-- dropDown-->
+					  </div>
+				</div>
+					  
+		  </div>
+		  <div class="modal-footer">
+		  	<button type="button" id="criarConceito" class="btn btn-primary">Criar</button>
+			<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar</button>
+		  </div>
+		  
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+	
+	<!--Fim Nova Modal-->
+	
+	
+	<!--Nova Modal-->
+	
+	<div id="interfaceCriarLigacao" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
+			<h4 class="modal-title">Criar nova ligacao</h4>
+		  </div>
+		  <div class="modal-body">
+		  
+				<div class="form-group">
+					 <label for="conceito">Nova Ligacao</label>
+					<input id="ligacao" name="ligacao" type="text" class="form-control" placeholder="Digite a palavra de ligacao" required autofocus>
+				</div>
+				<div class="form-group">
+					<label for="corFundol">Cor do Fundo</label>
+					<input id="corFundol" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
+					<script>
+						$('#corFundol').colpick({
+								layout:'hex',
+								submit:0,
+								onChange:function(hsb,hex,rgb,el,bySetColor) {
+									$(el).val('#' + hex);
+								}
+						});
+					</script>
+				</div>
+				<div class="form-group">
+					<div class="dropdown">
+					 <label for="fontel">Fonte</label>
+					  <button type="button" id="fontel" class="btn btn-default dropdown-toggle" data-toggle="dropdown" required autofocus>Arial</button>
+					  <ul class="dropdown-menu" role="menu">
+					    <% var listaFontes = [
+					    	"Arial",
+					    	"Times New Roman",
+					    	"Georgia",
+					    	"Tahoma",
+					    	"Verdana",
+					    	"Impact",
+					    	"Comic Sans"
+					    ];
+					     %>
+					    
+					    <% for(var i=0; i < listaFontes.length; i++){ %>
+					    
+					    	 <li onclick="$(fontel).text($(this).text())"><%=listaFontes[i]%></li>
+					    <%}%> 
+					  </ul>
+					  <!-- dropDown-->
+					  </div>
+				</div>
+				
+				<div class="form-group">
+					<label for="corFontel">Cor da Fonte</label>
+					<input id="corFontel" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
+					<script>
+						$('#corFontel').colpick({
+								layout:'hex',
+								submit:0,
+								onChange:function(hsb,hex,rgb,el,bySetColor) {
+									$(el).val('#' + hex);
+								}
+						});
+					</script>
+				</div>
+				
+				<div class="form-group">
+					<div class="dropdown">
+					 <label for="tamanhoFontel">Tamanho da Fonte</label>
+					  <button type="button" id="tamanhoFontel" class="btn btn-default dropdown-toggle" data-toggle="dropdown" required autofocus>9px</button>
+					  <ul class="dropdown-menu" role="menu">
+					    <% var listaTamanhoFontes = [
+					    	"8px",
+					    	"9px",
+					    	"10px",
+					    	"11px",
+					    	"12px",
+					    	"14px",
+					    	"18px",
+					    	"24px",
+					    	"30px"
+					    ];
+					     %>
+					    
+					    <% for(var i=0; i < listaTamanhoFontes.length; i++){ %>
+					    
+					    	 <li onclick="$(tamanhoFontel).text($(this).text())"><%=listaTamanhoFontes[i]%></li>
+					    <%}%> 
+					  </ul>
+					  <!-- dropDown-->
+					  </div>
+				</div>
+					  
+		  </div>
+		  <div class="modal-footer">
+		  	<button type="button" id="criarLigacao" class="btn btn-primary">Criar</button>
+			<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar</button>
+		  </div>
+		  
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+	
+	<!--Fim Nova Modal-->
+	
+	
+	
+	
 <div id="lista" style="display:none"></div>
 	<div>
-		<a href="#modal" id="abrirModal" style="display:none" rel="leanModal"></a>
 		<button type="button" id="handButton">Hand Tool</button>
 		<button type="button" id="editarButton">Editar Mapa</button>
 		<button  type="button" id="criarConceitoButton">Novo Conceito</button>
 		<button  type="button" id="novaLigacao" style="display:none">Nova Ligação</button>
 		<button  type="button" id="excluir" style="display:none">Excluir</button>
+		<button  type="button" id="logout" onclick="logout()">Sair</button>
 	</div>
 	
 <div>

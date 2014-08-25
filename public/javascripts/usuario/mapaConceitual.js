@@ -810,13 +810,9 @@ function MapaConceitual(id, usuario, lista){
     	
     }
     
-    $(function() {
-        $('a[rel*=leanModal]').leanModal({top:200, closeButton:".btnFechar"});     
-    });
-    
     /**
      * quando usuario clica no criarConceitoButton, chama usuario.criarConceito
-    */
+    
     if($("#criarConceitoButton")){ 
     	
     	$("#criarConceitoButton").click(function (){
@@ -825,14 +821,14 @@ function MapaConceitual(id, usuario, lista){
     			}
     	);
     }
-    
+    */
     
     if($("#excluir")){ 
     	
     	$("#excluir").click(function (){
     		mapa.usuarioAtual.excluir(0, mapa.conceitosSelecionados[0]);
-    			}
-    	);
+    			
+    	});
     }
     
     
@@ -851,21 +847,27 @@ function MapaConceitual(id, usuario, lista){
 					mapa.usuarioAtual.selecionarConceito(objetoSelecionado, mapa);
 				}
 				else{
-					
-					if(mapa.verificarCriarLigacao()){
-						var objeto0 = mapa.getContainerViaId(mapa.conceitosSelecionados[0]);
-						mapa.conceitosSelecionados[1] = stageCanvas.getChildIndex(objetoSelecionado.parent);
-						//verificar o que eh o conceito selecionado 0
-						if(objeto0.name == "conceito"){
-							new InterfaceCriarLigacao(mapa.usuarioAtual, mapa);
-							$("#abrirModal").click();
-							$("#lean_modal").show();
-						}
-						else{ // eh ligacao
-							//verificar se jah nao estao ligados
-							if(!verificarLigacao(mapa.conceitosSelecionados[0], mapa.conceitosSelecionados[1])){ //se nao estiverem
-								mapa.usuarioAtual.criarSemiLigacao(0, mapa, mapa.conceitosSelecionados[1], mapa.conceitosSelecionados[0],null,null);
+					if( mapa.verificarCriarLigacao() ){
+						var idConceitoClicado = stageCanvas.getChildIndex(objetoSelecionado.parent);
+						if( idConceitoClicado != mapa.conceitosSelecionados[0]){ //para impedir a auto-relacao
+							var objeto0 = mapa.getContainerViaId(mapa.conceitosSelecionados[0]);
+							mapa.conceitosSelecionados[1] = idConceitoClicado;
+							//verificar o que eh o conceito selecionado 0
+							if(objeto0.name == "conceito"){
+								$('#interfaceCriarLigacao').modal('show');
 							}
+							else{ // eh ligacao
+								//verificar se jah nao estao ligados
+								if(!verificarLigacao(mapa.conceitosSelecionados[1], mapa.conceitosSelecionados[0])){ //se nao estiverem
+									mapa.usuarioAtual.criarSemiLigacao(0, mapa, mapa.conceitosSelecionados[1], mapa.conceitosSelecionados[0],null,null);
+								}
+								else{
+									mapa.setCriarLigacao(false);
+								}
+							}
+						}
+						else{
+							mapa.setCriarLigacao(false);
 						}
 					}
 				}
@@ -880,8 +882,11 @@ function MapaConceitual(id, usuario, lista){
 						var objeto0 = mapa.getContainerViaId(mapa.conceitosSelecionados[0]);
 						mapa.conceitosSelecionados[1] = stageCanvas.getChildIndex(objetoSelecionado.parent);
 						//verificar o que eh o conceito selecionado 0
-						if(objeto0.name == "conceito" && !verificarLigacao(mapa.conceitosSelecionados[1], mapa.conceitosSelecionados[0])){
+						if(objeto0.name == "conceito" && !verificarLigacao(mapa.conceitosSelecionados[0], mapa.conceitosSelecionados[1])){
 							mapa.usuarioAtual.criarSemiLigacao(0, mapa, mapa.conceitosSelecionados[0], mapa.conceitosSelecionados[1],null,null);
+						}
+						else{
+							mapa.setCriarLigacao(false);
 						}
 					}
 				}
