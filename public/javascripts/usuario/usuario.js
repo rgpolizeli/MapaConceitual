@@ -230,7 +230,6 @@ function Usuario(idUsuarioP, mapa, ipServer, porta){
 			ligacao.setId(ligacao.getLinhaPaiContainer(), idLinhaPai);
 			ligacao.setId(ligacao.getLinhaFilhoContainer(), idLinhaFilho);
 			
-			mapaAtual.getStageCanvas().children;
 			
 			//se a ligacao esta sendo criada, ou seja, o x e y da ligacao sao default
 			if( $(mensagem).find("li[title='x']").length == 0 ){

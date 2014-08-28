@@ -684,14 +684,6 @@ function MapaConceitual(id, usuario, lista){
     var desativarHandTool = function() {
     	handTool.destruirRetangulo();
     };
-
-    
-    /**
-     * 
-     */
-    this.getContainerViaId = function(id){
-    	return stageCanvas.getChildAt(id);
-    };
     
     /**
      * 
@@ -703,6 +695,12 @@ function MapaConceitual(id, usuario, lista){
     this.getId = function(){
     	return idMapa;
     };
+    
+    
+    this.getContainerViaId = function(id){
+    	return stageCanvas.getChildAt(id);
+    };
+    
 
     /**
      * 
@@ -834,7 +832,7 @@ function MapaConceitual(id, usuario, lista){
     
     
     
-    stageCanvas.on("stagemousedown", function(evt) {
+    stageCanvas.on("stagemousedown", function tratarClickStage(evt) {
     	var x = evt.stageX - stageCanvas.x;
 		var y = evt.stageY - stageCanvas.y;
     	var objetoSelecionado = stageCanvas.getObjectUnderPoint(x,y); //se clicar no canvas vazio retorna null para objetoSelecionado
