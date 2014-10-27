@@ -39,32 +39,97 @@ function GerenciadorBanco(){
 	};
 	
 	
-	function adicionarPermissao(idUsuario, idMapa, nomeMapa, tipoPermissao){
-		connection.query('INSERT INTO permissoes SET idUsuario = ?, idMapa = ?, nomeMapa = ?, tipoPermissao = ?',[idUsuario, idMapa, nomeMapa, tipoPermissao], function(err, result) {		
-			if(err) {
-				//fazer algum tratamento
-			}
-			else { 
-				gerenciadorBanco.eventEmitter.emit('permissaoAdicionada');
-			}
-		});	
+	function adicionarPermissoes(idMapa, nomeMapa, permissoes){
+		var tiposPermissao = {
+			"Gerente": 1,
+			"Editor": 2,
+			"Visualizador": 3
+		};
+		
+		var permissoesRestantes = new Array();
+		
+		for(var i=0; i < permissoes.length; i++){
+			permissoesRestantes.push(i);
+		}
+		
+		
+		for(var k=0; k < permissoes.length; k++){
+			connection.query('INSERT INTO permissoes SET idUsuario = ?, idMapa = ?, nomeMapa = ?, tipoPermissao = ?',[permissoes[k].idUsuario, idMapa, nomeMapa, tiposPermissao[permissoes[k].tipoPermissao]], function(err, result) {		
+				if(err) {
+					//fazer algum tratamento
+					permissoesRestantes.pop();
+					if(permissoesRestantes.length == 0){
+						gerenciadorBanco.eventEmitter.emit('permissoesAdicionadas');
+					}
+				}
+				else{
+					permissoesRestantes.pop();
+					if(permissoesRestantes.length == 0){
+						gerenciadorBanco.eventEmitter.emit('permissoesAdicionadas');
+					}
+				}
+			});
+		}	
+		
 	}
 
 	
-	this.inserirNovoMapa = function (nomeMapa, idProprietario){
+	this.inserirNovoMapa = function (nomeMapa, permissoes){
+		var i, idProprietario, idMapaNovo;
+		
+		i=0;
+		while(permissoes[i].tipoPermissao != "Gerente"){
+			i++;
+		}
+		idProprietario = permissoes[i].idUsuario;
+		
 		connection.query('INSERT INTO mapas SET nome = ?, idProprietario = ?',[nomeMapa, idProprietario], function(err, result) {		
 			if(err) {
 				//fazer algum tratamento
 			}
 			else { 
-				adicionarPermissao(idProprietario, result.insertId, nomeMapa, 1);
-				gerenciadorBanco.eventEmitter.once('permissaoAdicionada', function(){ 
+				idMapaNovo = result.insertId;
+				adicionarPermissoes(idMapaNovo, nomeMapa, permissoes);
+				gerenciadorBanco.eventEmitter.once('permissoesAdicionadas', function(){ 
 					gerenciadorBanco.eventEmitter.emit('mapaCriado', result.insertId);
 				});
+			}
+		});
+	};
+	
+	
+	this.buscarNomeTodosUsuarios = function(){
+		connection.query('SELECT id,nome FROM usuarios', function(err, result) {
+			var listaUsuarios;
+			listaUsuarios = new Array();
+			
+			if(err) {
+				gerenciadorBanco.eventEmitter.emit('nomeTodosUsuarios', listaUsuarios);
+			}
+			else { 
+				for(var i=0; i < result.length; i++){
+					listaUsuarios[i] = {
+							id: result[i].id,
+							nome: result[i].nome
+					};
+				}
+				
+				gerenciadorBanco.eventEmitter.emit('nomeTodosUsuarios', listaUsuarios);
 			}
 		});	
 	};
 	
+	this.verificarTipoPermissao = function(idUsuario, idMapa){
+		connection.query('SELECT tipoPermissao FROM permissoes WHERE idUsuario=? AND idMapa=?', [idUsuario, idMapa], function(err, result) {
+			
+			if(err) {
+				//mensagem de erro ou usuario sem permissao
+			}
+			else { 
+				gerenciadorBanco.eventEmitter.emit('tipoPermissao', result[0].tipoPermissao);
+			}
+		});	
+	};
 
 }
 

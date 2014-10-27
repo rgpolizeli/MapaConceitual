@@ -17,12 +17,12 @@
     <script src="../javascripts/jquery-2.1.1.min.js"></script>
     <script src="../javascripts/bootstrap.min.js"></script>
     <script>
-    	function abrirModal(){
-			$('#criarMapa').modal('show');
-		}
-		
 		function logout(){
 			var href = location.origin + "/" + "logout";
+			window.location = href;
+		}
+		function criarMapa(){
+			var href = location.origin + "/" + "criarMapa";
 			window.location = href;
 		}
 		
@@ -63,7 +63,7 @@
 				</div><!-- /.col-lg-6 -->
 				
 				<button type="submit" class="btn btn-lg btn-primary btn-block">Abrir</button>
-				<button id="criarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="abrirModal()">Criar novo Mapa</button>
+				<button id="criarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="criarMapa();">Criar novo Mapa</button>
 			</form>
 			
 		</div>

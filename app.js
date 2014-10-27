@@ -137,14 +137,58 @@ function Servidor(Ip,Porta){
 			routes.pagina(req,res,'editarMapa', msg);
 		});
 		
+		app.get('/criarMapa', function(req,res){
+			if(!req.isAuthenticated()){
+				routes.pagina(req,res,'index',null);
+			}
+			else{
+				
+				var idUsuario, nomeUsuario, achou, msg;
+				
+				idUsuario = req.user.id;
+				gerenciadorBanco.buscarNomeTodosUsuarios();
+				gerenciadorBanco.eventEmitter.once('nomeTodosUsuarios', function(listaUsuarios){
+					
+					achou = false;
+					
+					for(var i=0; (i < listaUsuarios.length) && !achou; i++){
+						if(listaUsuarios[i].id == idUsuario){
+							nomeUsuario = listaUsuarios[i].nome;
+							achou = true;
+						}
+					}
+
+					msg = {
+							nomeUsuario: nomeUsuario,
+							idUsuario: idUsuario,
+							listaUsuarios: listaUsuarios
+					};
+					routes.pagina(req,res,'criarMapa', msg);
+				});
+			}
+		});
+		
 		app.post('/criarMapa', function(req,res){
-			gerenciadorBanco.inserirNovoMapa(req.body.nomeMapa, req.user.id);
+			
+			var permissoes = new Array();
+			var propriedades = Object.getOwnPropertyNames(req.body);
+			
+			for(var i=0; i < propriedades.length; i++){
+				if(propriedades[i] != "nomeMapa"){
+					var permissao = new Object();
+					permissao.idUsuario = parseInt(propriedades[i].replace("usuario", ""));
+					permissao.tipoPermissao = req.body[propriedades[i]];
+					permissoes.push(permissao);
+				}
+			}
+			
+			gerenciadorBanco.inserirNovoMapa(req.body.nomeMapa, permissoes);
 			gerenciadorBanco.eventEmitter.once('mapaCriado', function(idMapa){ 
 				gerenciadorArquivos.criarMapa(idMapa, req.body.nomeMapa);
 				return res.redirect('mapas');
 			});
+			
 		});
-		
 		
 		app.post(
 			'/autenticar',
@@ -398,8 +442,7 @@ function Servidor(Ip,Porta){
 					if(usuariosAtivos.length == 0){
 						gerenciadorArquivos.fecharMapa(idsMapas[i]);
 						removerSincronizador(idsMapas[i]);
-					}
-					
+					}				
 				}
 				
 				console.log("Usuario #" + id + " desconectou-se.");
@@ -621,7 +664,7 @@ function Servidor(Ip,Porta){
 	
 }
 
-	var servidor = new Servidor('192.168.0.102',3000);
+	var servidor = new Servidor('localhost',3000);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);
