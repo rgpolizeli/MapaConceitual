@@ -84,7 +84,10 @@ function logout(){
 </head>
 <body onload="main(<%=idUsuario%>, <%=idMapa%>)">
 
-	<!--Nova Modal-->
+	
+	<!-------------------------------- 
+	MODAL PARA CRIAR CONCEITO 
+	----------------------------------->
 	
 	<div id="interfaceCriarConceito" class="modal fade">
 	  <div class="modal-dialog">
@@ -188,10 +191,11 @@ function logout(){
 	  </div><!-- /.modal-dialog -->
 	</div><!-- /.modal -->
 	
-	<!--Fim Nova Modal-->
 	
 	
-	<!--Nova Modal-->
+	<!-------------------------------- 
+	MODAL PARA CRIAR PALAVRA DE LIGACAO 
+	----------------------------------->
 	
 	<div id="interfaceCriarLigacao" class="modal fade">
 	  <div class="modal-dialog">
@@ -295,12 +299,125 @@ function logout(){
 	  </div><!-- /.modal-dialog -->
 	</div><!-- /.modal -->
 	
-	<!--Fim Nova Modal-->
+	
+	<!------------------------  
+	MODAL PARA EDITAR CONCEITO 
+	---------------------------->
+	
+	<div id="interfaceCriarConceito" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
+			<h4 class="modal-title">Criar novo conceito</h4>
+		  </div>
+		  <div class="modal-body">
+		  
+				<div class="form-group">
+					 <label for="conceito">Novo Conceito</label>
+					<input id="conceito" name="conceito" type="text" class="form-control" placeholder="Digite o conceito" required autofocus>
+				</div>
+				<div class="form-group">
+					<label for="corFundo">Cor do Fundo</label>
+					<input id="corFundo" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
+					<script>
+						$('#corFundo').colpick({
+								layout:'hex',
+								submit:0,
+								onChange:function(hsb,hex,rgb,el,bySetColor) {
+									$(el).val('#' + hex);
+								}
+						});
+					</script>
+				</div>
+				<div class="form-group">
+					<div class="dropdown">
+					 <label for="fonte">Fonte</label>
+					  <button type="button" id="fonte" class="btn btn-default dropdown-toggle" data-toggle="dropdown" required autofocus>Arial</button>
+					  <ul class="dropdown-menu" role="menu">
+					    <% var listaFontes = [
+					    	"Arial",
+					    	"Times New Roman",
+					    	"Georgia",
+					    	"Tahoma",
+					    	"Verdana",
+					    	"Impact",
+					    	"Comic Sans"
+					    ];
+					     %>
+					    
+					    <% for(var i=0; i < listaFontes.length; i++){ %>
+					    
+					    	 <li onclick="$(fonte).text($(this).text())"><%=listaFontes[i]%></li>
+					    <%}%> 
+					  </ul>
+					  <!-- dropDown-->
+					  </div>
+				</div>
+				
+				<div class="form-group">
+					<label for="corFonte">Cor da Fonte</label>
+					<input id="corFonte" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
+					<script>
+						$('#corFonte').colpick({
+								layout:'hex',
+								submit:0,
+								onChange:function(hsb,hex,rgb,el,bySetColor) {
+									$(el).val('#' + hex);
+								}
+						});
+					</script>
+				</div>
+				
+				<div class="form-group">
+					<div class="dropdown">
+					 <label for="tamanhoFonte">Tamanho da Fonte</label>
+					  <button type="button" id="tamanhoFonte" class="btn btn-default dropdown-toggle" data-toggle="dropdown" required autofocus>9px</button>
+					  <ul class="dropdown-menu" role="menu">
+					    <% var listaTamanhoFontes = [
+					    	"8px",
+					    	"9px",
+					    	"10px",
+					    	"11px",
+					    	"12px",
+					    	"14px",
+					    	"18px",
+					    	"24px",
+					    	"30px"
+					    ];
+					     %>
+					    
+					    <% for(var i=0; i < listaTamanhoFontes.length; i++){ %>
+					    
+					    	 <li onclick="$(tamanhoFonte).text($(this).text())"><%=listaTamanhoFontes[i]%></li>
+					    <%}%> 
+					  </ul>
+					  <!-- dropDown-->
+					  </div>
+				</div>
+					  
+		  </div>
+		  <div class="modal-footer">
+		  	<button type="button" id="criarConceito" class="btn btn-primary">Criar</button>
+			<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar</button>
+		  </div>
+		  
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
 	
 	
+	<!-------------------------------- 
+	INICIALIZANDO LISTA LOCAL 
+	----------------------------------->
+	
+	<div id="lista" style="display:none"></div>
 	
 	
-<div id="lista" style="display:none"></div>
+	<!-------------------------------- 
+	BARRA DE FERRAMENTAS
+	----------------------------------->
+	
 	<div>
 		<button type="button" id="handButton">Hand Tool</button>
 		<button type="button" id="editarButton">Editar Mapa</button>
@@ -310,9 +427,13 @@ function logout(){
 		<button  type="button" id="logout" onclick="logout()">Sair</button>
 	</div>
 	
-<div>
-	<canvas id="demoCanvas"  width="500" height="500"  style="display: inline-block;border: 2px solid black"></canvas>
-</div>
+	<!-------------------------------- 
+	INICIALIZANDO O CANVAS
+	----------------------------------->
+	
+	<div>
+		<canvas id="demoCanvas"  width="500" height="500"  style="display: inline-block;border: 2px solid black"></canvas>
+	</div>
 
 </body>
 </html>
