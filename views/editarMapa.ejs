@@ -8,11 +8,14 @@
 <script src="../javascripts/bootstrap.min.js"></script>
 <script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
 <script src="https://cdn.socket.io/socket.io-1.0.6.js"></script>
-<script src="./javascripts/usuario/mapaConceitual.js"></script>
-<script src="./javascripts/usuario/usuario.js"></script>
-<script src="./javascripts/usuario/conceito.js"></script>
-<script src="./javascripts/usuario/ligacao.js"></script>
-<script src="./javascripts/usuario/semiLigacao.js"></script>
+<script src="./javascripts/usuario/InterfaceUsuario.js"></script>
+<script src="./javascripts/usuario/MapaConceitual.js"></script>
+<script src="./javascripts/usuario/Usuario.js"></script>
+<script src="./javascripts/usuario/GerenciadorConceito.js"></script>
+<script src="./javascripts/usuario/GerenciadorLigacao.js"></script>
+<script src="./javascripts/usuario/GerenciadorSemiLigacao.js"></script>
+<script src="./javascripts/usuario/GerenciadorLista.js"></script>
+<script src="./javascripts/usuario/HandTool.js"></script>
 <script src="../javascripts/colorpicker/colpick.js"></script>
 
 <link rel="stylesheet" href="./stylesheets/usuario/estilos.css">
@@ -24,54 +27,18 @@ var ip = "<%=ip%>";
 var porta = <%=porta%>;
 
 function main(idUsuario,idMapa){
-	var mapa = new MapaConceitual(idMapa, new Usuario(), null);
-	var usuario = new Usuario(idUsuario, mapa, ip, porta);
-	mapa.setUsuario(usuario);
+	
+	var usuario;
+	var nomeCanvas;
+	var listaElementos;
+	
+	nomeCanvas = "canvas";
+	listaElementos = $("#lista");
+	
+	usuario = new Usuario(idUsuario, idMapa, ip, porta,listaElementos, nomeCanvas);
 	usuario.conectarServidor();
 	
-	carregarEventos(usuario, mapa);
-}
-
-
-
-function carregarEventos(usuario, mapa){
-
-	$("#criarConceitoButton").on("click", function abrirModal(){
-		$('#interfaceCriarConceito').modal('show');
-	});
 	
-	$("#criarConceito").on("click", function abrirModal(){
-		var fonte = $("#fonte").text();
-		var corFonte = $("#corFonte").val();
-		var corFundo = $("#corFundo").val();
-		var tamanhoFonte = $("#tamanhoFonte").text();
-		var texto = $("#conceito").val();
-		
-		if(texto.length == 0){
-			$('#conceito').focus();
-		}
-		else{
-			$('#interfaceCriarConceito').modal('hide');
-			usuario.criarConceito(0, texto, fonte, tamanhoFonte, corFonte, corFundo);
-		}
-	});
-	
-	$("#criarLigacao").on("click", function abrirModal(){
-		var fonte = $("#fontel").text();
-		var corFonte = $("#corFontel").val();
-		var corFundo = $("#corFundol").val();
-		var tamanhoFonte = $("#tamanhoFontel").text();
-		var texto = $("#ligacao").val();
-		
-		if(texto.length == 0){
-			$('#ligacao').focus();
-		}
-		else{
-			$('#interfaceCriarLigacao').modal('hide');
-			usuario.criarLigacao(0, texto, fonte, tamanhoFonte, corFonte, corFundo,null,null,null,mapa.conceitosSelecionados[0], mapa.conceitosSelecionados[1], null);
-		}
-	});
-
 }
 
 function logout(){
@@ -432,7 +399,7 @@ function logout(){
 	----------------------------------->
 	
 	<div>
-		<canvas id="demoCanvas"  width="500" height="500"  style="display: inline-block;border: 2px solid black"></canvas>
+		<canvas id="canvas"  width="500" height="500"  style="display: inline-block;border: 2px solid black"></canvas>
 	</div>
 
 </body>

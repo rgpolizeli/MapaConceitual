@@ -1,38 +1,19 @@
-function SemiLigacao(origem, mapaConceitual, idConceitoP, idLigacaoP){
-    var linhaContainer;
-    var graphic;
-    var idConceito;
-    var idLigacao;
-    var espessuraLinha;
-    var corLinha;
-    var semiLigacao;
+function GerenciadorSemiLigacao(){
     
-    var coordenadasPontaConceito = new Object();
-	var coordenadasPontaLigacao = new Object(); 
+    var semiLigacao = this;
     
     /**
      * 
      */
-    this.desenharSemiLigacao = function() {
-    	var posicaoLigacaoX;
-    	var posicaoLigacaoY;
-    	var conceito;
+    this.desenharSemiLigacao = function( conceitoContainerP, ligacaoContainerP ) {
     	var conceitoContainer;
-    	var ligacao;
     	var ligacaoContainer;
     	
     	
-    	conceito = new Conceito();
-    	conceitoContainer= conceito.getConceitoContainerViaId(idConceito, mapaConceitual);
+    	conceitoContainer = conceitoContainerP;
+    	ligacaoContainer = ligacaoContainerP;
     	
-    	ligacao = new Ligacao();
-    	ligacaoContainer = ligacao.getLigacaoContainerViaId(idLigacao, mapaConceitual);
-    	
-    	
-    	// ATENCAO: conceito.x retorna string e nao number como consta na documentacao da easeljs
-    	
-    	desenharLinha(ligacaoContainer, conceitoContainer);
-    	mapaConceitual.renderizar();
+    	return desenharLinha(ligacaoContainer, conceitoContainer);
     };
 
     
@@ -41,18 +22,28 @@ function SemiLigacao(origem, mapaConceitual, idConceitoP, idLigacaoP){
      */
      function desenharLinha(ligacaoContainer, conceitoContainer) {
     	var coordenadasLinha;
+    	var graphic;
+    	var linhaContainer;
+    	var espessuraLinha;
+    	var corLinha;
     	
-    	//desenhando linha
     	coordenadasLinha = calcularNovaPonta(conceitoContainer,ligacaoContainer);
     	
-    	coordenadasPontaConceito = coordenadasLinha.conceito;
-    	coordenadasPontaLigacao = coordenadasLinha.ligacao;
+    	linhaContainer = new createjs.Shape(); 
+    	
+    	graphic = new createjs.Graphics(); //define as propriedades graficas da linha
+    	
+    	espessuraLinha = 1;
+    	corLinha = "#000";
+    	
+    	graphic.setStrokeStyle(espessuraLinha,"round").beginStroke(corLinha);
     	
     	graphic.moveTo(coordenadasLinha.conceito.x,coordenadasLinha.conceito.y);
     	graphic.lineTo(coordenadasLinha.ligacao.x,coordenadasLinha.ligacao.y);
-    	linhaContainer.graphics = graphic;
-    	mapaConceitual.getStageCanvas().addChild(linhaContainer);
     	
+    	linhaContainer.graphics = graphic;
+    	
+    	return linhaContainer;
     };
     
     /**
@@ -177,66 +168,7 @@ function SemiLigacao(origem, mapaConceitual, idConceitoP, idLigacaoP){
     }
     
     
-    this.getCoordenadasPontaConceito = function(){
-    	return coordenadasPontaConceito;
-    };
-    
-    this.getCoordenadasPontaLigacao = function(){
-    	return coordenadasPontaLigacao;
-    };
-    
     this.getLinhaContainer = function(){
         return linhaContainer;
     };
-    
-    
-    this.setId = function(objetoContainer,novoId) {
-    	var stage = mapaConceitual.getStageCanvas();
-    	
-    	//kids sao os elementos do stageCanvas
-    	var kids = stage.children, l = kids.length;
-		if (objetoContainer.parent != stage || novoId < 0) { return; }
-		
-		//procura conceitoContainer ate o fim de kids
-		for (var i=0;i<l;i++) {
-			if (kids[i] == objetoContainer) { break; }
-		}
-		
-		//se nao achou ou se o novo id for igual ao velho retorna sem nada fazer
-		if (i==l || i == novoId) { return; }
-		
-		//se a posicao de conceitoContainer em kids for maior que a nova posicao
-		//necessario preencher com um container vazio para a funcao update nao dar erro
-		if(i < novoId){
-			for(var j = i; j <= novoId; j++){
-				if(!kids[j]){
-					kids[j] = new createjs.Container();
-				}
-			}
-		}
-		else{ //se a posicao de conceitoContainer em kids for menor que a nova posicao
-			for(var j=i; j >= novoId; j--){
-				if(!kids[j])
-					kids[j] = new createjs.Container();
-			}
-		}
-		
-		kids[i] = kids[novoId];
-		kids[novoId] = objetoContainer;
-    	
-    };
-    
-    semiLigacao = this;
-    
-    idConceito = idConceitoP;
-    idLigacao = idLigacaoP; 
-	
-	linhaContainer = new createjs.Shape(); 
-	
-	graphic = new createjs.Graphics(); //define as propriedades graficas da linha
-	
-	espessuraLinha = 1;
-	corLinha = "#000";
-	
-	graphic.setStrokeStyle(espessuraLinha,"round").beginStroke(corLinha);
 }
