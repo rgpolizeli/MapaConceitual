@@ -20,6 +20,60 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     var handTool = new HandTool(stageCanvas, renderizar);
     
     
+    
+    this.verificarTipoObjeto = function verificarTipoObjeto(idObjeto){
+    	var tipoObjeto;
+    	
+    	tipoObjeto = gerenciadorLista.getConceito(idObjeto).attr('title');
+    	return tipoObjeto;
+    };
+    
+    
+    this.editar = function( propriedades ){
+    	var containerObjeto;
+    	
+    	containerObjeto = mapa.getContainerViaId(propriedades.idObjeto);
+    	if(containerObjeto.name == "conceito"){
+    		
+    		gerenciadorConceito.redesenharConceitoAposEdicao(containerObjeto, propriedades, stageCanvas);
+    		gerenciadorLista.setCorFundo(propriedades.idObjeto, propriedades.corFundo);
+    		renderizar();
+    	}
+    	
+    	
+    };
+    
+    this.getPropriedadesObjetoSelecionado = function(){
+    	var idObjeto;
+    	var propriedades;
+    	var conceitoContainer;
+    	var label;
+    	var i;
+    	var fonteCompleta;
+    	var fonte;
+    	var tamanhoFonte;
+    	
+    	idObjeto = mapa.getIdObjetoSelecionado();
+    	conceitoContainer = gerenciadorConceito.getConceitoContainerViaId(idObjeto, stageCanvas);
+    	label = conceitoContainer.getChildByName("label");
+    	
+    	fonteCompleta = label.font; //contem a familia da fonte e o tamanho da fonte
+    	i = fonteCompleta.indexOf(" ");
+    	fonte = fonteCompleta.slice(i+1, fonteCompleta.length);
+    	tamanhoFonte = fonteCompleta.slice(0,i);
+    	
+    	propriedades = {
+    		corFundo: gerenciadorLista.getCorFundo(idObjeto),
+    		corFonte: label.color,
+    		texto: label.text,
+    		fonte: fonte,
+    		tamanhoFonte: tamanhoFonte
+    	};
+    	
+    	return propriedades;
+    };
+    
+    
     this.getIdObjetoSelecionado = function(){
     	return objetosSelecionados[0];
     };
@@ -79,7 +133,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 	
     
 
-    this.inserirConceito = function (idConceito, texto, fonte, tamanhoFonte, corFonte, corFundo, montarMensagemAoMoverConceito, enviarMensagemAoServidor){
+    this.inserirConceito = function (idConceito, texto, fonte, tamanhoFonte, corFonte, corFundo, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor){
     	var conceitoContainer;
     	
     	conceitoContainer = gerenciadorConceito.desenharConceito( texto, fonte, tamanhoFonte, corFonte, corFundo, (stageCanvas.x), (stageCanvas.y) );
@@ -87,13 +141,14 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     	setIdObjeto(conceitoContainer, idConceito);
     	
     	gerenciadorConceito.adicionarDragDrop(idMapa,conceitoContainer, stageCanvas, gerenciadorLista.getConceito,
-    			gerenciadorLista.getLigacao, gerenciadorLigacao.atualizarLigacoesAoMoverConceito, renderizar, montarMensagemAoMoverConceito, enviarMensagemAoServidor)
+    			gerenciadorLista.getLigacao, gerenciadorLista.getCorFundo, gerenciadorLigacao.atualizarLigacoesAoMoverConceito,
+    			renderizar, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor);
     	renderizar();
     	gerenciadorLista.adicionarConceitoNaLista(idConceito, corFundo);
     };
     
     
-    this.inserirLigacao = function (texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, enviarMensagemAoServidor){
+    this.inserirLigacao = function (texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor){
     	var containers;
     	var conceitoContainerPai;
     	var conceitoContainerFilho;
@@ -113,7 +168,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     	setIdObjeto(containers["linhaFilhoContainer"], idLinhaFilho);
     	
     	gerenciadorLigacao.adicionarDragDrop(idMapa,containers["ligacaoContainer"], stageCanvas, gerenciadorLista.getLigacao, 
-    			renderizar, montarMensagemAoMoverLigacao, enviarMensagemAoServidor);
+    			gerenciadorLista.getCorFundo, renderizar, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
     	
     	renderizar();
     	gerenciadorLista.adicionarLigacaoNaLista(idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, corFundo);
@@ -195,7 +250,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 			if(mapa.getContainerViaId(objetosSelecionados[0]).name=="conceito"){
 				
 				var corFundo = gerenciadorLista.getCorFundo(objetosSelecionados[0]);
-				gerenciadorConceito.redesenharConceito(objetosSelecionados[0], corFundo, stageCanvas);
+				gerenciadorConceito.redesenharConceitoAposDesselecao(objetosSelecionados[0], corFundo, stageCanvas);
 				objetosSelecionados[0] = undefined;
 				renderizar();
 				return desselecionarCallBack();
@@ -204,7 +259,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 			if(mapa.getContainerViaId(objetosSelecionados[0]).name=="ligacao"){
 				
 				var corFundo = gerenciadorLista.getCorFundo(objetosSelecionados[0]);
-				gerenciadorLigacao.redesenharLigacao(objetosSelecionados[0], corFundo, stageCanvas);
+				gerenciadorLigacao.redesenharLigacaoAposDesselecao(objetosSelecionados[0], corFundo, stageCanvas);
 				objetosSelecionados[0] = undefined;
 				renderizar();
 				return desselecionarCallBack();
@@ -220,7 +275,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     	objetoSelecionado = objetoSelecionadoP;
     	objetosSelecionados[0] = gerenciadorConceito.getId(objetoSelecionado.parent, stageCanvas); //id do objeto no stage
     	corFundo = gerenciadorLista.getCorFundo(objetosSelecionados[0]);
-    	gerenciadorConceito.selecionarConceito(objetoSelecionado, corFundo);
+    	gerenciadorConceito.selecionarConceito(objetoSelecionado, corFundo, renderizar);
     	renderizar();
     	
     	return selecionarCallback;
@@ -234,7 +289,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     	objetoSelecionado = objetoSelecionadoP;
     	objetosSelecionados[0] = gerenciadorLigacao.getId(objetoSelecionado.parent, stageCanvas); //id do objeto no stage
     	corFundo = gerenciadorLista.getCorFundo(objetosSelecionados[0]);
-    	gerenciadorLigacao.selecionarLigacao(objetoSelecionado,corFundo);
+    	gerenciadorLigacao.selecionarLigacao(objetoSelecionado,corFundo, renderizar);
     	renderizar();
     	
     	return selecionarCallback;
@@ -286,7 +341,67 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 			}
 		});
 	};
+	
+	this.alterarTamanhoConceito = function(mensagem){
+		
+		var conceitoContainer;
+		var conceitoNaLista;
+		var corFundo;
+		var propriedades;
+		
+		conceitoContainer = mapa.getContainerViaId(mensagem.idConceito);
+		conceitoNaLista = gerenciadorLista.getConceito(mensagem.idConceito);
+		corFundo = gerenciadorLista.getCorFundo(mensagem.idConceito);
+		
+		gerenciadorConceito.setX(mensagem.idConceito, mensagem.novoX, stageCanvas);
+		gerenciadorConceito.setY(mensagem.idConceito, mensagem.novoY, stageCanvas);
+		gerenciadorConceito.setAltura(conceitoContainer, mensagem.novaAltura);
+		gerenciadorConceito.setLargura(conceitoContainer, mensagem.novaLargura);
+		
+		propriedades = {
+				altura: mensagem.novaAltura,
+				largura: mensagem.novaLargura,
+				corFundo:corFundo
+		};
+		
+		gerenciadorConceito.redesenharConceitoAposEdicao(conceitoContainer, propriedades, stageCanvas);
+		
+		gerenciadorLigacao.atualizarLigacoesAoMoverConceito(mensagem.idConceito, conceitoContainer, conceitoNaLista, 
+				gerenciadorLista.getLigacao, stageCanvas);
+		
+		if(objetosSelecionados[0] == mensagem.idConceito) //se o conceito alterado estiver selecionado
+			gerenciadorConceito.redesenharQuadradosSelecao(conceitoContainer);
+		
+		gerenciadorConceito.recentralizarLabel(conceitoContainer);
+		
+		renderizar();
+	};
     
+	this.alterarTamanhoLigacao = function(mensagem){
+		
+		var ligacaoContainer;
+		var ligacaoNaLista;
+		
+		ligacaoContainer = mapa.getContainerViaId(mensagem.idLigacao);
+		ligacaoNaLista = gerenciadorLista.getLigacao(mensagem.idLigacao);
+		
+		
+		gerenciadorLigacao.setAltura(ligacaoContainer, mensagem.novaAltura);
+		gerenciadorLigacao.setLargura(ligacaoContainer, mensagem.novaLargura);
+		gerenciadorLigacao.setX(mensagem.idLigacao, mensagem.novoX, stageCanvas);
+		gerenciadorLigacao.setY(mensagem.idLigacao, mensagem.novoY, stageCanvas);
+		
+		gerenciadorLigacao.redesenharLigacaoAposEdicao(mensagem.idLigacao, gerenciadorLista.getCorFundo, stageCanvas);
+		
+		gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
+		
+		if(objetosSelecionados[0] == mensagem.idLigacao) //se o conceito alterado estiver selecionado
+			gerenciadorLigacao.redesenharQuadradosSelecao(ligacaoContainer);
+		
+		gerenciadorLigacao.recentralizarLabel(ligacaoContainer);
+		
+		renderizar();
+	};
     
     
 	 /**
@@ -367,8 +482,16 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     	var x = evt.stageX - stageCanvas.x;
 		var y = evt.stageY - stageCanvas.y;
     	var objetoSelecionado = stageCanvas.getObjectUnderPoint(x,y); //se clicar no canvas vazio retorna null para objetoSelecionado
-		
-		mapa.desselecionar();
+		var bottomRigth = stageCanvas.getObjectUnderPoint(63,32);
+    	
+    	if(objetoSelecionado){ //nao clicou no canvas vazio
+    		//nao clicou em algum quadrado de selecao
+	    	if(objetoSelecionado.name != "qsTopLeft" && objetoSelecionado.name != "qsTopRigth" && objetoSelecionado.name != "qsBottomLeft" && objetoSelecionado.name != "qsBottomRigth")
+	    		mapa.desselecionar();
+    	}
+    	else{ //clicou no canvas vazio
+    		mapa.desselecionar();
+    	}
 		
 		if(objetoSelecionado){
 			if(objetoSelecionado.parent.name == "conceito"){

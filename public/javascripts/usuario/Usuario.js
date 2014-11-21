@@ -7,7 +7,7 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 	var portaConexao = porta;
 	var socket;
 	var usuario = this;
-	var interfaceUsuario = new InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativarHandTool, setCriarLigacao, excluir);
+	var interfaceUsuario = new InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativarHandTool, setCriarLigacao, excluir,iniciarEdicao,editar);
 	var mapaConceitual = new MapaConceitual(idMapa, nomeCanvasP, listaElementos, criarSemiLigacao, selecionar, desselecionar, abrirCriarLigacaoModal );
 	
 	function carregarMapa(msg){
@@ -15,22 +15,52 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 		$(msg).find('ul[title=conceito]').each( function( index, element ){
 			
 			var id = parseInt($(element).attr("id"));
-			var x = $(element).children("li[title='x']").val();
-			var y = $(element).children("li[title='y']").val();
+			var x = $(element).children("li[title='x']").attr("value");
+			var y = $(element).children("li[title='y']").attr("value");
+			var altura = $(element).children("li[title='altura']").attr("value");
+			var largura = $(element).children("li[title='largura']").attr("value");
+			
+			if(x != "default"){
+				x = parseFloat(x);
+			}
+			if(y != "default"){
+				y = parseFloat(y);
+			}
+			if(altura != "default"){
+				altura = parseFloat(altura);
+			}
+			if(largura != "default"){
+				largura = parseFloat(largura);
+			}
+			
 			var texto = $(element).children("li[title='texto']").text();
 			var fonte = $(element).children("li[title='fonte']").text();
 			var tamanhoFonte = $(element).children("li[title='tamanhoFonte']").text();
 			var corFonte = $(element).children("li[title='corFonte']").text();
 			var corFundo = $(element).children("li[title='corFundo']").text();
 			
-			mapaConceitual.inserirConceito(id, texto, fonte, tamanhoFonte, corFonte, corFundo, montarMensagemAoMoverConceito, enviarMensagemAoServidor);
+			mapaConceitual.inserirConceito(id, texto, fonte, tamanhoFonte, corFonte, corFundo, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor);
 	        
-	        var msgPosicaoConceito = 
-	        	"<ul id='" + id + "' title='conceito'>" + 
-	        	"<li title='x' value='" + x + "'></li>" +
-	        	"<li title='y' value='" + y + "'></li>" 
-			;
-	        mapaConceitual.atualizarPosicaoConceito(msgPosicaoConceito);
+			//default e a altura padrao (automatica)
+			if(altura != 'default'){
+				var mensagem = {
+					idConceito: id,
+					novaLargura: largura,
+					novaAltura: altura,
+					novoX: x,
+					novoY: y
+				}; 
+				mapaConceitual.alterarTamanhoConceito(mensagem);
+			}
+			else{
+				var msgPosicaoConceito = 
+		        	"<ul id='" + id + "' title='conceito'>" + 
+		        	"<li title='x' value='" + x + "'></li>" +
+		        	"<li title='y' value='" + y + "'></li>" 
+				;
+		        mapaConceitual.atualizarPosicaoConceito(msgPosicaoConceito);
+			}
+	        
 		});
 		
 		
@@ -43,8 +73,24 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 			var idConceitoFilho;
 			
 			
-			var x = $(element).children("li[title='x']").attr("value"); //talvez possa ocorrer erros ja que value armazena apenas numeros nao strings 
+			var x = $(element).children("li[title='x']").attr("value");
 			var y = $(element).children("li[title='y']").attr("value");
+			var altura = $(element).children("li[title='altura']").attr("value");
+			var largura = $(element).children("li[title='largura']").attr("value");
+			
+			if(x != "default"){
+				x = parseFloat(x);
+			}
+			if(y != "default"){
+				y = parseFloat(y);
+			}
+			if(altura != "default"){
+				altura = parseFloat(altura);
+			}
+			if(largura != "default"){
+				largura = parseFloat(largura);
+			}
+			
 			var texto = $(element).children("li[title='texto']").text();
 			var fonte = $(element).children("li[title='fonte']").text();
 			var tamanhoFonte = $(element).children("li[title='tamanhoFonte']").text();
@@ -56,50 +102,77 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 				idLinhaFilho = $(element).find("li[title^='idLinhaFilho']").first().val();
 				idConceitoFilho = $(element).find("li[title^='idConceitoFilho']").first().val();
 				
-				mapaConceitual.inserirLigacao(texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, enviarMensagemAoServidor);
+				mapaConceitual.inserirLigacao(texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
 				
-				//default e a posicao padrao (automatica) da ligacao
-				if(x != 'default'){
-					var msgPosicaoLigacao = 
-						"<ul id='" + idLigacao + "' title='ligacao'>" + 
-							"<li title='x' value='" + x + "'></li>" +
-							"<li title='y' value='" + y + "'></li>" 
-					;
-					mapaConceitual.atualizarPosicaoLigacao(msgPosicaoLigacao);
+				//default e a altura padrao (automatica)
+				if(altura != 'default'){
+					var mensagem = {
+						idLigacao: idLigacao,
+						novaLargura: largura,
+						novaAltura: altura,
+						novoX: x,
+						novoY: y
+					}; 
+					mapaConceitual.alterarTamanhoLigacao(mensagem);
 				}
+				else{
+					//default e a posicao padrao (automatica)
+					if(x != 'default'){
+						var msgPosicaoLigacao = 
+							"<ul id='" + idLigacao + "' title='ligacao'>" + 
+								"<li title='x' value='" + x + "'></li>" +
+								"<li title='y' value='" + y + "'></li>" 
+						;
+						mapaConceitual.atualizarPosicaoLigacao(msgPosicaoLigacao);
+					}
+				}
+				
 				
 			}
 			else{
 				var listaLigacao = $(element).clone();
 				
 				$(listaLigacao).children("li[title='qtdFilhos']").val(1);
-				var limite = qtdFilhos;
 				
 				$(listaLigacao).find("li[title^='idConceitoFilho']").each(function (index, subElement){
 					var papelConceito = verificarPapelConceitoViaMensagem( $(subElement).val(), listaLigacao);
 					
-					if( limite > 1 ){
+					if( papelConceito != 1 ){ //se nao e o conceitoFilho1
 						
 						$(listaLigacao).children("li[title='idLinhaFilho"+ papelConceito + "']").remove();
 						$(listaLigacao).children("li[title='idConceitoFilho"+ papelConceito + "']").remove();
-						limite--;
 					}
-					else
-						if (limite==1){
-							idLinhaFilho = $(listaLigacao).children("li[title='idLinhaFilho"+ papelConceito + "']").val();
-							idConceitoFilho = $(subElement).val();
-						}
+					else{ //se e o conceitoFilho1
+						idLinhaFilho = $(listaLigacao).children("li[title='idLinhaFilho"+ papelConceito + "']").val();
+						idConceitoFilho = $(subElement).val();
+					}
 				});
 				
-				mapaConceitual.inserirLigacao(texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, enviarMensagemAoServidor);
+				mapaConceitual.inserirLigacao(texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
 				
-				if(x != 'default'){
-					var msgPosicaoLigacao = 
-						"<ul id='" + idLigacao + "' title='ligacao'>" + 
-							"<li title='x' value='" + x + "'></li>" +
-							"<li title='y' value='" + y + "'></li>" 
-					;
-					mapaConceitual.atualizarPosicaoLigacao(msgPosicaoLigacao);
+				
+				//default e a altura padrao (automatica)
+				if(altura != 'default'){
+					var mensagem = {
+						idLigacao: idLigacao,
+						novaLargura: largura,
+						novaAltura: altura,
+						novoX: x,
+						novoY: y
+					}; 
+					mapaConceitual.alterarTamanhoLigacao(mensagem);
+					
+				}
+				else{
+					//default e a posicao padrao (automatica)
+					if(x != 'default'){
+						var msgPosicaoLigacao = 
+							"<ul id='" + idLigacao + "' title='ligacao'>" + 
+								"<li title='x' value='" + x + "'></li>" +
+								"<li title='y' value='" + y + "'></li>" 
+						;
+						mapaConceitual.atualizarPosicaoLigacao(msgPosicaoLigacao);
+					}
 				}
 				
 				$(element).find("li[title^='idConceitoFilho']").each(function (index, subElement){
@@ -250,7 +323,46 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 
 		return mensagem;
     }
-
+    
+    function montarMensagemAoAlterarTamanhoConceito(idMapa, idConceito, novaLargura, novaAltura, novoX, novoY){
+    	var mensagem;
+    	
+    	mensagem = {
+			tipoMensagem: 7,
+			idMapa: idMapa,
+			idConceito: idConceito,
+			novaLargura: novaLargura,
+			novaAltura: novaAltura,
+			novoX: novoX,
+			novoY: novoY
+    	};
+    	return mensagem;
+    }
+    
+    function montarMensagemAoAlterarTamanhoLigacao(idMapa, idLigacao, novaLargura, novaAltura, novoX, novoY){
+    	var mensagem;
+    	
+    	mensagem = {
+			tipoMensagem: 8,
+			idMapa: idMapa,
+			idLigacao: idLigacao,
+			novaLargura: novaLargura,
+			novaAltura: novaAltura,
+			novoX: novoX,
+			novoY: novoY
+    	};
+    	return mensagem;
+    }
+    
+    function montarMensagemAoEditar(propriedades){
+    	
+    	propriedades.tipoObjeto = mapaConceitual.verificarTipoObjeto(propriedades.idObjeto);
+    	propriedades.idMapa = idMapa;
+    	propriedades.tipoMensagem = 9;
+    	
+		return propriedades;
+    }
+    
 
     function enviarMensagemAoServidor( mensagem ){
     	socket.send(mensagem);
@@ -265,7 +377,28 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 		enviarMensagemAoServidor(mensagem);
     }
     
+    
+	function iniciarEdicao(){
+		var propriedades;
+		
+		propriedades = mapaConceitual.getPropriedadesObjetoSelecionado();
+		interfaceUsuario.abrirModalEdicao(propriedades);
+	}
+    
 	
+	function editar(propriedades){
+		var msg;
+		
+		propriedades.idObjeto = mapaConceitual.getIdObjetoSelecionado();
+		mapaConceitual.editar(propriedades);
+		
+		msg = montarMensagemAoEditar(propriedades);
+		enviarMensagemAoServidor(msg);
+	}
+	
+	
+	
+    
     /**
      * ativa funcao hand, redesenhando o retangulo para percorrer o mapa
      * adicionarStageMouseMove so e necessaria pois a funcao removeEventListener so funciona quando o handler e o mesmo do addEventListener
@@ -303,6 +436,10 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 		}
     }
     
+    
+    
+    
+    
   //encaminha mensagens vindas do servidor 
     //para atualizar a lista de elementos ou o nome dos mapas que podem ser abertos
    
@@ -324,7 +461,7 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 					var tamanhoFonte = $(mensagem).children("li[title='tamanhoFonte']").text();
 					var corFonte = $(mensagem).children("li[title='corFonte']").text();
 					var corFundo = $(mensagem).children("li[title='corFundo']").text();
-					mapaConceitual.inserirConceito(id, texto, fonte, tamanhoFonte, corFonte, corFundo, montarMensagemAoMoverConceito, enviarMensagemAoServidor);
+					mapaConceitual.inserirConceito(id, texto, fonte, tamanhoFonte, corFonte, corFundo, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor);
 				break;
 				case "2": //conceito movido por algum usuario
 					mensagem = mensagem.replace("<2ul","<ul");
@@ -342,7 +479,7 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 					var tamanhoFonte = $(mensagem).children("li[title='tamanhoFonte']").text();
 					var corFonte = $(mensagem).children("li[title='corFonte']").text();
 					var corFundo = $(mensagem).children("li[title='corFundo']").text();
-					mapaConceitual.inserirLigacao(texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, enviarMensagemAoServidor);
+					mapaConceitual.inserirLigacao(texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
 			        
 				break;
 				case "4": //palavra de ligacao movida por algum usuario
@@ -366,8 +503,22 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 				break;
 			}
 		}
-		else
-			console.log(mensagem);
+		else{
+			switch(mensagem.tipoMensagem){
+			
+				case 7: //tamanho do conceito alterado por algum usuario
+					mapaConceitual.alterarTamanhoConceito(mensagem);
+				break;
+				
+				case 8: //tamanho da ligacao alterado por algum usuario
+					mapaConceitual.alterarTamanhoLigacao(mensagem);
+				break;
+				
+				case 9: //objeto alterado por algum usuario
+					mapaConceitual.editar(mensagem);
+				break;
+			}
+		}
 		
     };
 
@@ -375,14 +526,20 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
     function desselecionar() {
     	interfaceUsuario.desabilitarBotaoNovaLigacao();
     	interfaceUsuario.desabilitarBotaoExcluir();
+    	interfaceUsuario.desabilitarBotaoEditar();
     }
     
     function selecionar(){ //objetoSelecionado pode ser o retangulo ou label
     	interfaceUsuario.habilitarBotaoNovaLigacao();
     	interfaceUsuario.habilitarBotaoExcluir();
+    	interfaceUsuario.habilitarBotaoEditar();
     }
     
     function abrirCriarLigacaoModal(idConceitoPai, idConceitoFilho){
     	interfaceUsuario.abrirModalCriarLigacao(idConceitoPai, idConceitoFilho);
+    }
+    
+    function getPropriedadesObjeto(){
+    	return mapaConceitual.getPropriedadesObjetoSelecionado();
     }
 }

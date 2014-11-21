@@ -185,6 +185,8 @@ function GerenciadorArquivos(){
 			"<id>" + conceito.idConceito + "</id>" +
 			"<x>" + 0 + "</x>" +
 			"<y>" + 0 + "</y>" +
+			"<largura>" + 'default' + "</largura>" +
+			"<altura>" + 'default' + "</altura>" +
 			"<texto>" + conceito.texto + "</texto>" +
 			"<fonte>" + conceito.fonte + "</fonte>" + 
 			"<tamanhoFonte>" + conceito.tamanhoFonte + "</tamanhoFonte>" + 
@@ -210,6 +212,8 @@ function GerenciadorArquivos(){
 			"<idConceitoFilho1>" + ligacao.idConceitoFilho1 + "</idConceitoFilho1>" +
 			"<x>" + 'default' + "</x>" +
 			"<y>" + 'default' + "</y>" +
+			"<largura>" + 'default' + "</largura>" +
+			"<altura>" + 'default' + "</altura>" +
 			"<texto>" + ligacao.texto + "</texto>" +
 			"<fonte>" + ligacao.fonte + "</fonte>" + 
 			"<tamanhoFonte>" + ligacao.tamanhoFonte + "</tamanhoFonte>" + 
@@ -397,6 +401,77 @@ function GerenciadorArquivos(){
 			}
 		});
 	}
+	
+	
+	this.alterarTamanhoConceito = function(mensagem){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(mensagem.idMapa);
+				
+		listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == mensagem.idConceito ){
+				
+				//Alterando largura e altura
+				$( element ).find('largura').text(mensagem.novaLargura);
+				$( element ).find('altura').text(mensagem.novaAltura);
+				
+				//Alterando posicao x e y
+				var conceito = {
+	    				idConceito : mensagem.idConceito,
+						novoX : mensagem.novoX,
+						novoY : mensagem.novoY
+	    		};
+	    		
+				//inserir no arquivo xml
+				gerenciador.alterarPosicaoConceito(mensagem.idMapa, conceito);
+			}
+		});
+	};	
+	
+	
+	this.alterarTamanhoLigacao = function(mensagem){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(mensagem.idMapa);
+				
+		listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == mensagem.idLigacao ){
+				
+				//Alterando largura e altura
+				$( element ).find('largura').text(mensagem.novaLargura);
+				$( element ).find('altura').text(mensagem.novaAltura);
+				
+				//Alterando posicao x e y
+				var ligacao = {
+	    				idLigacao : mensagem.idLigacao,
+						novoX : mensagem.novoX,
+						novoY : mensagem.novoY
+	    		};
+	    		
+				//inserir no arquivo xml
+				gerenciador.alterarPosicaoLigacao(mensagem.idMapa, ligacao);
+			}
+		});
+	};	
+
+	
+	this.editarConceito = function(mensagem){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(mensagem.idMapa);
+		
+		listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == mensagem.idObjeto ){
+				
+				//Alterando largura e altura
+				$( element ).find('fonte').text(mensagem.fonte);
+				$( element ).find('corFonte').text(mensagem.corFonte);
+				$( element ).find('corFundo').text(mensagem.corFundo);
+				$( element ).find('tamanhoFonte').text(mensagem.tamanhoFonte);
+				$( element ).find('texto').text(mensagem.texto);
+			}
+		});
+	};
+	
+	this.editarLigacao = function(mensagem){};
+	
 	
 	
 }

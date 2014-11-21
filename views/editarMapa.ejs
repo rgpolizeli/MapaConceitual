@@ -7,7 +7,7 @@
 <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
 <script src="../javascripts/bootstrap.min.js"></script>
 <script src="http://code.createjs.com/easeljs-0.7.0.min.js"></script>
-<script src="https://cdn.socket.io/socket.io-1.0.6.js"></script>
+<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script> 
 <script src="./javascripts/usuario/InterfaceUsuario.js"></script>
 <script src="./javascripts/usuario/MapaConceitual.js"></script>
 <script src="./javascripts/usuario/Usuario.js"></script>
@@ -16,11 +16,9 @@
 <script src="./javascripts/usuario/GerenciadorSemiLigacao.js"></script>
 <script src="./javascripts/usuario/GerenciadorLista.js"></script>
 <script src="./javascripts/usuario/HandTool.js"></script>
-<script src="../javascripts/colorpicker/colpick.js"></script>
 
 <link rel="stylesheet" href="./stylesheets/usuario/estilos.css">
 <link href="../stylesheets/bootstrap.min.css" rel="stylesheet">
-<link href="../stylesheets/colorpicker/colpick.css" rel="stylesheet">
 
 <script>
 var ip = "<%=ip%>";
@@ -72,15 +70,6 @@ function logout(){
 				<div class="form-group">
 					<label for="corFundo">Cor do Fundo</label>
 					<input id="corFundo" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
-					<script>
-						$('#corFundo').colpick({
-								layout:'hex',
-								submit:0,
-								onChange:function(hsb,hex,rgb,el,bySetColor) {
-									$(el).val('#' + hex);
-								}
-						});
-					</script>
 				</div>
 				<div class="form-group">
 					<div class="dropdown">
@@ -110,15 +99,6 @@ function logout(){
 				<div class="form-group">
 					<label for="corFonte">Cor da Fonte</label>
 					<input id="corFonte" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
-					<script>
-						$('#corFonte').colpick({
-								layout:'hex',
-								submit:0,
-								onChange:function(hsb,hex,rgb,el,bySetColor) {
-									$(el).val('#' + hex);
-								}
-						});
-					</script>
 				</div>
 				
 				<div class="form-group">
@@ -180,15 +160,6 @@ function logout(){
 				<div class="form-group">
 					<label for="corFundol">Cor do Fundo</label>
 					<input id="corFundol" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
-					<script>
-						$('#corFundol').colpick({
-								layout:'hex',
-								submit:0,
-								onChange:function(hsb,hex,rgb,el,bySetColor) {
-									$(el).val('#' + hex);
-								}
-						});
-					</script>
 				</div>
 				<div class="form-group">
 					<div class="dropdown">
@@ -218,15 +189,6 @@ function logout(){
 				<div class="form-group">
 					<label for="corFontel">Cor da Fonte</label>
 					<input id="corFontel" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
-					<script>
-						$('#corFontel').colpick({
-								layout:'hex',
-								submit:0,
-								onChange:function(hsb,hex,rgb,el,bySetColor) {
-									$(el).val('#' + hex);
-								}
-						});
-					</script>
 				</div>
 				
 				<div class="form-group">
@@ -271,36 +233,27 @@ function logout(){
 	MODAL PARA EDITAR CONCEITO 
 	---------------------------->
 	
-	<div id="interfaceCriarConceito" class="modal fade">
+	<div id="interfaceEdicao" class="modal fade">
 	  <div class="modal-dialog">
 		<div class="modal-content">
 		  <div class="modal-header">
 			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
-			<h4 class="modal-title">Criar novo conceito</h4>
+			<h4 class="modal-title">Editar conceito</h4>
 		  </div>
 		  <div class="modal-body">
 		  
 				<div class="form-group">
-					 <label for="conceito">Novo Conceito</label>
-					<input id="conceito" name="conceito" type="text" class="form-control" placeholder="Digite o conceito" required autofocus>
+					 <label for="textoEdicao">Texto</label>
+					<input id="textoEdicao" name="texto" type="text" class="form-control" required autofocus>
 				</div>
 				<div class="form-group">
-					<label for="corFundo">Cor do Fundo</label>
-					<input id="corFundo" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
-					<script>
-						$('#corFundo').colpick({
-								layout:'hex',
-								submit:0,
-								onChange:function(hsb,hex,rgb,el,bySetColor) {
-									$(el).val('#' + hex);
-								}
-						});
-					</script>
+					<label for="corFundoEdicao">Cor do Fundo</label>
+					<input id="corFundoEdicao" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
 				</div>
 				<div class="form-group">
 					<div class="dropdown">
-					 <label for="fonte">Fonte</label>
-					  <button type="button" id="fonte" class="btn btn-default dropdown-toggle" data-toggle="dropdown" required autofocus>Arial</button>
+					 <label for="fonteEdicao">Fonte</label>
+					  <button type="button" id="fonteEdicao" class="btn btn-default dropdown-toggle" data-toggle="dropdown" required autofocus>Arial</button>
 					  <ul class="dropdown-menu" role="menu">
 					    <% var listaFontes = [
 					    	"Arial",
@@ -315,7 +268,7 @@ function logout(){
 					    
 					    <% for(var i=0; i < listaFontes.length; i++){ %>
 					    
-					    	 <li onclick="$(fonte).text($(this).text())"><%=listaFontes[i]%></li>
+					    	 <li onclick="$(fonteEdicao).text($(this).text())"><%=listaFontes[i]%></li>
 					    <%}%> 
 					  </ul>
 					  <!-- dropDown-->
@@ -323,23 +276,14 @@ function logout(){
 				</div>
 				
 				<div class="form-group">
-					<label for="corFonte">Cor da Fonte</label>
-					<input id="corFonte" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
-					<script>
-						$('#corFonte').colpick({
-								layout:'hex',
-								submit:0,
-								onChange:function(hsb,hex,rgb,el,bySetColor) {
-									$(el).val('#' + hex);
-								}
-						});
-					</script>
+					<label for="corFonteEdicao">Cor da Fonte</label>
+					<input id="corFonteEdicao" type="color" class="form-control" placeholder="Clique para selecionar uma cor" required autofocus>
 				</div>
 				
 				<div class="form-group">
 					<div class="dropdown">
-					 <label for="tamanhoFonte">Tamanho da Fonte</label>
-					  <button type="button" id="tamanhoFonte" class="btn btn-default dropdown-toggle" data-toggle="dropdown" required autofocus>9px</button>
+					 <label for="tamanhoFonteEdicao">Tamanho da Fonte</label>
+					  <button type="button" id="tamanhoFonteEdicao" class="btn btn-default dropdown-toggle" data-toggle="dropdown" required autofocus>9px</button>
 					  <ul class="dropdown-menu" role="menu">
 					    <% var listaTamanhoFontes = [
 					    	"8px",
@@ -356,7 +300,7 @@ function logout(){
 					    
 					    <% for(var i=0; i < listaTamanhoFontes.length; i++){ %>
 					    
-					    	 <li onclick="$(tamanhoFonte).text($(this).text())"><%=listaTamanhoFontes[i]%></li>
+					    	 <li onclick="$(tamanhoFonteEdicao).text($(this).text())"><%=listaTamanhoFontes[i]%></li>
 					    <%}%> 
 					  </ul>
 					  <!-- dropDown-->
@@ -365,7 +309,7 @@ function logout(){
 					  
 		  </div>
 		  <div class="modal-footer">
-		  	<button type="button" id="criarConceito" class="btn btn-primary">Criar</button>
+		  	<button type="button" id="confirmarEdicao" class="btn btn-primary">Editar</button>
 			<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar</button>
 		  </div>
 		  
@@ -390,6 +334,7 @@ function logout(){
 		<button type="button" id="editarButton">Editar Mapa</button>
 		<button  type="button" id="criarConceitoButton">Novo Conceito</button>
 		<button  type="button" id="novaLigacao" style="display:none">Nova Ligação</button>
+		<button type="button" id="editar" style="display:none">Editar</button>
 		<button  type="button" id="excluir" style="display:none">Excluir</button>
 		<button  type="button" id="logout" onclick="logout()">Sair</button>
 	</div>
@@ -399,7 +344,7 @@ function logout(){
 	----------------------------------->
 	
 	<div>
-		<canvas id="canvas"  width="500" height="500"  style="display: inline-block;border: 2px solid black"></canvas>
+		<canvas id="canvas"  width="600" height="600"  style="display: inline-block;border: 2px solid black"></canvas>
 	</div>
 
 </body>

@@ -9,6 +9,10 @@ function GerenciadorLista(listaElementos){
 		return $('ul#' + idObjeto).children("li[title='corFundo']").text();
 	};
 	
+	this.setCorFundo = function(idObjeto, novaCorFundo){
+		return $('ul#' + idObjeto).children("li[title='corFundo']").text(novaCorFundo);
+	};
+	
 	
 	/**
      * verificar se ha ligacao entre conceito e palavra de ligacao

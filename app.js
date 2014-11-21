@@ -422,10 +422,63 @@ function Servidor(Ip,Porta){
 						break;
 					}
 				}
+				else{
+					switch(mensagem.tipoMensagem){
+						
+						case 7: //tamanho do conceito alterado por algum usuario
+							
+							//visualizador nao tem permissao para isso
+				    		if(gerenciadorUsuariosAtivos.verificarPermissao(mensagem.idMapa, socket) != 3){
+					    		
+								//inserir no arquivo xml
+					    		gerenciadorArquivos.alterarTamanhoConceito(mensagem);
+					    		
+					    		enviarParaTodosUsuariosAtivos(mensagem.idMapa, mensagem, socket);
+				    		}
+						break;
+						
+						case 8: //tamanho da ligacao alterado por algum usuario
+							
+							//visualizador nao tem permissao para isso
+				    		if(gerenciadorUsuariosAtivos.verificarPermissao(mensagem.idMapa, socket) != 3){
+					    		
+								//inserir no arquivo xml
+					    		gerenciadorArquivos.alterarTamanhoLigacao(mensagem);
+					    		enviarBroadcastParaUsuariosAtivos(mensagem.idMapa, mensagem, socket);
+				    		}
+						break;
+						
+						case 9: //conceito alterado por algum usuario
+							var idMapa;
+							
+							idMapa = mensagem.idMapa;
+							
+							//visualizador nao tem permissao para isso
+				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
+					    		
+								if(mensagem.tipoObjeto == "conceito"){
+									gerenciadorArquivos.editarConceito(mensagem);
+								}
+								else{
+									if(mensagem.tipoObjeto == "ligacao"){
+										gerenciadorArquivos.editarLigacao(mensagem);
+									}
+								}
+				    			
+								//Remove uma propriedade de um objeto
+								delete mensagem.idMapa;
+								delete mensagem.tipoObjeto;
+								
+								enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
+				    		}
+						break;
+					}
+				}
 			});
 			
 			socket.on('disconnect', function () { 
 				
+				console.log("Usuario desconectou-se.");
 				var idsMapas = gerenciadorUsuariosAtivos.getIdsMapasDoUsuario(socket);
 				
 				for(var i=0; i< idsMapas.length; i++){
@@ -436,7 +489,7 @@ function Servidor(Ip,Porta){
 						gerenciadorArquivos.fecharMapa(idsMapas[i]);
 					}
 				}
-				//console.log("Usuario #" + id + " desconectou-se.");
+				
 			});
 			
 		});
@@ -453,6 +506,8 @@ function Servidor(Ip,Porta){
 			var idConceito = $( element ).find( 'id' ).text();
 			var x = $( element ).find( 'x' ).text();
 			var y = $( element ).find( 'y' ).text();
+			var altura = $( element ).find( 'altura' ).text();
+			var largura = $( element ).find( 'largura' ).text();
 			var texto = $( element ).find( 'texto' ).text();
 			var fonte = $( element ).find( 'fonte' ).text();
 			var tamanhoFonte = $( element ).find( 'tamanhoFonte' ).text();
@@ -464,6 +519,8 @@ function Servidor(Ip,Porta){
 				"<ul id='" + idConceito + "' title='conceito'>" + 
 				"<li title='x' value='" + x + "'></li>" +
 				"<li title='y' value='" + y + "'></li>" +
+				"<li title='altura' value='" + altura + "'></li>" +
+				"<li title='largura' value='" + largura + "'></li>" +
 				"<li title='texto'>" + texto + "</li>" +
 				"<li title='fonte'>" + fonte + "</li>" +
 				"<li title='tamanhoFonte'>" + tamanhoFonte + "</li>" +
@@ -486,6 +543,8 @@ function Servidor(Ip,Porta){
 			var idLinhaFilho = $( element ).find( 'idLinhaFilho1' ).text();
 			var x = $( element ).find( 'x' ).text();
 			var y = $( element ).find( 'y' ).text();
+			var altura = $( element ).find( 'altura' ).text();
+			var largura = $( element ).find( 'largura' ).text();
 			var texto = $( element ).find( 'texto' ).text();
 			var fonte = $( element ).find( 'fonte' ).text();
 			var tamanhoFonte = $( element ).find( 'tamanhoFonte' ).text();
@@ -500,6 +559,8 @@ function Servidor(Ip,Porta){
 				"<li title='idConceitoPai' value='" + idConceitoPai + "'></li>" +
 				"<li title='x' value='" + x + "'></li>" +
 				"<li title='y' value='" + y + "'></li>" +
+				"<li title='altura' value='" + altura + "'></li>" +
+				"<li title='largura' value='" + largura + "'></li>" +
 				"<li title='texto'>" + texto + "</li>" +
 				"<li title='fonte'>" + fonte + "</li>" +
 				"<li title='tamanhoFonte'>" + tamanhoFonte + "</li>" +
@@ -554,7 +615,7 @@ function Servidor(Ip,Porta){
 	}
 }
 
-	var servidor = new Servidor('localhost',3000);
+	var servidor = new Servidor('189.35.109.151',3000);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);

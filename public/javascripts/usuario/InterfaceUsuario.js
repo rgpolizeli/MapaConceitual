@@ -1,4 +1,4 @@
-function InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativarHandTool, setCriarLigacao, excluir){
+function InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativarHandTool, setCriarLigacao, excluir, iniciarEdicao,editar){
 	
 	this.idConceitoPai;
 	this.idConceitoFilho;
@@ -11,6 +11,10 @@ function InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativar
 	this.desabilitarBotaoExcluir = function(){
 		$("#excluir").hide();
 	};
+	
+	this.desabilitarBotaoEditar = function(){
+		$("#editar").hide();
+	};
 
 	/**
 	 * 
@@ -22,13 +26,43 @@ function InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativar
 	this.habilitarBotaoExcluir = function(){
 		$("#excluir").show();
 	};
+	
+	this.habilitarBotaoEditar = function(){
+		$("#editar").show();
+	};
 
 	this.abrirModalCriarLigacao = function(idConceitoPai, idConceitoFilho){
 		interfaceUsuario.idConceitoPai = idConceitoPai;
 		interfaceUsuario.idConceitoFilho = idConceitoFilho;
 		$('#interfaceCriarLigacao').modal('show');
 	};
+	
+	this.abrirModalEdicao = function(propriedades){
+		
+		$('#textoEdicao').val(propriedades.texto);
+		$('#corFundoEdicao').val(propriedades.corFundo);
+		$('#corFonteEdicao').val(propriedades.corFonte);
+		$('#fonteEdicao').text( propriedades.fonte );
+		$('#tamanhoFonteEdicao').text( propriedades.tamanhoFonte );
+		$('#interfaceEdicao').modal('show');
+	};
 
+	$("#confirmarEdicao").click(function (){
+		
+		var propriedades;
+
+		propriedades = {
+			fonte : $("#fonteEdicao").text(),
+			corFonte : $("#corFonteEdicao").val(),
+			corFundo : $("#corFundoEdicao").val(),
+			tamanhoFonte : $("#tamanhoFonteEdicao").text(),
+			texto : $("#textoEdicao").val()
+		};
+		
+		editar(propriedades);
+	});
+	
+	
 	/**
 	 * quando usuario clica no handButton, chama ativarHandTool
 	*/
@@ -53,6 +87,10 @@ function InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativar
 		
 	$("#excluir").click(function (){
 		excluir();
+	});
+	
+	$("#editar").click(function (){
+		iniciarEdicao();
 	});
 		
 		

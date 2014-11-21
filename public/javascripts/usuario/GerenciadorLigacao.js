@@ -6,11 +6,14 @@ function Coordenadas (conceito, ligacao){
 
 function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFundoP, mapaConceitual, idConceitoPaiP, idConceitoFilhoP){
     var gerenciadorLigacao = this;
-    
+    var tamanhoQuadradoSelecao = 10;
+	var corQuadradoSelecao = "#F00";
+	
+	
     /**
      * 
      */
-    this.adicionarDragDrop = function(idMapa,ligacaoContainer, stageCanvas, getLigacaoLista, renderizarMapa, montarMensagemAoMoverLigacao, enviarMensagemAoServidor){
+    this.adicionarDragDrop = function(idMapa,ligacaoContainer, stageCanvas, getLigacaoLista, getCorFundo, renderizarMapa, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor){
     	var altura;
     	var largura;
     	var novoX;
@@ -26,19 +29,213 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     		ligacaoNaLista = getLigacaoLista(idLigacao);
     		altura = getAltura(ligacaoContainer);
     		largura = getLargura(ligacaoContainer);
-    		novoX = (evt.stageX - (largura/2) - stageCanvas.x); //a nova posicao do conceitoContainer eh a posicao do mouse para onde foi arrastado - o deslocamento do stageCanvas
-    		novoY = (evt.stageY - (altura/2) - stageCanvas.y);
-    	    
-    		evt.currentTarget.x = novoX;
-    	    evt.currentTarget.y = novoY;
-    	    
-    	    //atualiza a linhas de ligacao na tela
-    	    gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
-    	    
-    	    msg = montarMensagemAoMoverLigacao(idLigacao, idMapa, novoX, novoY);
-			enviarMensagemAoServidor(msg);
+    		
+    		if(evt.target.name != "qsTopLeft" && evt.target.name != "qsTopRigth" && evt.target.name != "qsBottomLeft" && evt.target.name != "qsBottomRigth"){
+    			novoX = (evt.stageX - (largura/2) - stageCanvas.x); //a nova posicao do conceitoContainer eh a posicao do mouse para onde foi arrastado - o deslocamento do stageCanvas
+        		novoY = (evt.stageY - (altura/2) - stageCanvas.y);
+        	    
+        		evt.currentTarget.x = novoX;
+        	    evt.currentTarget.y = novoY;
+        	    
+        	    //atualiza a linhas de ligacao na tela
+        	    gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
+        	    
+        	    msg = montarMensagemAoMoverLigacao(idLigacao, idMapa, novoX, novoY);
+    			enviarMensagemAoServidor(msg);
+    		}
+    		else{
+    			var novaAltura;
+    			var novaLargura;
+    			var deslocamentoX;
+    			var deslocamentoY;
+    			var corFundo;
+    			var novoX;
+    			var novoY;
+    			var alturaMin;
+    			var larguraMin;
+    			var label;
+    			
+    			label = getLabel(ligacaoContainer);
+    			corFundo = getCorFundo(idLigacao);
+    			alturaMin = label.getMeasuredHeight() + tamanhoQuadradoSelecao/4;
+    			larguraMin = label.getMeasuredWidth() + tamanhoQuadradoSelecao/4;
+    			
+    			switch(evt.target.name){
+    				case "qsTopLeft":
+    	    			
+    	    			if (ligacaoContainer.x <= evt.stageX) {
+    	    				deslocamentoX = ligacaoContainer.x - evt.stageX;
+    	    				novaLargura = largura + deslocamentoX;
+    	    				novoX = evt.stageX;
+    	        		}
+    	    			else{
+    	    				deslocamentoX = evt.stageX - ligacaoContainer.x;
+    	    				novaLargura = largura - deslocamentoX;
+    	    				novoX = evt.stageX;
+    	    			}
+    	    			
+    	        		if (ligacaoContainer.y <= evt.stageY) {
+    	        			deslocamentoY = evt.stageY - ligacaoContainer.y;
+    	    				novaAltura = altura - deslocamentoY;
+    	    				novoY = evt.stageY;
+    	        		}
+    	        		else{
+    	        			deslocamentoY = ligacaoContainer.y - evt.stageY;
+    	    				novaAltura = altura + deslocamentoY;
+    	    				novoY = evt.stageY;
+    	        		}
+    	        		
+    	        		if(novaLargura > larguraMin){
+    	        			gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
+    	        			gerenciadorLigacao.setX(idLigacao, novoX, stageCanvas);
+    	        		}
+    	        		else{
+    	        			novaLargura = larguraMin;
+    	        		}
+	            		if(novaAltura > alturaMin){
+	            			gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
+	            			gerenciadorLigacao.setY(idLigacao, novoY, stageCanvas);
+	            		}
+	            		else{
+	            			novaAltura = alturaMin;
+	            		}
+	            		gerenciadorLigacao.redesenharLigacaoAposEdicao(idLigacao, getCorFundo, stageCanvas);
+	    			
+    				break;
+    				
+    				case "qsBottomLeft":
+    					if (ligacaoContainer.x <= evt.stageX) {
+    	    				deslocamentoX = evt.stageX - ligacaoContainer.x;
+    	    				novaLargura = largura - deslocamentoX;
+    	    				novoX = evt.stageX;
+    	        		}
+    	    			else{
+    	    				deslocamentoX = ligacaoContainer.x - evt.stageX;
+    	    				novaLargura = largura + deslocamentoX;
+    	    				novoX = evt.stageX;
+    	    			}
+    	    			
+    	        		if ( (ligacaoContainer.y + altura) <= evt.stageY) {
+    	        			deslocamentoY = evt.stageY - (ligacaoContainer.y + altura);
+    	    				novaAltura = altura + deslocamentoY;
+    	        		}
+    	        		else{
+    	        			deslocamentoY = (ligacaoContainer.y + altura) - evt.stageY;
+    	    				novaAltura = altura - deslocamentoY;
+    	        		}
+    	        		
+    	        		if(novaLargura > larguraMin){
+    	        			gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
+    	        			gerenciadorLigacao.setX(idLigacao, novoX, stageCanvas);
+    	        		}
+    	        		else{
+    	        			novaLargura = larguraMin;
+    	        		}
+	            		if(novaAltura > alturaMin){
+	            			gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
+	            		}
+	            		else{
+	            			novaAltura = alturaMin;
+	            		}
+	            		gerenciadorLigacao.redesenharLigacaoAposEdicao(idLigacao, getCorFundo, stageCanvas);
+    				break;
+    				
+    				case "qsTopRigth":
+    					if ( (ligacaoContainer.x + largura) <= evt.stageX) {
+    	    				deslocamentoX = evt.stageX - (ligacaoContainer.x + largura);
+    	    				novaLargura = largura + deslocamentoX;
+    	        		}
+    	    			else{
+    	    				deslocamentoX = (ligacaoContainer.x + largura) - evt.stageX;
+    	    				novaLargura = largura - deslocamentoX;
+    	    			}
+    	    			
+    	        		if (ligacaoContainer.y <= evt.stageY) {
+    	        			deslocamentoY = evt.stageY - ligacaoContainer.y;
+    	    				novaAltura = altura - deslocamentoY;
+    	    				novoY = evt.stageY;
+    	        		}
+    	        		else{
+    	        			deslocamentoY = ligacaoContainer.y - evt.stageY;
+    	    				novaAltura = altura + deslocamentoY;
+    	    				novoY = evt.stageY;
+    	        		}
+    	        		
+    	        		if(novaLargura > larguraMin){
+    	        			gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
+    	        		}
+    	        		else{
+    	        			novaLargura = larguraMin;
+    	        		}
+	            		if(novaAltura > alturaMin){
+	            			gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
+	            			gerenciadorLigacao.setY(idLigacao, novoY, stageCanvas);
+	            		}
+	            		else{
+	            			novaAltura = alturaMin;
+	            		}
+	            		gerenciadorLigacao.redesenharLigacaoAposEdicao(idLigacao, getCorFundo, stageCanvas);
+    				break;
+    				
+    				case "qsBottomRigth":
+    					if ( (ligacaoContainer.x + largura) <= evt.stageX) {
+    	    				deslocamentoX = evt.stageX - (ligacaoContainer.x + largura);
+    	    				novaLargura = largura + deslocamentoX;
+    	        		}
+    	    			else{
+    	    				deslocamentoX = (ligacaoContainer.x + largura) - evt.stageX;
+    	    				novaLargura = largura - deslocamentoX;
+    	    			}
+    	    			
+    	        		if ( (ligacaoContainer.y + altura) <= evt.stageY) {
+    	        			deslocamentoY = evt.stageY - (ligacaoContainer.y + altura);
+    	    				novaAltura = altura + deslocamentoY;
+    	    				
+    	        		}
+    	        		else{
+    	        			deslocamentoY = (ligacaoContainer.y + altura) - evt.stageY;
+    	    				novaAltura = altura - deslocamentoY;
+    	        		}
+    	        		
+    	        		if(novaLargura > larguraMin){
+    	        			gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
+    	        			
+    	        		}
+    	        		else{
+    	        			novaLargura = larguraMin;
+    	        		}
+	            		if(novaAltura > alturaMin){
+	            			gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
+	            		}
+	            		else{
+	            			novaAltura = alturaMin;
+	            		}
+	            		gerenciadorLigacao.redesenharLigacaoAposEdicao(idLigacao, getCorFundo, stageCanvas);
+    				break;
+    			}
+        		
+    			gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
+    			gerenciadorLigacao.redesenharQuadradosSelecao(ligacaoContainer);
+    			gerenciadorLigacao.recentralizarLabel(ligacaoContainer);
+    			
+    			msg = montarMensagemAoAlterarTamanhoLigacao(idMapa, idLigacao, novaLargura, novaAltura, ligacaoContainer.x, ligacaoContainer.y);
+    			enviarMensagemAoServidor(msg);
+    		}
+    		
     	    renderizarMapa();
         });
+    };
+    
+    this.recentralizarLabel = function(ligacaoContainer){
+    	var alturaContainer;
+    	var larguraContainer;
+    	
+    	label = getLabel(ligacaoContainer);
+    	alturaContainer = getAltura(ligacaoContainer);
+    	larguraContainer = getLargura(ligacaoContainer);
+    	
+    	label.x = (larguraContainer/2);
+    	label.y = (alturaContainer/2);
     };
 
     
@@ -93,7 +290,7 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
 		 graphic.lineTo(coordenadas.ligacao.x,coordenadas.ligacao.y);
 		 linhaContainer.graphics.clear();
 		 linhaContainer.graphics = graphic;
-    }
+    };
     
     
     /**
@@ -243,51 +440,135 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	return linhasContainers;
     };
     
-    this.redesenharLigacao = function(idLigacaoP, corFundo, stageCanvas) {
-    	var idLigacao;
-    	var ligacaoContainer; //pode ser label ou rect
-		var rect;
-		var altura;
-		var largura;
+    this.redesenharLigacaoAposDesselecao = function(idLigacao, corFundo, stageCanvas) {
+    	
+    	var ligacaoContainer;
+		var qs;
+		var nome;
 		
-		idLigacao = idLigacaoP;
 		ligacaoContainer = gerenciadorLigacao.getLigacaoContainerViaId(idLigacao, stageCanvas);
-		rect = getRetangulo(ligacaoContainer);
 		
-		altura = getAltura(ligacaoContainer);
-    	largura = getLargura(ligacaoContainer);
+		nome = "qsTopLeft";
+		qs = getQuadradroSelecao(ligacaoContainer, nome);
+		ligacaoContainer.removeChild(qs);
 		
-		rect.graphics.clear();
-		rect.graphics.beginFill(corFundo).drawRoundRect( //adiciona na posicao zero,zero
-				0,0,largura,altura,3);
+		nome = "qsTopRigth";
+		qs = getQuadradroSelecao(ligacaoContainer, nome);
+		ligacaoContainer.removeChild(qs);
+		
+		nome = "qsBottomLeft";
+		qs = getQuadradroSelecao(ligacaoContainer, nome);
+		ligacaoContainer.removeChild(qs);
+		
+		nome = "qsBottomRigth";
+		qs = getQuadradroSelecao(ligacaoContainer, nome);
+		ligacaoContainer.removeChild(qs);
     };
 
     
-    this.selecionarLigacao = function(objetoSelecionadoP, corFundo) { //objetoSelecionado pode ser o retangulo ou label
+    this.selecionarLigacao = function(objetoSelecionadoP, corFundo, renderizarMapa) { //objetoSelecionado pode ser o retangulo ou label
 		
-    	var objetoSelecionado;
-    	var rect;
-    	var corSelecao;
-    	var espessuraBorda;
+    	var objetoSelecionado; //pode ser label ou rect
     	var altura;
     	var largura;
-    	var quadradoSelecao;
+    	var quadradosSelecao;
     	
     	objetoSelecionado = objetoSelecionadoP;
-    	rect = getRetangulo(objetoSelecionado.parent);
     	
-    	corSelecao = "#F00";
-    	espessuraBorda = 2;
+    	altura = getAltura(objetoSelecionado.parent);
+    	largura = getLargura(objetoSelecionado.parent);
     	
-    	altura = getAltura(objetoSelecionado);
-    	largura = getLargura(objetoSelecionado);
     	
-		rect.graphics.clear();
-		rect.graphics.setStrokeStyle(espessuraBorda,"round").beginStroke(corSelecao).beginFill(corFundo).drawRoundRect( //adiciona na posicao zero,zero
-				0,0,largura,altura,3);
+    	quadradosSelecao = {
+    		topLeft: new createjs.Shape(),
+    		topRigth: new createjs.Shape(),
+    		bottomLeft: new createjs.Shape(),
+    		bottomRigth: new createjs.Shape()
+    	};
+    	
+    	quadradosSelecao.topLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
+    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
+    	quadradosSelecao.topRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
+    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
+    	quadradosSelecao.bottomLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
+    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
+    	quadradosSelecao.bottomRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
+    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
+    	
+    	quadradosSelecao.topLeft.name = "qsTopLeft";
+    	quadradosSelecao.topRigth.name = "qsTopRigth";
+    	quadradosSelecao.bottomLeft.name = "qsBottomLeft";
+    	quadradosSelecao.bottomRigth.name = "qsBottomRigth";
+    	
+    	
+    	objetoSelecionado.parent.addChild(quadradosSelecao.topLeft);
+    	objetoSelecionado.parent.addChild(quadradosSelecao.topRigth);
+    	objetoSelecionado.parent.addChild(quadradosSelecao.bottomLeft);
+    	objetoSelecionado.parent.addChild(quadradosSelecao.bottomRigth);
+    	
+    	quadradosSelecao.topLeft.x = 0 - tamanhoQuadradoSelecao/2;
+    	quadradosSelecao.topLeft.y = 0 - tamanhoQuadradoSelecao/2;
+    	
+    	quadradosSelecao.topRigth.x = largura - tamanhoQuadradoSelecao/2;
+    	quadradosSelecao.topRigth.y = 0 - tamanhoQuadradoSelecao/2;
+    	
+    	quadradosSelecao.bottomLeft.x = 0 - tamanhoQuadradoSelecao/2;
+    	quadradosSelecao.bottomLeft.y = altura - tamanhoQuadradoSelecao/2;
+    	
+    	quadradosSelecao.bottomRigth.x = largura - tamanhoQuadradoSelecao/2;
+    	quadradosSelecao.bottomRigth.y = altura - tamanhoQuadradoSelecao/2;
+    	
+    	return renderizarMapa();    
     };
     
+    
+    this.redesenharQuadradosSelecao = function(ligacaoContainer){
+    	
+    	var quadradosSelecao;
+    	var altura;
+    	var largura;
+    	
+    	altura = getAltura(ligacaoContainer);
+    	largura = getLargura(ligacaoContainer);
+    	
+    	
+    	quadradosSelecao = {
+        		topLeft: getQuadradroSelecao(ligacaoContainer, "qsTopLeft"),
+        		topRigth: getQuadradroSelecao(ligacaoContainer, "qsTopRigth"),
+        		bottomLeft: getQuadradroSelecao(ligacaoContainer, "qsBottomLeft"),
+        		bottomRigth: getQuadradroSelecao(ligacaoContainer, "qsBottomRigth")
+        };
+    	
+    	quadradosSelecao.topLeft.graphics.clear();
+    	quadradosSelecao.topRigth.graphics.clear();
+    	quadradosSelecao.bottomLeft.graphics.clear();
+    	quadradosSelecao.bottomRigth.graphics.clear();
+    	
+    	quadradosSelecao.topLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
+    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
+    	quadradosSelecao.topRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
+    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
+    	quadradosSelecao.bottomLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
+    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
+    	quadradosSelecao.bottomRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
+    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
+    	
+    	quadradosSelecao.topLeft.x = 0 - tamanhoQuadradoSelecao/2;
+    	quadradosSelecao.topLeft.y = 0 - tamanhoQuadradoSelecao/2;
+    	
+    	quadradosSelecao.topRigth.x = largura - tamanhoQuadradoSelecao/2;
+    	quadradosSelecao.topRigth.y = 0 - tamanhoQuadradoSelecao/2;
+    	
+    	quadradosSelecao.bottomLeft.x = 0 - tamanhoQuadradoSelecao/2;
+    	quadradosSelecao.bottomLeft.y = altura - tamanhoQuadradoSelecao/2;
+    	
+    	quadradosSelecao.bottomRigth.x = largura - tamanhoQuadradoSelecao/2;
+    	quadradosSelecao.bottomRigth.y = altura - tamanhoQuadradoSelecao/2;
+    };
 
+    
+    
+    
     /**
      * calcula os novos pontos de interconexao entre conceitos ou palavras de ligacao conectados
      */
@@ -492,16 +773,24 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     /**
      * 
      */
-    function getRetangulo(conceitoContainer) {
-    	return conceitoContainer.getChildByName("retangulo");
+    function getRetangulo(ligacaoContainer) {
+    	return ligacaoContainer.getChildByName("retangulo");
     }
     
     /**
      * 
      */
-    this.getLabel = function(conceitoContainer) {
+    function getLabel(ligacaoContainer) {
     	return ligacaoContainer.getChildByName("label");
-    };
+    }
+    
+    
+    /**
+     * 
+     */
+    function getQuadradroSelecao(ligacaoContainer, nome) {
+    	return ligacaoContainer.getChildByName(nome);
+    }
     
     
     /**
@@ -529,5 +818,42 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	var ligacaoContainer;
     	ligacaoContainer = gerenciadorLigacao.getLigacaoContainerViaId(idLigacao, stageCanvas);
     	ligacaoContainer.y = novoY;
+    };
+    
+    
+    this.setAltura = function(ligacaoContainer, novaAltura){
+    	var retangulo;
+    	var largura;
+    	
+    	retangulo = getRetangulo(ligacaoContainer);
+    	largura = getLargura(ligacaoContainer);
+    	retangulo.setBounds(0,0,largura,novaAltura);
+    };
+    
+    this.setLargura = function(ligacaoContainer, novaLargura){
+    	var retangulo;
+    	var altura;
+    	
+    	retangulo = getRetangulo(ligacaoContainer);
+    	altura = getAltura(ligacaoContainer);
+    	retangulo.setBounds(0,0,novaLargura,altura);
+    };
+
+    this.redesenharLigacaoAposEdicao = function(idLigacao, getCorFundo, stageCanvas){
+    	var altura;
+    	var largura;
+    	var corFundo;
+    	var ligacaoContainer;
+    	var rect;
+    	
+    	ligacaoContainer = gerenciadorLigacao.getLigacaoContainerViaId(idLigacao, stageCanvas);
+    	rect = getRetangulo(ligacaoContainer);
+    	corFundo = getCorFundo(idLigacao);
+    	altura = getAltura(ligacaoContainer);
+    	largura = getLargura(ligacaoContainer);
+    	
+    	rect.graphics.clear();
+		rect.graphics.beginFill(corFundo).drawRoundRect( //adiciona na posicao zero,zero
+				0,0,largura,altura,3);
     };
 }
