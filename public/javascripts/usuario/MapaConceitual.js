@@ -19,7 +19,6 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     var gerenciadorSemiLigacao = new GerenciadorSemiLigacao();
     var handTool = new HandTool(stageCanvas, renderizar);
     
-    
     this.getAlturaObjeto = function getAlturaObjeto( idObjeto ){
     	var containerObjeto;
     	
@@ -126,6 +125,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 		
 		if(conceitoContainer.parent){ //para o caso do conceito ter sido deletado por um usuario e mensagens para mover este conceito terem chegado logo em seguida.
 			var conceitoNaLista;
+			var retanguloSelecaoAT;
 			
 			if(mensagem.novoX != "default")
 				gerenciadorConceito.setX(mensagem.idConceito, mensagem.novoX, stageCanvas);
@@ -134,6 +134,17 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 			
 			conceitoNaLista = gerenciadorLista.getConceito(mensagem.idConceito);
 			gerenciadorLigacao.atualizarLigacoesAoMoverConceito(mensagem.idConceito, conceitoContainer, conceitoNaLista, gerenciadorLista.getLigacao, stageCanvas);
+			
+			//necessario remover o retangulo selecao AT pois o conceito mudou de posicao. O MV nao precisa ser removido
+			retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT"); 
+			if(retanguloSelecaoAT){ //tem o retanguloSelecaoAT
+				var indexRetanguloSelecao;
+				
+				mapa.desselecionar(); //necessario para parar o evento pressmove disparado sobre o conceito
+				indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecaoAT);
+				removerFilho(stageCanvas, indexRetanguloSelecao);
+				selecionarConceito( conceitoContainer.getChildAt(0) ); // necessario passar um filho do conceito
+			}
 			
 			renderizar();	
 		}
