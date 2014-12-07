@@ -49,12 +49,36 @@ function GerenciadorLista(listaElementos){
     this.getConceito = function (idConceito){
     	return $('ul#' + idConceito);
     };
-	
+    
+    this.setAlturaMinima = function setAlturaMinima (idObjeto, novaAlturaMinima){
+    	$( 'ul#' + idObjeto ).children("li[title='alturaMinima']").text(novaAlturaMinima);
+    };
+    
+    this.setLarguraMinima = function setLarguraMinima(idObjeto, novaLarguraMinima){
+    	$( 'ul#' + idObjeto ).children("li[title='larguraMinima']").text(novaLarguraMinima);
+    };
+    
+    this.getAlturaMinima = function getAlturaMinima (idObjeto){
+    	var alturaMin;
+    	
+    	alturaMin = $( 'ul#' + idObjeto ).children("li[title='alturaMinima']").text();
+    	alturaMin = parseFloat(alturaMin);
+    	return alturaMin;
+    };
+    
+    this.getLarguraMinima = function getLarguraMinima(idObjeto){
+    	var larguraMin;
+    	
+    	larguraMin = $( 'ul#' + idObjeto ).children("li[title='larguraMinima']").text();
+    	larguraMin = parseFloat(larguraMin);
+    	return larguraMin;
+    };
+    
 	
 	/**
 	 * adiciona um novo conceito a lista
 	 */
-	this.adicionarConceitoNaLista = function(idConceitoP, corFundo){
+	this.adicionarConceitoNaLista = function(idConceitoP, corFundo, alturaMinima, larguraMinima){
 		
 		var idConceito;
 		var novoConceito;
@@ -63,12 +87,14 @@ function GerenciadorLista(listaElementos){
 		
 		novoConceito = "<ul id =" + idConceito +" title ='conceito'>";
 		novoConceito += "<li title='corFundo'>"+ corFundo +"</li>";
+		novoConceito += "<li title='alturaMinima'>" + alturaMinima + "</li>";
+		novoConceito += "<li title='larguraMinima'>" + larguraMinima + "</li>";
 		novoConceito += "</ul>";
 			
 		$(lista).append($(novoConceito));
 	};
 	
-	this.adicionarLigacaoNaLista = function (idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, corFundo){
+	this.adicionarLigacaoNaLista = function (idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, corFundo, alturaMinima, larguraMinima){
 		
 		var novaLigacao;
 		var atributosLigacao;
@@ -83,7 +109,9 @@ function GerenciadorLista(listaElementos){
 			"<li title='idLinhaPai' value='" + idLinhaPai + "'></li>" +
     		"<li title='idLinhaFilho1' value='" + idLinhaFilho + "'></li>" +
     		"<li title='qtdFilhos' value='1'></li>"	+
-    		"<li title='corFundo'>"+ corFundo +"</li>"
+    		"<li title='corFundo'>"+ corFundo +"</li>" +
+    		"<li title='alturaMinima'>" + alturaMinima + "</li>" +
+    		"<li title='larguraMinima'>" + larguraMinima + "</li>"
 		;
 		
 		novaLigacao += atributosLigacao + "</ul>";

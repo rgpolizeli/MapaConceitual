@@ -265,32 +265,6 @@ function Servidor(Ip,Porta){
 				    		}
 						break;
 						
-						case "2": //conceito movido por algum usuario
-							mensagem = mensagem.replace("<2ul","<ul");
-							
-							var idMapa = $(mensagem).children("li[title='idMapa']").text();
-				    		idMapa = parseInt(idMapa);
-				    		
-				    		//visualizador nao tem permissao para isso
-				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
-				    		
-					    		var conceito = {
-					    				idConceito : parseInt( $(mensagem).attr("id") ),
-										novoX : $(mensagem).children("li[title='x']").val(),
-										novoY : $(mensagem).children("li[title='y']").val()
-					    		};
-					    		
-								//inserir no arquivo xml
-					    		gerenciadorArquivos.alterarPosicaoConceito(idMapa, conceito);
-					    		
-					    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
-					    		mensagem = mensagem.replace("<ul","<2ul");
-					    		
-					    		//manda para todos os usuarios, inclusive quem criou o conceito
-					    		enviarBroadcastParaUsuariosAtivos(idMapa, mensagem, socket);
-				    		}
-						break;
-						
 						case "3": //ligacao criada por algum usuario
 							mensagem = mensagem.replace("<3ul","<ul");
 							
@@ -327,30 +301,7 @@ function Servidor(Ip,Porta){
 					    		enviarParaTodosUsuariosAtivos(idMapa, mensagem);
 				    		}
 						break;
-						case "4": //palavra de ligacao movida por algum usuario +
-							mensagem = mensagem.replace("<4ul","<ul");
-							
-							var idMapa = $(mensagem).children("li[title='idMapa']").text();
-				    		idMapa = parseInt(idMapa);
-							
-				    		//visualizador nao tem permissao para isso
-				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
-				    			var ligacao = {
-					    				idLigacao : parseInt( $(mensagem).attr("id") ),
-										novoX : $(mensagem).children("li[title='x']").val(),
-										novoY : $(mensagem).children("li[title='y']").val()
-					    		};
-					    		
-								//inserir no arquivo xml
-					    		gerenciadorArquivos.alterarPosicaoLigacao(idMapa, ligacao);
-					    		
-					    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
-					    		mensagem = mensagem.replace("<ul","<4ul");
-					    		
-					    		//manda para todos os usuarios, exceto para quem criou a ligacao
-					    		enviarBroadcastParaUsuariosAtivos(idMapa, mensagem, socket);
-				    		}
-						break;
+						
 						
 						case "5": //nova SemiLigacao
 							mensagem = mensagem.replace("<5ul","<ul");
@@ -425,30 +376,94 @@ function Servidor(Ip,Porta){
 				else{
 					switch(mensagem.tipoMensagem){
 						
-						case 7: //tamanho do conceito alterado por algum usuario
+						case 2: //conceito movido por algum usuario
+				    		var idMapa;
+				    		
+				    		idMapa = mensagem.idMapa;
+				    		//visualizador nao tem permissao para isso
+				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
+				    		
+					    		var conceito = {
+					    			idConceito : mensagem.idConceito,
+									novoX : mensagem.novoX,
+									novoY : mensagem.novoY
+					    		};
+					    		
+								//inserir no arquivo xml
+						    	gerenciadorArquivos.alterarPosicaoConceito(idMapa, conceito);
+						    	
+						    	delete mensagem.idMapa;
+						    		
+						    	//manda para todos os usuarios, inclusive quem criou o conceito
+						    	enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
+						    	
+				    		}
+						
+						break;
+						
+						case 4: //palavra de ligacao movida por algum usuario
+							var idMapa;
 							
+				    		
+				    		idMapa = mensagem.idMapa;
+				    		//visualizador nao tem permissao para isso
+				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
+				    		
+					    		var ligacao = {
+					    			idLigacao : mensagem.idLigacao,
+									novoX : mensagem.novoX,
+									novoY : mensagem.novoY
+					    		};
+					    		
+								//inserir no arquivo xml
+					    		gerenciadorArquivos.alterarPosicaoLigacao(idMapa, ligacao);
+					    		
+				    			delete mensagem.idMapa;
+					    		
+					    		//manda para todos os usuarios, inclusive quem criou o conceito
+					    		enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
+					    		
+				    		}
+						break;
+					
+					
+						case 7: //tamanho do conceito alterado por algum usuario
+							var alterado;
+							var idMapa;
+							
+				    		
+				    		idMapa = mensagem.idMapa;
 							//visualizador nao tem permissao para isso
 				    		if(gerenciadorUsuariosAtivos.verificarPermissao(mensagem.idMapa, socket) != 3){
 					    		
 								//inserir no arquivo xml
-					    		gerenciadorArquivos.alterarTamanhoConceito(mensagem);
+				    			alterado = gerenciadorArquivos.alterarTamanhoConceito(mensagem);
+				    			if(alterado == 1){
+				    				delete mensagem.idMapa;
+				    				enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
+				    			}
 					    		
-					    		enviarParaTodosUsuariosAtivos(mensagem.idMapa, mensagem, socket);
 				    		}
 						break;
 						
 						case 8: //tamanho da ligacao alterado por algum usuario
+							var alterado;
+							var idMapa;
 							
+				    		idMapa = mensagem.idMapa;
 							//visualizador nao tem permissao para isso
 				    		if(gerenciadorUsuariosAtivos.verificarPermissao(mensagem.idMapa, socket) != 3){
+				    			
+				    			alterado = gerenciadorArquivos.alterarTamanhoLigacao(mensagem);
+				    			if(alterado == 1){
+				    				delete mensagem.idMapa;
+				    				enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
+				    			}
 					    		
-								//inserir no arquivo xml
-					    		gerenciadorArquivos.alterarTamanhoLigacao(mensagem);
-					    		enviarBroadcastParaUsuariosAtivos(mensagem.idMapa, mensagem, socket);
 				    		}
 						break;
 						
-						case 9: //conceito alterado por algum usuario
+						case 9: //objeto editado por algum usuario
 							var idMapa;
 							
 							idMapa = mensagem.idMapa;
@@ -508,6 +523,8 @@ function Servidor(Ip,Porta){
 			var y = $( element ).find( 'y' ).text();
 			var altura = $( element ).find( 'altura' ).text();
 			var largura = $( element ).find( 'largura' ).text();
+			var alturaMinima = $( element ).find( 'alturaMinima' ).text();
+			var larguraMinima = $( element ).find( 'larguraMinima' ).text();
 			var texto = $( element ).find( 'texto' ).text();
 			var fonte = $( element ).find( 'fonte' ).text();
 			var tamanhoFonte = $( element ).find( 'tamanhoFonte' ).text();
@@ -521,6 +538,8 @@ function Servidor(Ip,Porta){
 				"<li title='y' value='" + y + "'></li>" +
 				"<li title='altura' value='" + altura + "'></li>" +
 				"<li title='largura' value='" + largura + "'></li>" +
+				"<li title='alturaMinima'>" + alturaMinima + "</li>" +
+				"<li title='larguraMinima'>" + larguraMinima + "</li>" +
 				"<li title='texto'>" + texto + "</li>" +
 				"<li title='fonte'>" + fonte + "</li>" +
 				"<li title='tamanhoFonte'>" + tamanhoFonte + "</li>" +
@@ -545,6 +564,8 @@ function Servidor(Ip,Porta){
 			var y = $( element ).find( 'y' ).text();
 			var altura = $( element ).find( 'altura' ).text();
 			var largura = $( element ).find( 'largura' ).text();
+			var alturaMinima = $( element ).find( 'alturaMinima' ).text();
+			var larguraMinima = $( element ).find( 'larguraMinima' ).text();
 			var texto = $( element ).find( 'texto' ).text();
 			var fonte = $( element ).find( 'fonte' ).text();
 			var tamanhoFonte = $( element ).find( 'tamanhoFonte' ).text();
@@ -561,6 +582,8 @@ function Servidor(Ip,Porta){
 				"<li title='y' value='" + y + "'></li>" +
 				"<li title='altura' value='" + altura + "'></li>" +
 				"<li title='largura' value='" + largura + "'></li>" +
+				"<li title='alturaMinima'>" + alturaMinima + "</li>" +
+				"<li title='larguraMinima'>" + larguraMinima + "</li>" +
 				"<li title='texto'>" + texto + "</li>" +
 				"<li title='fonte'>" + fonte + "</li>" +
 				"<li title='tamanhoFonte'>" + tamanhoFonte + "</li>" +
@@ -615,7 +638,7 @@ function Servidor(Ip,Porta){
 	}
 }
 
-	var servidor = new Servidor('189.35.109.151',3000);
+	var servidor = new Servidor('186.207.240.130',3000);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);

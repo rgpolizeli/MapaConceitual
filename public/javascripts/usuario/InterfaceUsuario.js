@@ -59,7 +59,14 @@ function InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativar
 			texto : $("#textoEdicao").val()
 		};
 		
-		editar(propriedades);
+		if(propriedades.texto.length == 0){
+			$('#textoEdicao').focus();
+		}
+		else{
+			$('#interfaceEdicao').modal('hide');
+			editar(propriedades);
+		}
+		
 	});
 	
 	

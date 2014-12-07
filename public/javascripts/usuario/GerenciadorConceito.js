@@ -3,249 +3,199 @@ function GerenciadorConceito(){
     var gerenciadorConceito = this;
     var paddingH = 12;
 	var paddingW = 12; 
-	var tamanhoQuadradoSelecao = 10;
-	var corQuadradoSelecao = "#F00";
+	var espessuraRetanguloSelecao = 3;
+	var corRetanguloSelecao = "#F00";
+	var alturaQuadradoTamanho = 20;
     
     /**
      * 
      */
-    this.adicionarDragDrop = function(idMapa,conceitoContainer, stageCanvas, getConceitoLista, getLigacaoLista, getCorFundo, atualizarLigacoesAoMoverConceito, renderizarMapa, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor){
-    	var altura;
-    	var largura;
-    	var novoX;
-    	var novoY;
-    	var conceitoNaLista;
-    	var idConceito;
-    	var msg;
-    	
-    	
+    this.adicionarDragDrop = function(idMapa,conceitoContainer, stageCanvas, getConceitoLista, getLigacaoLista, getCorFundo, getAlturaMinima, getLarguraMinima, atualizarLigacoesAoMoverConceito, removerFilhoStageCanvas, renderizarMapa, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor){
+
     	conceitoContainer.addEventListener("pressmove", function(evt){
+    		var altura;
+        	var largura;
     		
-    		idConceito = gerenciadorConceito.getId(conceitoContainer, stageCanvas);
-    		altura = getAltura(conceitoContainer);
-    		largura = getLargura(conceitoContainer);
-    		conceitoNaLista = getConceitoLista(idConceito);
+    		altura = gerenciadorConceito.getAltura(conceitoContainer);
+    		largura = gerenciadorConceito.getLargura(conceitoContainer);
     		
-    		if(evt.target.name != "qsTopLeft" && evt.target.name != "qsTopRigth" && evt.target.name != "qsBottomLeft" && evt.target.name != "qsBottomRigth"){
+    		if(evt.target.name != "quadradoTamanho"){ // movimentando o retangulo selecao
     			
+    			if(stageCanvas.getChildByName("retanguloSelecaoMV") == null){ // MV de movimentacao
+        			var retangulo = new createjs.Shape();
+            		retangulo.name = "retanguloSelecaoMV";
+            		var hit = new createjs.Shape();
+            		
+            		retangulo.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
+            				0,0,largura,altura,3);
+            		hit.graphics.beginFill("#000").rect(0,
+            				0, largura - (2 * espessuraRetanguloSelecao), altura - (2 * espessuraRetanguloSelecao));
+            		retangulo.hitArea = hit;
+            		retangulo.setBounds(0,0,largura,altura);
+            		
+            		stageCanvas.addChild(retangulo);
+            		retangulo.x = conceitoContainer.x;
+            		retangulo.y = conceitoContainer.y;
+        		}
+        		
+        		else{
+        			var retangulo = stageCanvas.getChildByName("retanguloSelecaoMV"); 
+        			retangulo.x = (evt.stageX - (largura/2) - stageCanvas.x);
+        			retangulo.y = (evt.stageY - (altura/2) - stageCanvas.y);
+        		}
     			
-        		novoX = (evt.stageX - (largura/2) - stageCanvas.x); //a nova posicao do conceitoContainer eh a posicao do mouse para onde foi arrastado - o deslocamento do stageCanvas
-        		novoY = (evt.stageY - (altura/2) - stageCanvas.y);
-        	    
-        		evt.currentTarget.x = novoX; 
-        	    evt.currentTarget.y = novoY;
-        	    
-        	    //atualizar as linhas de ligacao na tela e atualiza na lista as coordenadas de ponta de ligacao
-        	    atualizarLigacoesAoMoverConceito(idConceito, conceitoContainer, conceitoNaLista, getLigacaoLista, stageCanvas);
-        	    
-        	    
-        	    msg = montarMensagemAoMoverConceito(idConceito, idMapa, novoX, novoY);
-    			enviarMensagemAoServidor(msg);
     		}
-    		else{
+    		else{ //alterando o tamanho do retangulo selecao
     			var novaAltura;
     			var novaLargura;
     			var deslocamentoX;
     			var deslocamentoY;
-    			var corFundo;
-    			var novoX;
-    			var novoY;
-    			var alturaMin;
-    			var larguraMin;
-    			var label;
-    			var propriedades;
     			
-    			label = getLabel(conceitoContainer);
-    			corFundo = getCorFundo(idConceito);
-    			alturaMin = label.getMeasuredHeight() + paddingH/2 + tamanhoQuadradoSelecao/4;
-    			larguraMin = label.getMeasuredWidth() + paddingW/2 + tamanhoQuadradoSelecao/4;
+    			console.log(evt.target.name);
     			
-    			switch(evt.target.name){
-    				case "qsTopLeft":
-    	    			
-    	    			if (conceitoContainer.x <= (evt.stageX - stageCanvas.x) ) {
-    	    				deslocamentoX = conceitoContainer.x - (evt.stageX - stageCanvas.x);
-    	    				novaLargura = largura + deslocamentoX;
-    	    				novoX = (evt.stageX - stageCanvas.x);
-    	        		}
-    	    			else{
-    	    				deslocamentoX = (evt.stageX - stageCanvas.x) - conceitoContainer.x;
-    	    				novaLargura = largura - deslocamentoX;
-    	    				novoX = (evt.stageX - stageCanvas.x);
-    	    			}
-    	    			
-    	        		if (conceitoContainer.y <= (evt.stageY - stageCanvas.y)) {
-    	        			deslocamentoY = (evt.stageY - stageCanvas.y) - conceitoContainer.y;
-    	    				novaAltura = altura - deslocamentoY;
-    	    				novoY = (evt.stageY - stageCanvas.y);
-    	        		}
-    	        		else{
-    	        			deslocamentoY = conceitoContainer.y - (evt.stageY - stageCanvas.y);
-    	    				novaAltura = altura + deslocamentoY;
-    	    				novoY = (evt.stageY - stageCanvas.y);
-    	        		}
-    	        		
-    	        		if(novaLargura > larguraMin){
-    	        			gerenciadorConceito.setLargura(conceitoContainer, novaLargura);
-    	        			gerenciadorConceito.setX(idConceito, novoX, stageCanvas);
-    	        		}
-    	        		else{
-    	        			novaLargura = larguraMin;
-    	        		}
-	            		if(novaAltura > alturaMin){
-	            			gerenciadorConceito.setAltura(conceitoContainer, novaAltura);
-	            			gerenciadorConceito.setY(idConceito, novoY, stageCanvas);
-	            		}
-	            		else{
-	            			novaAltura = alturaMin;
-	            		}
-	            		
-	            		propriedades = {
-	            			corFundo: corFundo,
-	            			altura: novaAltura,
-	            			largura: novaLargura
-	            		};
-	            		gerenciadorConceito.redesenharConceitoAposEdicao(conceitoContainer, propriedades, stageCanvas);
-	    			
-    				break;
+    			if(stageCanvas.getChildByName("retanguloSelecaoAT") == null){ //AT de alterarTamanho
+        			var retangulo = new createjs.Shape();
+            		retangulo.name = "retanguloSelecaoAT";
+            		var hit = new createjs.Shape();
+            		
+            		retangulo.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
+            				0,0,largura,altura,3);
+            		hit.graphics.beginFill("#000").rect(0,
+            				0, largura - (2 * espessuraRetanguloSelecao), altura - (2 * espessuraRetanguloSelecao));
+            		retangulo.hitArea = hit;
+            		retangulo.setBounds(0,0,largura,altura);
+            		
+            		stageCanvas.addChild(retangulo);
+            		retangulo.x = conceitoContainer.x;
+            		retangulo.y = conceitoContainer.y;
+        		}
+    			else{
+    				var retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT"); 
     				
-    				case "qsBottomLeft":
-    					if (conceitoContainer.x <= (evt.stageX - stageCanvas.x)) {
-    	    				deslocamentoX = (evt.stageX - stageCanvas.x) - conceitoContainer.x;
-    	    				novaLargura = largura - deslocamentoX;
-    	    				novoX = (evt.stageX - stageCanvas.x);
-    	        		}
-    	    			else{
-    	    				deslocamentoX = conceitoContainer.x - (evt.stageX - stageCanvas.x);
-    	    				novaLargura = largura + deslocamentoX;
-    	    				novoX = (evt.stageX - stageCanvas.x);
-    	    			}
-    	    			
-    	        		if ( (conceitoContainer.y + altura) <= (evt.stageY - stageCanvas.y)) {
-    	        			deslocamentoY = (evt.stageY - stageCanvas.y) - (conceitoContainer.y + altura);
-    	    				novaAltura = altura + deslocamentoY;
-    	        		}
-    	        		else{
-    	        			deslocamentoY = (conceitoContainer.y + altura) - (evt.stageY - stageCanvas.y);
-    	    				novaAltura = altura - deslocamentoY;
-    	        		}
-    	        		
-    	        		if(novaLargura > larguraMin){
-    	        			gerenciadorConceito.setLargura(conceitoContainer, novaLargura);
-    	        			gerenciadorConceito.setX(idConceito, novoX, stageCanvas);
-    	        		}
-    	        		else{
-    	        			novaLargura = larguraMin;
-    	        		}
-	            		if(novaAltura > alturaMin){
-	            			gerenciadorConceito.setAltura(conceitoContainer, novaAltura);
-	            		}
-	            		else{
-	            			novaAltura = alturaMin;
-	            		}
-	            		propriedades = {
-		            		corFundo: corFundo,
-		            		altura: novaAltura,
-		            		largura: novaLargura
-		            	};
-	            		gerenciadorConceito.redesenharConceitoAposEdicao(conceitoContainer, propriedades, stageCanvas);
-    				break;
-    				
-    				case "qsTopRigth":
-    					if ( (conceitoContainer.x + largura) <= (evt.stageX - stageCanvas.x)) {
-    	    				deslocamentoX = (evt.stageX - stageCanvas.x) - (conceitoContainer.x + largura);
-    	    				novaLargura = largura + deslocamentoX;
-    	        		}
-    	    			else{
-    	    				deslocamentoX = (conceitoContainer.x + largura) - (evt.stageX - stageCanvas.x);
-    	    				novaLargura = largura - deslocamentoX;
-    	    			}
-    	    			
-    	        		if (conceitoContainer.y <= (evt.stageY - stageCanvas.y)) {
-    	        			deslocamentoY = (evt.stageY - stageCanvas.y) - conceitoContainer.y;
-    	    				novaAltura = altura - deslocamentoY;
-    	    				novoY = (evt.stageY - stageCanvas.y);
-    	        		}
-    	        		else{
-    	        			deslocamentoY = conceitoContainer.y - (evt.stageY - stageCanvas.y);
-    	    				novaAltura = altura + deslocamentoY;
-    	    				novoY = (evt.stageY - stageCanvas.y);
-    	        		}
-    	        		
-    	        		if(novaLargura > larguraMin){
-    	        			gerenciadorConceito.setLargura(conceitoContainer, novaLargura);
-    	        		}
-    	        		else{
-    	        			novaLargura = larguraMin;
-    	        		}
-	            		if(novaAltura > alturaMin){
-	            			gerenciadorConceito.setAltura(conceitoContainer, novaAltura);
-	            			gerenciadorConceito.setY(idConceito, novoY, stageCanvas);
-	            		}
-	            		else{
-	            			novaAltura = alturaMin;
-	            		}
-	            		propriedades = {
-		            			corFundo: corFundo,
-		            			altura: novaAltura,
-		            			largura: novaLargura
-		            	};
-	            		gerenciadorConceito.redesenharConceitoAposEdicao(conceitoContainer, propriedades, stageCanvas);
-    				break;
-    				
-    				case "qsBottomRigth":
-    					if ( (conceitoContainer.x + largura) <= (evt.stageX - stageCanvas.x)) {
-    	    				deslocamentoX = (evt.stageX - stageCanvas.x) - (conceitoContainer.x + largura);
-    	    				novaLargura = largura + deslocamentoX;
-    	        		}
-    	    			else{
-    	    				deslocamentoX = (conceitoContainer.x + largura) - (evt.stageX - stageCanvas.x);
-    	    				novaLargura = largura - deslocamentoX;
-    	    			}
-    	    			
-    	        		if ( (conceitoContainer.y + altura) <= (evt.stageY - stageCanvas.y)) {
-    	        			deslocamentoY = (evt.stageY - stageCanvas.y) - (conceitoContainer.y + altura);
-    	    				novaAltura = altura + deslocamentoY;
-    	    				
-    	        		}
-    	        		else{
-    	        			deslocamentoY = (conceitoContainer.y + altura) - (evt.stageY - stageCanvas.y);
-    	    				novaAltura = altura - deslocamentoY;
-    	        		}
-    	        		
-    	        		if(novaLargura > larguraMin){
-    	        			gerenciadorConceito.setLargura(conceitoContainer, novaLargura);
-    	        			
-    	        		}
-    	        		else{
-    	        			novaLargura = larguraMin;
-    	        		}
-	            		if(novaAltura > alturaMin){
-	            			gerenciadorConceito.setAltura(conceitoContainer, novaAltura);
-	            		
-	            		}
-	            		else{
-	            			novaAltura = alturaMin;
-	            		}
-	            		propriedades = {
-		            		corFundo: corFundo,
-		            		altura: novaAltura,
-		            		largura: novaLargura
-		            	};
-	            		gerenciadorConceito.redesenharConceitoAposEdicao(conceitoContainer, propriedades, stageCanvas);
-    				break;
+    				if ( (conceitoContainer.x + largura) <= (evt.stageX - stageCanvas.x)) {
+        				deslocamentoX = (evt.stageX - stageCanvas.x) - (conceitoContainer.x + largura);
+        				novaLargura = largura + deslocamentoX;
+            		}
+        			else{
+        				deslocamentoX = (conceitoContainer.x + largura) - (evt.stageX - stageCanvas.x);
+        				novaLargura = largura - deslocamentoX;
+        			}
+        			
+            		if ( (conceitoContainer.y + altura) <= (evt.stageY - stageCanvas.y)) {
+            			deslocamentoY = (evt.stageY - stageCanvas.y) - (conceitoContainer.y + altura);
+        				novaAltura = altura + deslocamentoY;
+        				
+            		}
+            		else{
+            			deslocamentoY = (conceitoContainer.y + altura) - (evt.stageY - stageCanvas.y);
+        				novaAltura = altura - deslocamentoY;
+            		}
+            		
+            		if(novaAltura < 0 )
+            			novaAltura = 0;
+            		if(novaLargura < 0 )
+            			novaLargura = 0;
+            		redesenharRSAoAlterarTamanho(retanguloSelecao, novaAltura, novaLargura);	
     			}
-        		
-    			atualizarLigacoesAoMoverConceito(idConceito, conceitoContainer, conceitoNaLista, getLigacaoLista, stageCanvas);
-    			gerenciadorConceito.redesenharQuadradosSelecao(conceitoContainer);
-    			gerenciadorConceito.recentralizarLabel(conceitoContainer);
-    			
-    			msg = montarMensagemAoAlterarTamanhoConceito(idMapa, idConceito, novaLargura, novaAltura, conceitoContainer.x, conceitoContainer.y);
-    			enviarMensagemAoServidor(msg);
     		}
-
+    		
     	    renderizarMapa();
         });
+    	
+    	conceitoContainer.addEventListener("pressup", function conceitoPressUp(evt){
+    		
+    		var retanguloSelecaoAT;
+    		var retanguloSelecaoMV;
+    		
+    		retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT");
+    		retanguloSelecaoMV = stageCanvas.getChildByName("retanguloSelecaoMV");
+    		
+    		if(retanguloSelecaoAT || retanguloSelecaoMV){ // necessario pois quando o usuario clica uma unica vez sem pressionar, tambem gera o pressup
+    			
+    			var conceitoNaLista;
+    	    	var idConceito;
+    	    	var msg;
+        		var indexRetanguloSelecao;
+        		
+        		idConceito = gerenciadorConceito.getId(conceitoContainer, stageCanvas);
+        		conceitoNaLista = getConceitoLista(idConceito);
+        		
+    			if(evt.target.name != "quadradoTamanho"){ //movimentando conceito
+    				var novoX;
+    				var novoY;
+    				
+    				indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecaoMV);
+    				
+	        		novoX = retanguloSelecaoMV.x;
+	        		novoY = retanguloSelecaoMV.y;
+	        		conceitoContainer.x = novoX;
+	        		conceitoContainer.y = novoY;
+	        		
+	        		removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+	        		//atualizar as linhas de ligacao na tela e atualiza na lista as coordenadas de ponta de ligacao
+	        	    atualizarLigacoesAoMoverConceito(idConceito, conceitoContainer, conceitoNaLista, getLigacaoLista, stageCanvas);
+	        	    renderizarMapa();
+	        	    
+	        	    msg = montarMensagemAoMoverConceito(idConceito, idMapa, novoX, novoY);
+	    			enviarMensagemAoServidor(msg);
+    			}
+    			
+    			else{ //alterando o tamanho do conceito
+    				
+    				var novaAltura;
+        			var novaLargura;
+        			var corFundo;
+        			var alturaMin;
+        			var larguraMin;
+        			var label;
+        			var propriedades;
+    				
+        			label = getLabel(conceitoContainer);
+        			corFundo = getCorFundo(idConceito);
+        			alturaMin = getAlturaMinima(idConceito);
+        			larguraMin = getLarguraMinima(idConceito);
+        			novaLargura = getLarguraRS(retanguloSelecaoAT);
+        			novaAltura = getAlturaRS(retanguloSelecaoAT);
+        			indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecaoAT);
+        			removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+        			propriedades = new Object();
+        			
+        			if(alturaMin == 0){ //conceito ainda nao foi editado
+        				alturaMin = label.getMeasuredHeight() + paddingH/2;
+        				larguraMin = label.getMeasuredWidth() + paddingW/2;
+        				
+        				propriedades.alturaMinima = alturaMin;
+        				propriedades.larguraMinima = larguraMin;
+        			}
+        			
+    				if(novaLargura < larguraMin){
+    					novaLargura = larguraMin;
+	        		}
+    				gerenciadorConceito.setLargura(conceitoContainer, novaLargura);
+    				
+            		if(novaAltura < alturaMin){
+            			novaAltura = alturaMin;
+            		}
+            		gerenciadorConceito.setAltura(conceitoContainer, novaAltura);
+            		
+            		propriedades.idConceito = idConceito;
+            		propriedades.corFundo = corFundo;
+            		propriedades.altura = novaAltura;
+            		propriedades.largura = novaLargura;
+            		
+            		gerenciadorConceito.redesenharConceitoAposEdicao(conceitoContainer, propriedades, stageCanvas, renderizarMapa);
+					atualizarLigacoesAoMoverConceito(idConceito, conceitoContainer, conceitoNaLista, getLigacaoLista, stageCanvas);
+					gerenciadorConceito.recentralizarLabel(conceitoContainer);
+					gerenciadorConceito.selecionarConceito(label, corFundo, stageCanvas, renderizarMapa); // devo mandar a label devido a implementacao da funcao selecionar
+					
+					msg = montarMensagemAoAlterarTamanhoConceito(idMapa, propriedades);
+					enviarMensagemAoServidor(msg);
+    			}
+    		}
+    		
+    	});
+    	
+    	
     };
     
     
@@ -255,8 +205,8 @@ function GerenciadorConceito(){
     	var label;
     	
     	label = getLabel(conceitoContainer);
-    	alturaContainer = getAltura(conceitoContainer);
-    	larguraContainer = getLargura(conceitoContainer);
+    	alturaContainer = gerenciadorConceito.getAltura(conceitoContainer);
+    	larguraContainer = gerenciadorConceito.getLargura(conceitoContainer);
     	
     	label.x = (larguraContainer/2);
     	label.y = (alturaContainer/2);
@@ -318,147 +268,92 @@ function GerenciadorConceito(){
     
     this.redesenharConceitoAposDesselecao = function(idConceito, corFundo, stageCanvas) {
     	var conceitoContainer;
-		var qs;
-		var nome;
-		
+    	var altura;
+    	var largura;
+    	var rect;
+		var qt; //quadrado tamanho
+    	
 		conceitoContainer = gerenciadorConceito.getConceitoContainerViaId(idConceito, stageCanvas);
 		
-		nome = "qsTopLeft";
-		qs = getQuadradroSelecao(conceitoContainer, nome);
-		conceitoContainer.removeChild(qs);
-		
-		nome = "qsTopRigth";
-		qs = getQuadradroSelecao(conceitoContainer, nome);
-		conceitoContainer.removeChild(qs);
-		
-		nome = "qsBottomLeft";
-		qs = getQuadradroSelecao(conceitoContainer, nome);
-		conceitoContainer.removeChild(qs);
-		
-		nome = "qsBottomRigth";
-		qs = getQuadradroSelecao(conceitoContainer, nome);
-		conceitoContainer.removeChild(qs);
+		altura = gerenciadorConceito.getAltura(conceitoContainer);
+    	largura = gerenciadorConceito.getLargura(conceitoContainer);
+    	
+		qt = getQuadradroTamanho(conceitoContainer, "quadradoTamanho");
+		conceitoContainer.removeChild(qt);
+    	
+		rect = getRetangulo(conceitoContainer);
+		rect.graphics.clear();
+		rect.graphics.beginFill(corFundo).drawRoundRect( //adiciona na posicao zero,zero
+				0,0,largura,altura,3);
     };
     
     
-    this.selecionarConceito = function(objetoSelecionadoP, corFundo, renderizarMapa) { //objetoSelecionado pode ser o retangulo ou label
+    this.selecionarConceito = function(objetoSelecionadoP, corFundo, stageCanvas, renderizarMapa) { //objetoSelecionado pode ser o retangulo ou label
     	
     	var objetoSelecionado; //pode ser label ou rect
     	var altura;
     	var largura;
-    	var quadradosSelecao;
+    	var rect;
+    	var qt; //quadrado Tamanho
     	
     	objetoSelecionado = objetoSelecionadoP;
     	
-    	altura = getAltura(objetoSelecionado.parent);
-    	largura = getLargura(objetoSelecionado.parent);
+    	altura = gerenciadorConceito.getAltura(objetoSelecionado.parent);
+    	largura = gerenciadorConceito.getLargura(objetoSelecionado.parent);
     	
-    	
-    	quadradosSelecao = {
-    		topLeft: new createjs.Shape(),
-    		topRigth: new createjs.Shape(),
-    		bottomLeft: new createjs.Shape(),
-    		bottomRigth: new createjs.Shape()
-    	};
-    	
-    	quadradosSelecao.topLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.topRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.bottomLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.bottomRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	
-    	quadradosSelecao.topLeft.name = "qsTopLeft";
-    	quadradosSelecao.topRigth.name = "qsTopRigth";
-    	quadradosSelecao.bottomLeft.name = "qsBottomLeft";
-    	quadradosSelecao.bottomRigth.name = "qsBottomRigth";
-    	
-    	
-    	objetoSelecionado.parent.addChild(quadradosSelecao.topLeft);
-    	objetoSelecionado.parent.addChild(quadradosSelecao.topRigth);
-    	objetoSelecionado.parent.addChild(quadradosSelecao.bottomLeft);
-    	objetoSelecionado.parent.addChild(quadradosSelecao.bottomRigth);
-    	
-    	quadradosSelecao.topLeft.x = 0 - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.topLeft.y = 0 - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.topRigth.x = largura - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.topRigth.y = 0 - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.bottomLeft.x = 0 - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.bottomLeft.y = altura - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.bottomRigth.x = largura - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.bottomRigth.y = altura - tamanhoQuadradoSelecao/2;
-    	
+    	rect = getRetangulo(objetoSelecionado.parent);
+		rect.graphics.clear();
+		rect.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill(corFundo).drawRoundRect( //adiciona na posicao zero,zero
+				0,0,largura,altura,3);
+		
+		qt = new createjs.Shape();
+		qt.graphics.beginFill(corRetanguloSelecao).drawRoundRect(
+    			0,0,alturaQuadradoTamanho, alturaQuadradoTamanho,0);
+		qt.name = "quadradoTamanho";
+		objetoSelecionado.parent.addChild(qt);
+		qt.x = largura - alturaQuadradoTamanho/2;
+		qt.y = altura - alturaQuadradoTamanho/2;
+		
     	return renderizarMapa();
     };
     
-    this.redesenharQuadradosSelecao = function (conceitoContainer){
-    	
-    	var quadradosSelecao;
-    	var altura;
-    	var largura;
-    	
-    	altura = getAltura(conceitoContainer);
-    	largura = getLargura(conceitoContainer);
-    	
-    	
-    	quadradosSelecao = {
-        		topLeft: getQuadradroSelecao(conceitoContainer, "qsTopLeft"),
-        		topRigth: getQuadradroSelecao(conceitoContainer, "qsTopRigth"),
-        		bottomLeft: getQuadradroSelecao(conceitoContainer, "qsBottomLeft"),
-        		bottomRigth: getQuadradroSelecao(conceitoContainer, "qsBottomRigth")
-        };
-    	
-    	quadradosSelecao.topLeft.graphics.clear();
-    	quadradosSelecao.topRigth.graphics.clear();
-    	quadradosSelecao.bottomLeft.graphics.clear();
-    	quadradosSelecao.bottomRigth.graphics.clear();
-    	
-    	quadradosSelecao.topLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.topRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.bottomLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.bottomRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	
-    	quadradosSelecao.topLeft.x = 0 - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.topLeft.y = 0 - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.topRigth.x = largura - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.topRigth.y = 0 - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.bottomLeft.x = 0 - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.bottomLeft.y = altura - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.bottomRigth.x = largura - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.bottomRigth.y = altura - tamanhoQuadradoSelecao/2;
-    };
-
-    /**
-     * 
-     */
-    function getAltura(conceitoContainer) {
-        var retangulo;
-    	
-        retangulo = getRetangulo(conceitoContainer);
-        return retangulo.getBounds().height;
-    	//return conceitoContainer.getBounds().height;
+    
+    function getAlturaRS(retanguloSelecao){
+    	return retanguloSelecao.getBounds().height;
+    }
+    
+    function getLarguraRS(retanguloSelecao){
+    	return retanguloSelecao.getBounds().width;
     }
 
     /**
      * 
      */
-    this.getConceitoContainer = function(){
-        return conceitoContainer;
+    this.getAltura = function getAltura(conceitoContainer) {
+        var retangulo;
+    	
+        retangulo = getRetangulo(conceitoContainer);
+        return retangulo.getBounds().height;
     };
     
     
+    this.getAlturaMinima = function getAlturaMinima( conceitoContainer ){
+    	var label;
+    	var alturaMin;
+    	
+    	label = getLabel(conceitoContainer);
+    	alturaMin = label.getMeasuredHeight() + paddingH/2;
+    	return alturaMin;
+    };
+    
+    this.getLarguraMinima = function getLarguraMinima( conceitoContainer ){
+    	var label;
+    	var larguraMin;
+    	
+    	label = getLabel(conceitoContainer);
+    	larguraMin = label.getMeasuredWidth() + paddingW/2;
+    	return larguraMin;
+    };
     
     
     /**
@@ -509,13 +404,13 @@ function GerenciadorConceito(){
     /**
      * 
      */
-    function getLargura(conceitoContainer) {
+    this.getLargura = function getLargura(conceitoContainer) {
     	var retangulo;
      	
         retangulo = getRetangulo(conceitoContainer);
         return retangulo.getBounds().width;
     	
-    }
+    };
 
      
     /**
@@ -542,16 +437,10 @@ function GerenciadorConceito(){
     /**
      * 
      */
-    function getQuadradroSelecao(conceitoContainer, nome) {
+    function getQuadradroTamanho(conceitoContainer, nome) {
     	return conceitoContainer.getChildByName(nome);
     }
     
-    /**
-     * 
-     */
-    this.getTamanhoFonte = function() {
-    	return tamanhoFonte;
-    };
     
     /**
      * 
@@ -572,12 +461,13 @@ function GerenciadorConceito(){
     	conceitoContainer.y = novoY;
     };
     
+    
     this.setAltura = function(conceitoContainer, novaAltura){
     	var retangulo;
     	var largura;
     	
     	retangulo = getRetangulo(conceitoContainer);
-    	largura = getLargura(conceitoContainer);
+    	largura = gerenciadorConceito.getLargura(conceitoContainer);
     	retangulo.setBounds(0,0,largura,novaAltura);
     };
     
@@ -586,64 +476,203 @@ function GerenciadorConceito(){
     	var altura;
     	
     	retangulo = getRetangulo(conceitoContainer);
-    	altura = getAltura(conceitoContainer);
+    	altura = gerenciadorConceito.getAltura(conceitoContainer);
     	retangulo.setBounds(0,0,novaLargura,altura);
     };
-
-    this.redesenharConceitoAposEdicao = function(conceitoContainer, propriedades, stageCanvas){
-    	var rect;
+    
+    function redesenharRSAoAlterarTamanho(retanguloSelecao, novaAltura, novaLargura){
+    	var hit; 
     	
+    	hit = new createjs.Shape();
+    	retanguloSelecao.graphics.clear();
+    	
+    	
+    	retanguloSelecao.setBounds(0,0,novaLargura,novaAltura);
+    	
+    	retanguloSelecao.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
+				0,0,novaLargura,novaAltura,3);
+		hit.graphics.beginFill("#000").rect(0,
+				0, novaLargura - (2 * espessuraRetanguloSelecao), novaAltura - (2 * espessuraRetanguloSelecao));
+		retanguloSelecao.hitArea = hit;
+    }
+
+    this.redesenharConceitoAposEdicao = function(conceitoContainer, propriedades, stageCanvas, setAlturaMinimaNaLista, setLarguraMinimaNaLista, getAlturaMinimaNaLista, getLarguraMinimaNaLista, removerFilhoStageCanvas, renderizarMapa){
+    	var rect;
+    	var retanguloSelecao;
+    	var label;
+		
     	rect = getRetangulo(conceitoContainer);
     	label = getLabel(conceitoContainer);
     	
-    	if(propriedades.altura){ //se tiver altura
-	    	rect.graphics.clear();
+    	//necessario remover o retangulo selecao quando o qt e removido pois quem dispara o evento do retangulo selecao e o qt
+    	//necessario nao remover o RS quando o usuario estiver movimentando o RS e chegar uma mensagem para atualizar o tamanho do conceito
+		retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT");
+    	
+    	if(!propriedades.texto){ //se nao houver texto, altera-se apenas o tamanho
+    		
+    		
+    		rect.graphics.clear();
 			rect.graphics.beginFill(propriedades.corFundo).drawRoundRect( //adiciona na posicao zero,zero
 					0,0,propriedades.largura, propriedades.altura, 3);
+			qt = getQuadradroTamanho(conceitoContainer, "quadradoTamanho");
+			conceitoContainer.removeChild(qt);
+			
+			if(retanguloSelecao){ //tem o retanguloSelecaoAT
+				var indexRetanguloSelecao;
+				indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+				removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+			}
+			else{
+				retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+				if(retanguloSelecao){
+					var novaAltura;
+					var novaLargura;
+					var antigaAltura;
+					var antigaLargura;
+					
+					antigaAltura = getAlturaRS(retanguloSelecao);
+					antigaLargura = getLarguraRS(retanguloSelecao);
+					novaAltura = gerenciadorConceito.getAltura(conceitoContainer);
+					novaLargura = gerenciadorConceito.getLargura(conceitoContainer);
+					redesenharRSAoAlterarTamanho(retanguloSelecao, novaAltura,  novaLargura);
+					retanguloSelecao.x = (retanguloSelecao.x - (novaLargura/2 - antigaLargura/2) - stageCanvas.x);
+					retanguloSelecao.y = (retanguloSelecao.y - (novaAltura/2 - antigaAltura/2) - stageCanvas.y);
+				}
+			}
+				
+			
+    		
 		}
-		else{ //caso nao tenha altura - altera-se a label
+		else{ //caso tenha - altera-se a label
 			
-			var alturaConceito;
-			var larguraConceito;
-			var alturaLabel;
-			var larguraLabel;
-			var labelAux;
-			
-			alturaConceito = getAltura(conceitoContainer);
-			larguraConceito = getLargura(conceitoContainer);
-			labelAux = new createjs.Text();
-			
-			
-			//alterando a labelAux
-			labelAux.text = propriedades.texto;
-			labelAux.font = propriedades.tamanhoFonte + " " + propriedades.fonte;
-			
-			alturaLabel = labelAux.getMeasuredHeight();
-			larguraLabel = labelAux.getMeasuredWidth();
-			
-			if(alturaConceito < alturaLabel){
-				alturaConceito =  alturaLabel + paddingH;
-				gerenciadorConceito.setAltura(conceitoContainer, alturaConceito);
+			if(propriedades.altura || propriedades.largura){ // veio do servidor
+				
+				gerenciadorConceito.setAltura(conceitoContainer, propriedades.altura);
+				gerenciadorConceito.setLargura(conceitoContainer, propriedades.largura);
+				
+				label.color = propriedades.corFonte;
+				label.text = propriedades.texto;
+				label.font = propriedades.tamanhoFonte + " " + propriedades.fonte;
+				gerenciadorConceito.recentralizarLabel(conceitoContainer);
+				
+				setAlturaMinimaNaLista(propriedades.idObjeto, propriedades.alturaMinima );
+				setLarguraMinimaNaLista(propriedades.idObjeto, propriedades.larguraMinima );
+				
+				//alterando o retangulo
+				rect.graphics.clear();
+				rect.graphics.beginFill(propriedades.corFundo).drawRoundRect( //adiciona na posicao zero,zero
+						0,0,propriedades.largura, propriedades.altura, 3);
+				
+				if(conceitoContainer.getChildByName("quadradoTamanho") != undefined){
+					var qt = getQuadradroTamanho(conceitoContainer, "quadradoTamanho");
+					conceitoContainer.removeChild(qt);
+					
+					if(retanguloSelecao){ //tem o retanguloSelecaoAT
+						var indexRetanguloSelecao;
+						indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+						removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+					}
+					else{
+						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+						if(retanguloSelecao){
+							var novaAltura;
+							var novaLargura;
+							var antigaAltura;
+							var antigaLargura;
+							
+							antigaAltura = getAlturaRS(retanguloSelecao);
+							antigaLargura = getLarguraRS(retanguloSelecao);
+							novaAltura = gerenciadorConceito.getAltura(conceitoContainer);
+							novaLargura = gerenciadorConceito.getLargura(conceitoContainer);
+							redesenharRSAoAlterarTamanho(retanguloSelecao, novaAltura,  novaLargura);
+							retanguloSelecao.x = (retanguloSelecao.x - (novaLargura/2 - antigaLargura/2) - stageCanvas.x);
+							retanguloSelecao.y = (retanguloSelecao.y - (novaAltura/2 - antigaAltura/2) - stageCanvas.y);
+						}
+					}
+					
+					gerenciadorConceito.selecionarConceito(label, propriedades.corFundo, stageCanvas,renderizarMapa);
+				}	
+				else{
+					renderizarMapa();
+				}
+				
 			}
-			
-			if(larguraConceito < larguraLabel){
-				larguraConceito = larguraLabel + paddingW;
-				gerenciadorConceito.setLargura(conceitoContainer, larguraConceito);
+			else{ //edicao local
+				
+				var alturaConceito;
+				var larguraConceito;
+				var alturaLabel;
+				var larguraLabel;
+				var labelAux;
+				
+				alturaConceito = gerenciadorConceito.getAltura(conceitoContainer);
+				larguraConceito = gerenciadorConceito.getLargura(conceitoContainer);
+				
+				labelAux = new createjs.Text();
+				labelAux.text = propriedades.texto;
+				labelAux.font = propriedades.tamanhoFonte + " " + propriedades.fonte;
+				alturaLabel = labelAux.getMeasuredHeight();
+				larguraLabel = labelAux.getMeasuredWidth();
+				
+				if(alturaConceito < alturaLabel){
+					alturaConceito =  alturaLabel + paddingH/2;
+					gerenciadorConceito.setAltura(conceitoContainer, alturaConceito);
+					
+				}
+				
+				if(larguraConceito < larguraLabel){
+					larguraConceito = larguraLabel + paddingW/2;
+					gerenciadorConceito.setLargura(conceitoContainer, larguraConceito);
+					
+				}
+				
+				setAlturaMinimaNaLista(propriedades.idObjeto, (alturaLabel + paddingH/2) );
+				setLarguraMinimaNaLista(propriedades.idObjeto, (larguraLabel + paddingW/2) );
+				
+				label.color = propriedades.corFonte;
+				label.text = labelAux.text;
+				label.font = labelAux.font;
+				gerenciadorConceito.recentralizarLabel(conceitoContainer);
+				
+				//alterando o retangulo
+				rect.graphics.clear();
+				rect.graphics.beginFill(propriedades.corFundo).drawRoundRect( //adiciona na posicao zero,zero
+						0,0,larguraConceito, alturaConceito, 3);
+				
+				if(conceitoContainer.getChildByName("quadradoTamanho") != undefined){
+					var qt = getQuadradroTamanho(conceitoContainer, "quadradoTamanho");
+					conceitoContainer.removeChild(qt);
+					
+					if(retanguloSelecao){ //tem o retanguloSelecaoAT
+						var indexRetanguloSelecao;
+						indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+						removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+					}
+					else{
+						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+						if(retanguloSelecao){
+							var novaAltura;
+							var novaLargura;
+							var antigaAltura;
+							var antigaLargura;
+							
+							antigaAltura = getAlturaRS(retanguloSelecao);
+							antigaLargura = getLarguraRS(retanguloSelecao);
+							novaAltura = gerenciadorConceito.getAltura(conceitoContainer);
+							novaLargura = gerenciadorConceito.getLargura(conceitoContainer);
+							redesenharRSAoAlterarTamanho(retanguloSelecao, novaAltura,  novaLargura);
+							retanguloSelecao.x = (retanguloSelecao.x - (novaLargura/2 - antigaLargura/2) - stageCanvas.x);
+							retanguloSelecao.y = (retanguloSelecao.y - (novaAltura/2 - antigaAltura/2) - stageCanvas.y);
+						}
+					}
+					
+					gerenciadorConceito.selecionarConceito(label, propriedades.corFundo, stageCanvas,renderizarMapa);
+				}
+					
+				else{
+					renderizarMapa();
+				}	
 			}
-		
-			label.color = propriedades.corFonte;
-			label.text = labelAux.text;
-			label.font = labelAux.font;
-			gerenciadorConceito.recentralizarLabel(conceitoContainer);
-			
-			//alterando o retangulo
-			rect.graphics.clear();
-			rect.graphics.beginFill(propriedades.corFundo).drawRoundRect( //adiciona na posicao zero,zero
-					0,0,larguraConceito, alturaConceito, 3);
-			
-			if(conceitoContainer.getChildByName("qsTopLeft") != undefined)
-			gerenciadorConceito.redesenharQuadradosSelecao(conceitoContainer);
-			
 			
 		}
     };

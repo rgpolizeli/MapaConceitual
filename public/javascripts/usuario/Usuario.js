@@ -14,117 +14,136 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 		
 		$(msg).find('ul[title=conceito]').each( function( index, element ){
 			
-			var id = parseInt($(element).attr("id"));
-			var x = $(element).children("li[title='x']").attr("value");
-			var y = $(element).children("li[title='y']").attr("value");
-			var altura = $(element).children("li[title='altura']").attr("value");
-			var largura = $(element).children("li[title='largura']").attr("value");
+			var propriedades = {
+				idConceito : parseInt($(element).attr("id")),
+				x : $(element).children("li[title='x']").attr("value"),
+				y : $(element).children("li[title='y']").attr("value"),
+				altura : $(element).children("li[title='altura']").attr("value"),
+				largura : $(element).children("li[title='largura']").attr("value"),
+				alturaMinima: $(element).children("li[title='alturaMinima']").text(),
+				larguraMinima: $(element).children("li[title='larguraMinima']").text(),
+				texto : $(element).children("li[title='texto']").text(),
+				fonte : $(element).children("li[title='fonte']").text(),
+				tamanhoFonte : $(element).children("li[title='tamanhoFonte']").text(),
+				corFonte : $(element).children("li[title='corFonte']").text(),
+				corFundo : $(element).children("li[title='corFundo']").text()
+			};
 			
-			if(x != "default"){
-				x = parseFloat(x);
+			if(propriedades.alturaMinima == "default"){ // ou alturaMinima e larguraMinima sao default ou nenhum dos dois eh
+				propriedades.alturaMinima = 0;
+				propriedades.larguraMinima = 0;
 			}
-			if(y != "default"){
-				y = parseFloat(y);
-			}
-			if(altura != "default"){
-				altura = parseFloat(altura);
-			}
-			if(largura != "default"){
-				largura = parseFloat(largura);
+			else{
+				propriedades.alturaMinima = parseFloat(propriedades.alturaMinima);
+				propriedades.larguraMinima = parseFloat(propriedades.larguraMinima);
 			}
 			
-			var texto = $(element).children("li[title='texto']").text();
-			var fonte = $(element).children("li[title='fonte']").text();
-			var tamanhoFonte = $(element).children("li[title='tamanhoFonte']").text();
-			var corFonte = $(element).children("li[title='corFonte']").text();
-			var corFundo = $(element).children("li[title='corFundo']").text();
+			if(propriedades.altura != "default"){
+				propriedades.altura = parseFloat(propriedades.altura);
+			}
+			if(propriedades.largura != "default"){
+				propriedades.largura = parseFloat(propriedades.largura);
+			}
 			
-			mapaConceitual.inserirConceito(id, texto, fonte, tamanhoFonte, corFonte, corFundo, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor);
+			if(propriedades.x != "default"){
+				propriedades.x = parseFloat(propriedades.x);
+			}
+			if(propriedades.y != "default"){
+				propriedades.y = parseFloat(propriedades.y);
+			}
+						
+			mapaConceitual.inserirConceito(propriedades, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, 
+					enviarMensagemAoServidor);
 	        
-			//default e a altura padrao (automatica)
-			if(altura != 'default'){
+			if( propriedades.altura != 'default' || propriedades.largura != 'default'){
 				var mensagem = {
-					idConceito: id,
-					novaLargura: largura,
-					novaAltura: altura,
-					novoX: x,
-					novoY: y
+						idConceito: propriedades.idConceito,
+						novaLargura: propriedades.largura,
+						novaAltura: propriedades.altura
 				}; 
 				mapaConceitual.alterarTamanhoConceito(mensagem);
 			}
-			else{
-				var msgPosicaoConceito = 
-		        	"<ul id='" + id + "' title='conceito'>" + 
-		        	"<li title='x' value='" + x + "'></li>" +
-		        	"<li title='y' value='" + y + "'></li>" 
-				;
-		        mapaConceitual.atualizarPosicaoConceito(msgPosicaoConceito);
+			
+			if( propriedades.x != "default" || propriedades.y != "default"){
+				var mensagem = {
+					idConceito: propriedades.idConceito,
+					novoX: propriedades.x,
+					novoY: propriedades.y
+				}; 
+				mapaConceitual.atualizarPosicaoConceito(mensagem);
 			}
-	        
 		});
 		
 		
 		$(msg).find('ul[title=ligacao]').each( function( index, element ){
 			
-			var idLigacao = parseInt($(element).attr("id"));
-			var idLinhaPai = $(element).children("li[title='idLinhaPai']").val();
-			var idLinhaFilho;
-			var idConceitoPai = $(element).children("li[title='idConceitoPai']").val();
-			var idConceitoFilho;
+			var propriedades = {
+					idLigacao: parseInt($(element).attr("id")),
+					idLinhaPai: $(element).children("li[title='idLinhaPai']").val(),
+					idConceitoPai: $(element).children("li[title='idConceitoPai']").val(),
+					texto: $(element).children("li[title='texto']").text(),
+					fonte: $(element).children("li[title='fonte']").text(),
+					tamanhoFonte: $(element).children("li[title='tamanhoFonte']").text(),
+					corFonte: $(element).children("li[title='corFonte']").text(),
+					corFundo: $(element).children("li[title='corFundo']").text(),
+					qtdFilhos: $(element).children("li[title='qtdFilhos']").val(),
+					x: $(element).children("li[title='x']").attr("value"),
+					y: $(element).children("li[title='y']").attr("value"),
+					altura: $(element).children("li[title='altura']").attr("value"),
+					largura: $(element).children("li[title='largura']").attr("value"),
+					alturaMinima: $(element).children("li[title='alturaMinima']").text(),
+					larguraMinima: $(element).children("li[title='larguraMinima']").text(),
+			};
 			
-			
-			var x = $(element).children("li[title='x']").attr("value");
-			var y = $(element).children("li[title='y']").attr("value");
-			var altura = $(element).children("li[title='altura']").attr("value");
-			var largura = $(element).children("li[title='largura']").attr("value");
-			
-			if(x != "default"){
-				x = parseFloat(x);
+			if(propriedades.alturaMinima == "default"){ // ou alturaMinima e larguraMinima sao default ou nenhum dos dois eh
+				propriedades.alturaMinima = 0;
+				propriedades.larguraMinima = 0;
 			}
-			if(y != "default"){
-				y = parseFloat(y);
-			}
-			if(altura != "default"){
-				altura = parseFloat(altura);
-			}
-			if(largura != "default"){
-				largura = parseFloat(largura);
+			else{
+				propriedades.alturaMinima = parseFloat(propriedades.alturaMinima);
+				propriedades.larguraMinima = parseFloat(propriedades.larguraMinima);
 			}
 			
-			var texto = $(element).children("li[title='texto']").text();
-			var fonte = $(element).children("li[title='fonte']").text();
-			var tamanhoFonte = $(element).children("li[title='tamanhoFonte']").text();
-			var corFonte = $(element).children("li[title='corFonte']").text();
-			var corFundo = $(element).children("li[title='corFundo']").text();
-			var qtdFilhos = $(element).children("li[title='qtdFilhos']").val();
+			if(propriedades.x != "default"){
+				propriedades.x = parseFloat(propriedades.x);
+			}
+			if(propriedades.y != "default"){
+				propriedades.y = parseFloat(propriedades.y);
+			}
+			if(propriedades.altura != "default"){
+				propriedades.altura = parseFloat(propriedades.altura);
+			}
+			if(propriedades.largura != "default"){
+				propriedades.largura = parseFloat(propriedades.largura);
+			}
 			
-			if(qtdFilhos == 1){
-				idLinhaFilho = $(element).find("li[title^='idLinhaFilho']").first().val();
-				idConceitoFilho = $(element).find("li[title^='idConceitoFilho']").first().val();
+			
+			
+			if(propriedades.qtdFilhos == 1){
+				propriedades.idLinhaFilho = $(element).find("li[title^='idLinhaFilho']").first().val();
+				propriedades.idConceitoFilho = $(element).find("li[title^='idConceitoFilho']").first().val();
 				
-				mapaConceitual.inserirLigacao(texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
+				mapaConceitual.inserirLigacao(propriedades, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, 
+						enviarMensagemAoServidor);
 				
 				//default e a altura padrao (automatica)
-				if(altura != 'default'){
+				if(propriedades.altura != 'default' || propriedades.largura != 'default'){
 					var mensagem = {
-						idLigacao: idLigacao,
-						novaLargura: largura,
-						novaAltura: altura,
-						novoX: x,
-						novoY: y
+						idLigacao: propriedades.idLigacao,
+						novaLargura: propriedades.largura,
+						novaAltura: propriedades.altura
 					}; 
 					mapaConceitual.alterarTamanhoLigacao(mensagem);
 				}
-				else{
-					//default e a posicao padrao (automatica)
-					if(x != 'default'){
-						var msgPosicaoLigacao = 
-							"<ul id='" + idLigacao + "' title='ligacao'>" + 
-								"<li title='x' value='" + x + "'></li>" +
-								"<li title='y' value='" + y + "'></li>" 
-						;
-						mapaConceitual.atualizarPosicaoLigacao(msgPosicaoLigacao);
-					}
+					
+				//default e a posicao padrao (automatica)
+				if(propriedades.x != 'default' || propriedades.y != 'default'){
+					var mensagem = {
+						idLigacao: propriedades.idLigacao,
+						novoX: propriedades.x,
+						novoY: propriedades.y
+					}; 
+					mapaConceitual.atualizarPosicaoLigacao(mensagem);
 				}
 				
 				
@@ -143,36 +162,32 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 						$(listaLigacao).children("li[title='idConceitoFilho"+ papelConceito + "']").remove();
 					}
 					else{ //se e o conceitoFilho1
-						idLinhaFilho = $(listaLigacao).children("li[title='idLinhaFilho"+ papelConceito + "']").val();
-						idConceitoFilho = $(subElement).val();
+						propriedades.idLinhaFilho = $(listaLigacao).children("li[title='idLinhaFilho"+ papelConceito + "']").val();
+						propriedades.idConceitoFilho = $(subElement).val();
 					}
 				});
 				
-				mapaConceitual.inserirLigacao(texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
-				
+				mapaConceitual.inserirLigacao(propriedades, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, 
+						enviarMensagemAoServidor);
 				
 				//default e a altura padrao (automatica)
-				if(altura != 'default'){
+				if(propriedades.altura != 'default' || propriedades.largura != 'default'){
 					var mensagem = {
-						idLigacao: idLigacao,
-						novaLargura: largura,
-						novaAltura: altura,
-						novoX: x,
-						novoY: y
+						idLigacao: propriedades.idLigacao,
+						novaLargura: propriedades.largura,
+						novaAltura: propriedades.altura
 					}; 
 					mapaConceitual.alterarTamanhoLigacao(mensagem);
-					
 				}
-				else{
-					//default e a posicao padrao (automatica)
-					if(x != 'default'){
-						var msgPosicaoLigacao = 
-							"<ul id='" + idLigacao + "' title='ligacao'>" + 
-								"<li title='x' value='" + x + "'></li>" +
-								"<li title='y' value='" + y + "'></li>" 
-						;
-						mapaConceitual.atualizarPosicaoLigacao(msgPosicaoLigacao);
-					}
+					
+				//default e a posicao padrao (automatica)
+				if(propriedades.x != 'default' || propriedades.y != 'default'){
+					var mensagem = {
+						idLigacao: propriedades.idLigacao,
+						novoX: propriedades.x,
+						novoY: propriedades.y
+					}; 
+					mapaConceitual.atualizarPosicaoLigacao(mensagem);
 				}
 				
 				$(element).find("li[title^='idConceitoFilho']").each(function (index, subElement){
@@ -180,9 +195,9 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 					var idLinhaAtual = $(element).children("li[title='idLinhaFilho"+ papelConceito + "']").val();
 					var idConceitoAtual = $(element).children("li[title='idConceitoFilho"+ papelConceito + "']").val();
 					
-					if(idConceitoFilho != idConceitoAtual){
+					if(propriedades.idConceitoFilho != idConceitoAtual){
 						var novaQtdFilhos = $(listaLigacao).children("li[title='qtdFilhos']").val() + 1;
-						mapaConceitual.inserirSemiLigacao(idConceitoAtual, idLigacao, idLinhaAtual, novaQtdFilhos, papelConceito);
+						mapaConceitual.inserirSemiLigacao(idConceitoAtual, propriedades.idLigacao, idLinhaAtual, novaQtdFilhos, papelConceito);
 					}
 				});
 				
@@ -294,22 +309,26 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 	}
     
     function montarMensagemAoMoverConceito(idConceito, idMapa, novoX, novoY){
-		var mensagem = 
-			"<2ul id='" + idConceito + "' title='conceito'>" + 
-				"<li title='x' value='" + novoX + "'></li>" +
-				"<li title='y' value='" + novoY + "'></li>" +
-				"<li title='idMapa'>" + idMapa + "</li>"
-			;
+		var mensagem = {
+			tipoMensagem: 2,
+			idMapa : idMapa,
+			idConceito: idConceito,
+			novoX: novoX,
+			novoY: novoY
+		};
+		
 		return mensagem;
 	}
 	
 	function montarMensagemAoMoverLigacao(idLigacao, idMapa, novoX, novoY){
-		var mensagem = 
-			"<4ul id='" + idLigacao + "' title='ligacao'>" + 
-				"<li title='x' value='" + novoX + "'></li>" +
-				"<li title='y' value='" + novoY + "'></li>" +
-				"<li title='idMapa'>" + idMapa + "</li>"
-		;
+		var mensagem = {
+			tipoMensagem: 4,
+			idMapa : idMapa,
+			idLigacao: idLigacao,
+			novoX: novoX,
+			novoY: novoY
+		};
+		
 		return mensagem;
 	};
     
@@ -324,33 +343,41 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 		return mensagem;
     }
     
-    function montarMensagemAoAlterarTamanhoConceito(idMapa, idConceito, novaLargura, novaAltura, novoX, novoY){
+    function montarMensagemAoAlterarTamanhoConceito(idMapa, propriedades){
     	var mensagem;
     	
     	mensagem = {
 			tipoMensagem: 7,
 			idMapa: idMapa,
-			idConceito: idConceito,
-			novaLargura: novaLargura,
-			novaAltura: novaAltura,
-			novoX: novoX,
-			novoY: novoY
+			idConceito: propriedades.idConceito,
+			novaLargura: propriedades.largura,
+			novaAltura: propriedades.altura
     	};
+    	
+    	if(propriedades.alturaMinima){
+    		mensagem.alturaMinima = propriedades.alturaMinima;
+    		mensagem.larguraMinima = propriedades.larguraMinima;
+    	}
+    	
     	return mensagem;
     }
     
-    function montarMensagemAoAlterarTamanhoLigacao(idMapa, idLigacao, novaLargura, novaAltura, novoX, novoY){
+    function montarMensagemAoAlterarTamanhoLigacao(idMapa, propriedades){
     	var mensagem;
     	
     	mensagem = {
 			tipoMensagem: 8,
 			idMapa: idMapa,
-			idLigacao: idLigacao,
-			novaLargura: novaLargura,
-			novaAltura: novaAltura,
-			novoX: novoX,
-			novoY: novoY
+			idLigacao: propriedades.idLigacao,
+			novaLargura: propriedades.largura,
+			novaAltura: propriedades.altura
     	};
+    	
+    	if(propriedades.alturaMinima){
+    		mensagem.alturaMinima = propriedades.alturaMinima;
+    		mensagem.larguraMinima = propriedades.larguraMinima;
+    	}
+    	
     	return mensagem;
     }
     
@@ -360,7 +387,22 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
     	propriedades.idMapa = idMapa;
     	propriedades.tipoMensagem = 9;
     	
-		return propriedades;
+    	switch(propriedades.tipoObjeto){
+    		case "conceito":
+    			propriedades.alturaMinima = mapaConceitual.getAlturaMinima(propriedades.idObjeto);
+    			propriedades.larguraMinima = mapaConceitual.getLarguraMinima(propriedades.idObjeto);
+    		break;
+    		
+    		case "ligacao":
+    			propriedades.alturaMinima = mapaConceitual.getAlturaMinima(propriedades.idObjeto);
+    			propriedades.larguraMinima = mapaConceitual.getLarguraMinima(propriedades.idObjeto);
+    		break;
+    	}
+    	
+    	propriedades.altura = mapaConceitual.getAlturaObjeto(propriedades.idObjeto);
+    	propriedades.largura = mapaConceitual.getLarguraObjeto(propriedades.idObjeto);
+		
+    	return propriedades;
     }
     
 
@@ -388,7 +430,7 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 	
 	function editar(propriedades){
 		var msg;
-		
+			
 		propriedades.idObjeto = mapaConceitual.getIdObjetoSelecionado();
 		mapaConceitual.editar(propriedades);
 		
@@ -455,37 +497,40 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 				break;
 			case "1": //novo conceito criado por um usuario
 		    		mensagem = mensagem.replace("<1ul","<ul");
-					var id = parseInt($(mensagem).attr("id"));
-					var texto = $(mensagem).children("li[title='texto']").text();
-					var fonte = $(mensagem).children("li[title='fonte']").text();
-					var tamanhoFonte = $(mensagem).children("li[title='tamanhoFonte']").text();
-					var corFonte = $(mensagem).children("li[title='corFonte']").text();
-					var corFundo = $(mensagem).children("li[title='corFundo']").text();
-					mapaConceitual.inserirConceito(id, texto, fonte, tamanhoFonte, corFonte, corFundo, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor);
-				break;
-				case "2": //conceito movido por algum usuario
-					mensagem = mensagem.replace("<2ul","<ul");
-					mapaConceitual.atualizarPosicaoConceito(mensagem);
+		    		var propriedades = {
+		    				idConceito : parseInt($(mensagem).attr("id")),
+		    				alturaMinima: 0,
+		    				larguraMinima: 0,
+		    				texto : $(mensagem).children("li[title='texto']").text(),
+		    				fonte : $(mensagem).children("li[title='fonte']").text(),
+		    				tamanhoFonte : $(mensagem).children("li[title='tamanhoFonte']").text(),
+		    				corFonte : $(mensagem).children("li[title='corFonte']").text(),
+		    				corFundo : $(mensagem).children("li[title='corFundo']").text()
+		    		};
+					
+					mapaConceitual.inserirConceito(propriedades, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor);
 				break;
 				case "3": //ligacao criada por algum usuario
 					mensagem = mensagem.replace("<3ul","<ul");
-					var idLigacao = parseInt($(mensagem).attr("id"));
-					var idLinhaPai = $(mensagem).children("li[title='idLinhaPai']").val();
-					var idLinhaFilho = $(mensagem).children("li[title='idLinhaFilho1']").val();
-					var idConceitoPai = $(mensagem).children("li[title='idConceitoPai']").val();
-					var idConceitoFilho = $(mensagem).children("li[title='idConceitoFilho1']").val();
-					var texto = $(mensagem).children("li[title='texto']").text();
-					var fonte = $(mensagem).children("li[title='fonte']").text();
-					var tamanhoFonte = $(mensagem).children("li[title='tamanhoFonte']").text();
-					var corFonte = $(mensagem).children("li[title='corFonte']").text();
-					var corFundo = $(mensagem).children("li[title='corFundo']").text();
-					mapaConceitual.inserirLigacao(texto, fonte, tamanhoFonte, corFonte, corFundo, idLigacao, idLinhaPai, idLinhaFilho, idConceitoPai, idConceitoFilho, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
+					var propriedades = {
+							idLigacao : parseInt($(mensagem).attr("id")),
+							idLinhaPai : $(mensagem).children("li[title='idLinhaPai']").val(),
+							idLinhaFilho : $(mensagem).children("li[title='idLinhaFilho1']").val(),
+							idConceitoPai : $(mensagem).children("li[title='idConceitoPai']").val(),
+							idConceitoFilho : $(mensagem).children("li[title='idConceitoFilho1']").val(),
+							alturaMinima: 0,
+		    				larguraMinima: 0,
+							texto : $(mensagem).children("li[title='texto']").text(),
+							fonte : $(mensagem).children("li[title='fonte']").text(),
+							tamanhoFonte : $(mensagem).children("li[title='tamanhoFonte']").text(),
+							corFonte : $(mensagem).children("li[title='corFonte']").text(),
+							corFundo : $(mensagem).children("li[title='corFundo']").text(),	
+					};
+					
+					mapaConceitual.inserirLigacao(propriedades, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
 			        
 				break;
-				case "4": //palavra de ligacao movida por algum usuario
-					mensagem = mensagem.replace("<4ul","<ul");
-					mapaConceitual.atualizarPosicaoLigacao(mensagem);
-				break;
+				
 				case "5": //nova SemiLigacao (
 					mensagem = mensagem.replace("<5ul","<ul");
 					var papelConceito =  $(mensagem).children("li[title='papelConceito']").val();
@@ -506,15 +551,28 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 		else{
 			switch(mensagem.tipoMensagem){
 			
+				case 2: //conceito movido por algum usuario
+					delete mensagem.tipoMensagem;
+					mapaConceitual.atualizarPosicaoConceito(mensagem);
+				break;
+				
+				case 4: //palavra de ligacao movida por algum usuario
+					delete mensagem.tipoMensagem;
+					mapaConceitual.atualizarPosicaoLigacao(mensagem);
+				break;
+			
 				case 7: //tamanho do conceito alterado por algum usuario
+					delete mensagem.tipoMensagem;
 					mapaConceitual.alterarTamanhoConceito(mensagem);
 				break;
 				
 				case 8: //tamanho da ligacao alterado por algum usuario
+					delete mensagem.tipoMensagem;
 					mapaConceitual.alterarTamanhoLigacao(mensagem);
 				break;
 				
 				case 9: //objeto alterado por algum usuario
+					delete mensagem.tipoMensagem;
 					mapaConceitual.editar(mensagem);
 				break;
 			}

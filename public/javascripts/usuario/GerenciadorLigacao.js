@@ -6,233 +6,206 @@ function Coordenadas (conceito, ligacao){
 
 function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFonteP, corFundoP, mapaConceitual, idConceitoPaiP, idConceitoFilhoP){
     var gerenciadorLigacao = this;
-    var tamanhoQuadradoSelecao = 10;
-	var corQuadradoSelecao = "#F00";
+    var espessuraRetanguloSelecao = 3;
+	var corRetanguloSelecao = "#F00";
+	var alturaQuadradoTamanho = 20;
 	
 	
     /**
      * 
      */
-    this.adicionarDragDrop = function(idMapa,ligacaoContainer, stageCanvas, getLigacaoLista, getCorFundo, renderizarMapa, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor){
-    	var altura;
-    	var largura;
-    	var novoX;
-    	var novoY;
-    	var ligacaoNaLista;
-    	var idLigacao;
-    	var msg;
+    this.adicionarDragDrop = function(idMapa,ligacaoContainer, stageCanvas, getLigacaoLista, getCorFundo, getAlturaMinima, getLarguraMinima, removerFilhoStageCanvas, renderizarMapa, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor){
     	
     	
     	ligacaoContainer.addEventListener("pressmove", function(evt){
     		
-    		idLigacao = gerenciadorLigacao.getId(ligacaoContainer, stageCanvas);
-    		ligacaoNaLista = getLigacaoLista(idLigacao);
-    		altura = getAltura(ligacaoContainer);
-    		largura = getLargura(ligacaoContainer);
+    		var altura;
+        	var largura;
     		
-    		if(evt.target.name != "qsTopLeft" && evt.target.name != "qsTopRigth" && evt.target.name != "qsBottomLeft" && evt.target.name != "qsBottomRigth"){
-    			novoX = (evt.stageX - (largura/2) - stageCanvas.x); //a nova posicao do conceitoContainer eh a posicao do mouse para onde foi arrastado - o deslocamento do stageCanvas
-        		novoY = (evt.stageY - (altura/2) - stageCanvas.y);
-        	    
-        		evt.currentTarget.x = novoX;
-        	    evt.currentTarget.y = novoY;
-        	    
-        	    //atualiza a linhas de ligacao na tela
-        	    gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
-        	    
-        	    msg = montarMensagemAoMoverLigacao(idLigacao, idMapa, novoX, novoY);
-    			enviarMensagemAoServidor(msg);
+    		altura = gerenciadorLigacao.getAltura(ligacaoContainer);
+    		largura = gerenciadorLigacao.getLargura(ligacaoContainer);
+    		
+    		if(evt.target.name != "quadradoTamanho"){
+    			
+    			if(stageCanvas.getChildByName("retanguloSelecao") == null){
+        			var retangulo = new createjs.Shape();
+            		retangulo.name = "retanguloSelecao";
+            		var hit = new createjs.Shape();
+            		
+            		retangulo.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
+            				0,0,largura,altura,3);
+            		hit.graphics.beginFill("#000").rect(0,
+            				0, largura - (2 * espessuraRetanguloSelecao), altura - (2 * espessuraRetanguloSelecao));
+            		retangulo.hitArea = hit;
+            		retangulo.setBounds(0,0,largura,altura);
+            		
+            		stageCanvas.addChild(retangulo);
+            		retangulo.x = ligacaoContainer.x;
+            		retangulo.y = ligacaoContainer.y;
+        		}
+        		
+        		else{
+        			var retangulo = stageCanvas.getChildByName("retanguloSelecao"); 
+        			retangulo.x = (evt.stageX - (largura/2) - stageCanvas.x);
+        			retangulo.y = (evt.stageY - (altura/2) - stageCanvas.y);
+        		}
     		}
-    		else{
+    		else{//alterando o tamanho
     			var novaAltura;
     			var novaLargura;
     			var deslocamentoX;
     			var deslocamentoY;
-    			var corFundo;
-    			var novoX;
-    			var novoY;
-    			var alturaMin;
-    			var larguraMin;
-    			var label;
-    			
-    			label = getLabel(ligacaoContainer);
-    			corFundo = getCorFundo(idLigacao);
-    			alturaMin = label.getMeasuredHeight() + tamanhoQuadradoSelecao/4;
-    			larguraMin = label.getMeasuredWidth() + tamanhoQuadradoSelecao/4;
-    			
-    			switch(evt.target.name){
-    				case "qsTopLeft":
-    	    			
-    	    			if (ligacaoContainer.x <= evt.stageX) {
-    	    				deslocamentoX = ligacaoContainer.x - evt.stageX;
-    	    				novaLargura = largura + deslocamentoX;
-    	    				novoX = evt.stageX;
-    	        		}
-    	    			else{
-    	    				deslocamentoX = evt.stageX - ligacaoContainer.x;
-    	    				novaLargura = largura - deslocamentoX;
-    	    				novoX = evt.stageX;
-    	    			}
-    	    			
-    	        		if (ligacaoContainer.y <= evt.stageY) {
-    	        			deslocamentoY = evt.stageY - ligacaoContainer.y;
-    	    				novaAltura = altura - deslocamentoY;
-    	    				novoY = evt.stageY;
-    	        		}
-    	        		else{
-    	        			deslocamentoY = ligacaoContainer.y - evt.stageY;
-    	    				novaAltura = altura + deslocamentoY;
-    	    				novoY = evt.stageY;
-    	        		}
-    	        		
-    	        		if(novaLargura > larguraMin){
-    	        			gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
-    	        			gerenciadorLigacao.setX(idLigacao, novoX, stageCanvas);
-    	        		}
-    	        		else{
-    	        			novaLargura = larguraMin;
-    	        		}
-	            		if(novaAltura > alturaMin){
-	            			gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
-	            			gerenciadorLigacao.setY(idLigacao, novoY, stageCanvas);
-	            		}
-	            		else{
-	            			novaAltura = alturaMin;
-	            		}
-	            		gerenciadorLigacao.redesenharLigacaoAposEdicao(idLigacao, getCorFundo, stageCanvas);
+        			
+    			if(stageCanvas.getChildByName("retanguloSelecao") == null){
+        			var retangulo = new createjs.Shape();
+            		retangulo.name = "retanguloSelecao";
+            		var hit = new createjs.Shape();
+            		
+            		retangulo.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
+            				0,0,largura,altura,3);
+            		hit.graphics.beginFill("#000").rect(0,
+            				0, largura - (2 * espessuraRetanguloSelecao), altura - (2 * espessuraRetanguloSelecao));
+            		retangulo.hitArea = hit;
+            		retangulo.setBounds(0,0,largura,altura);
+            		
+            		stageCanvas.addChild(retangulo);
+            		retangulo.x = ligacaoContainer.x;
+            		retangulo.y = ligacaoContainer.y;
+        		}
+    			else{
+    				var retanguloSelecao = stageCanvas.getChildByName("retanguloSelecao"); 
+    				
+    				if ( (ligacaoContainer.x + largura) <= evt.stageX) {
+	    				deslocamentoX = evt.stageX - (ligacaoContainer.x + largura);
+	    				novaLargura = largura + deslocamentoX;
+	        		}
+	    			else{
+	    				deslocamentoX = (ligacaoContainer.x + largura) - evt.stageX;
+	    				novaLargura = largura - deslocamentoX;
+	    			}
 	    			
-    				break;
-    				
-    				case "qsBottomLeft":
-    					if (ligacaoContainer.x <= evt.stageX) {
-    	    				deslocamentoX = evt.stageX - ligacaoContainer.x;
-    	    				novaLargura = largura - deslocamentoX;
-    	    				novoX = evt.stageX;
-    	        		}
-    	    			else{
-    	    				deslocamentoX = ligacaoContainer.x - evt.stageX;
-    	    				novaLargura = largura + deslocamentoX;
-    	    				novoX = evt.stageX;
-    	    			}
-    	    			
-    	        		if ( (ligacaoContainer.y + altura) <= evt.stageY) {
-    	        			deslocamentoY = evt.stageY - (ligacaoContainer.y + altura);
-    	    				novaAltura = altura + deslocamentoY;
-    	        		}
-    	        		else{
-    	        			deslocamentoY = (ligacaoContainer.y + altura) - evt.stageY;
-    	    				novaAltura = altura - deslocamentoY;
-    	        		}
-    	        		
-    	        		if(novaLargura > larguraMin){
-    	        			gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
-    	        			gerenciadorLigacao.setX(idLigacao, novoX, stageCanvas);
-    	        		}
-    	        		else{
-    	        			novaLargura = larguraMin;
-    	        		}
-	            		if(novaAltura > alturaMin){
-	            			gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
-	            		}
-	            		else{
-	            			novaAltura = alturaMin;
-	            		}
-	            		gerenciadorLigacao.redesenharLigacaoAposEdicao(idLigacao, getCorFundo, stageCanvas);
-    				break;
-    				
-    				case "qsTopRigth":
-    					if ( (ligacaoContainer.x + largura) <= evt.stageX) {
-    	    				deslocamentoX = evt.stageX - (ligacaoContainer.x + largura);
-    	    				novaLargura = largura + deslocamentoX;
-    	        		}
-    	    			else{
-    	    				deslocamentoX = (ligacaoContainer.x + largura) - evt.stageX;
-    	    				novaLargura = largura - deslocamentoX;
-    	    			}
-    	    			
-    	        		if (ligacaoContainer.y <= evt.stageY) {
-    	        			deslocamentoY = evt.stageY - ligacaoContainer.y;
-    	    				novaAltura = altura - deslocamentoY;
-    	    				novoY = evt.stageY;
-    	        		}
-    	        		else{
-    	        			deslocamentoY = ligacaoContainer.y - evt.stageY;
-    	    				novaAltura = altura + deslocamentoY;
-    	    				novoY = evt.stageY;
-    	        		}
-    	        		
-    	        		if(novaLargura > larguraMin){
-    	        			gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
-    	        		}
-    	        		else{
-    	        			novaLargura = larguraMin;
-    	        		}
-	            		if(novaAltura > alturaMin){
-	            			gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
-	            			gerenciadorLigacao.setY(idLigacao, novoY, stageCanvas);
-	            		}
-	            		else{
-	            			novaAltura = alturaMin;
-	            		}
-	            		gerenciadorLigacao.redesenharLigacaoAposEdicao(idLigacao, getCorFundo, stageCanvas);
-    				break;
-    				
-    				case "qsBottomRigth":
-    					if ( (ligacaoContainer.x + largura) <= evt.stageX) {
-    	    				deslocamentoX = evt.stageX - (ligacaoContainer.x + largura);
-    	    				novaLargura = largura + deslocamentoX;
-    	        		}
-    	    			else{
-    	    				deslocamentoX = (ligacaoContainer.x + largura) - evt.stageX;
-    	    				novaLargura = largura - deslocamentoX;
-    	    			}
-    	    			
-    	        		if ( (ligacaoContainer.y + altura) <= evt.stageY) {
-    	        			deslocamentoY = evt.stageY - (ligacaoContainer.y + altura);
-    	    				novaAltura = altura + deslocamentoY;
-    	    				
-    	        		}
-    	        		else{
-    	        			deslocamentoY = (ligacaoContainer.y + altura) - evt.stageY;
-    	    				novaAltura = altura - deslocamentoY;
-    	        		}
-    	        		
-    	        		if(novaLargura > larguraMin){
-    	        			gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
-    	        			
-    	        		}
-    	        		else{
-    	        			novaLargura = larguraMin;
-    	        		}
-	            		if(novaAltura > alturaMin){
-	            			gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
-	            		}
-	            		else{
-	            			novaAltura = alturaMin;
-	            		}
-	            		gerenciadorLigacao.redesenharLigacaoAposEdicao(idLigacao, getCorFundo, stageCanvas);
-    				break;
+	        		if ( (ligacaoContainer.y + altura) <= evt.stageY) {
+	        			deslocamentoY = evt.stageY - (ligacaoContainer.y + altura);
+	    				novaAltura = altura + deslocamentoY;
+	    				
+	        		}
+	        		else{
+	        			deslocamentoY = (ligacaoContainer.y + altura) - evt.stageY;
+	    				novaAltura = altura - deslocamentoY;
+	        		}
+            		
+            		if(novaAltura < 0 )
+            			novaAltura = 0;
+            		if(novaLargura < 0 )
+            			novaLargura = 0;
+            		redesenharRSAoAlterarTamanho(retanguloSelecao, novaAltura, novaLargura);	
     			}
-        		
-    			gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
-    			gerenciadorLigacao.redesenharQuadradosSelecao(ligacaoContainer);
-    			gerenciadorLigacao.recentralizarLabel(ligacaoContainer);
-    			
-    			msg = montarMensagemAoAlterarTamanhoLigacao(idMapa, idLigacao, novaLargura, novaAltura, ligacaoContainer.x, ligacaoContainer.y);
-    			enviarMensagemAoServidor(msg);
     		}
-    		
-    	    renderizarMapa();
+    		renderizarMapa();
         });
+    	
+    	
+    	
+    	ligacaoContainer.addEventListener("pressup", function ligacaoPressUp(evt){
+    		
+    		var retanguloSelecao;
+    		
+    		retanguloSelecao = stageCanvas.getChildByName("retanguloSelecao");
+    		
+    		if(retanguloSelecao){ // necessario pois quando o usuario clica uma unica vez sem pressionar, tambem gera o pressup
+    			
+    			var ligacaoNaLista;
+    	    	var idLigacao;
+    	    	var msg;
+        		var indexRetanguloSelecao;
+        		
+        		indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+        		idLigacao = gerenciadorLigacao.getId(ligacaoContainer, stageCanvas);
+        		ligacaoNaLista = getLigacaoLista(idLigacao);
+        		
+    			if(evt.target.name != "quadradoTamanho"){
+    				var novoX;
+    				var novoY;
+    				
+	        		novoX = retanguloSelecao.x;
+	        		novoY = retanguloSelecao.y;
+	        		
+	        		ligacaoContainer.x = novoX;
+	        		ligacaoContainer.y = novoY;
+	        		
+	        		removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+	        		//atualizar as linhas de ligacao na tela e atualiza na lista as coordenadas de ponta de ligacao
+	        		gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
+	        	    renderizarMapa();
+	        	    
+	        	    msg = montarMensagemAoMoverLigacao(idLigacao, idMapa, novoX, novoY);
+	    			enviarMensagemAoServidor(msg);
+    			}
+    			
+    			else{ //alterando o tamanho
+    				
+    				var novaAltura;
+        			var novaLargura;
+        			var corFundo;
+        			var alturaMin;
+        			var larguraMin;
+        			var label;
+        			var propriedades;
+    				
+        			label = getLabel(ligacaoContainer);
+        			corFundo = getCorFundo(idLigacao);
+        			alturaMin = getAlturaMinima(idLigacao);
+        			larguraMin = getLarguraMinima(idLigacao);
+        			novaLargura = getLarguraRS(retanguloSelecao);
+        			novaAltura = getAlturaRS(retanguloSelecao);
+        			removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+        			propriedades = new Object();
+        			
+        			if(alturaMin == 0){ //ligacao ainda nao foi editada
+        				alturaMin = label.getMeasuredHeight();
+        				larguraMin = label.getMeasuredWidth();
+        				
+        				propriedades.alturaMinima = alturaMin;
+        				propriedades.larguraMinima = larguraMin;
+        			}
+        			
+    				if(novaLargura < larguraMin){
+    					novaLargura = larguraMin;
+	        		}
+    				gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
+    				
+            		if(novaAltura < alturaMin){
+            			novaAltura = alturaMin;
+            		}
+            		gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
+            		
+            		propriedades.idLigacao = idLigacao;
+            		propriedades.corFundo = corFundo;
+            		propriedades.altura = novaAltura;
+            		propriedades.largura = novaLargura;
+            		
+            		gerenciadorLigacao.redesenharLigacaoAposEdicao(ligacaoContainer, propriedades, stageCanvas, renderizarMapa);
+            		gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
+					gerenciadorLigacao.recentralizarLabel(ligacaoContainer);
+					gerenciadorLigacao.selecionarLigacao(label, corFundo, stageCanvas, renderizarMapa); // devo mandar a label devido a implementacao da funcao selecionar
+					
+					msg = montarMensagemAoAlterarTamanhoLigacao(idMapa, propriedades);
+	    			enviarMensagemAoServidor(msg);
+    			}
+    		}
+    	
+    	});
+    	
     };
     
     this.recentralizarLabel = function(ligacaoContainer){
     	var alturaContainer;
     	var larguraContainer;
+    	var label;
     	
     	label = getLabel(ligacaoContainer);
-    	alturaContainer = getAltura(ligacaoContainer);
-    	larguraContainer = getLargura(ligacaoContainer);
+    	alturaContainer = gerenciadorLigacao.getAltura(ligacaoContainer);
+    	larguraContainer = gerenciadorLigacao.getLargura(ligacaoContainer);
     	
     	label.x = (larguraContainer/2);
     	label.y = (alturaContainer/2);
@@ -443,132 +416,56 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     this.redesenharLigacaoAposDesselecao = function(idLigacao, corFundo, stageCanvas) {
     	
     	var ligacaoContainer;
-		var qs;
-		var nome;
+    	var altura;
+    	var largura;
+    	var rect;
+		var qt; //quadrado tamanho
 		
 		ligacaoContainer = gerenciadorLigacao.getLigacaoContainerViaId(idLigacao, stageCanvas);
 		
-		nome = "qsTopLeft";
-		qs = getQuadradroSelecao(ligacaoContainer, nome);
-		ligacaoContainer.removeChild(qs);
 		
-		nome = "qsTopRigth";
-		qs = getQuadradroSelecao(ligacaoContainer, nome);
-		ligacaoContainer.removeChild(qs);
-		
-		nome = "qsBottomLeft";
-		qs = getQuadradroSelecao(ligacaoContainer, nome);
-		ligacaoContainer.removeChild(qs);
-		
-		nome = "qsBottomRigth";
-		qs = getQuadradroSelecao(ligacaoContainer, nome);
-		ligacaoContainer.removeChild(qs);
+		altura = gerenciadorLigacao.getAltura(ligacaoContainer);
+    	largura = gerenciadorLigacao.getLargura(ligacaoContainer);
+    	
+		qt = getQuadradroTamanho(ligacaoContainer, "quadradoTamanho");
+		ligacaoContainer.removeChild(qt);
+    	
+		rect = getRetangulo(ligacaoContainer);
+		rect.graphics.clear();
+		rect.graphics.beginFill(corFundo).drawRoundRect( //adiciona na posicao zero,zero
+				0,0,largura,altura,3);
     };
 
     
-    this.selecionarLigacao = function(objetoSelecionadoP, corFundo, renderizarMapa) { //objetoSelecionado pode ser o retangulo ou label
+    this.selecionarLigacao = function(objetoSelecionadoP, corFundo, stageCanvas, renderizarMapa) { //objetoSelecionado pode ser o retangulo ou label
 		
     	var objetoSelecionado; //pode ser label ou rect
     	var altura;
     	var largura;
-    	var quadradosSelecao;
+    	var rect;
+    	var qt; //quadrado Tamanho
     	
     	objetoSelecionado = objetoSelecionadoP;
     	
-    	altura = getAltura(objetoSelecionado.parent);
-    	largura = getLargura(objetoSelecionado.parent);
+    	altura = gerenciadorLigacao.getAltura(objetoSelecionado.parent);
+    	largura = gerenciadorLigacao.getLargura(objetoSelecionado.parent);
     	
-    	
-    	quadradosSelecao = {
-    		topLeft: new createjs.Shape(),
-    		topRigth: new createjs.Shape(),
-    		bottomLeft: new createjs.Shape(),
-    		bottomRigth: new createjs.Shape()
-    	};
-    	
-    	quadradosSelecao.topLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.topRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.bottomLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.bottomRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	
-    	quadradosSelecao.topLeft.name = "qsTopLeft";
-    	quadradosSelecao.topRigth.name = "qsTopRigth";
-    	quadradosSelecao.bottomLeft.name = "qsBottomLeft";
-    	quadradosSelecao.bottomRigth.name = "qsBottomRigth";
-    	
-    	
-    	objetoSelecionado.parent.addChild(quadradosSelecao.topLeft);
-    	objetoSelecionado.parent.addChild(quadradosSelecao.topRigth);
-    	objetoSelecionado.parent.addChild(quadradosSelecao.bottomLeft);
-    	objetoSelecionado.parent.addChild(quadradosSelecao.bottomRigth);
-    	
-    	quadradosSelecao.topLeft.x = 0 - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.topLeft.y = 0 - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.topRigth.x = largura - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.topRigth.y = 0 - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.bottomLeft.x = 0 - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.bottomLeft.y = altura - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.bottomRigth.x = largura - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.bottomRigth.y = altura - tamanhoQuadradoSelecao/2;
-    	
-    	return renderizarMapa();    
-    };
-    
-    
-    this.redesenharQuadradosSelecao = function(ligacaoContainer){
-    	
-    	var quadradosSelecao;
-    	var altura;
-    	var largura;
-    	
-    	altura = getAltura(ligacaoContainer);
-    	largura = getLargura(ligacaoContainer);
-    	
-    	
-    	quadradosSelecao = {
-        		topLeft: getQuadradroSelecao(ligacaoContainer, "qsTopLeft"),
-        		topRigth: getQuadradroSelecao(ligacaoContainer, "qsTopRigth"),
-        		bottomLeft: getQuadradroSelecao(ligacaoContainer, "qsBottomLeft"),
-        		bottomRigth: getQuadradroSelecao(ligacaoContainer, "qsBottomRigth")
-        };
-    	
-    	quadradosSelecao.topLeft.graphics.clear();
-    	quadradosSelecao.topRigth.graphics.clear();
-    	quadradosSelecao.bottomLeft.graphics.clear();
-    	quadradosSelecao.bottomRigth.graphics.clear();
-    	
-    	quadradosSelecao.topLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.topRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.bottomLeft.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	quadradosSelecao.bottomRigth.graphics.beginFill(corQuadradoSelecao).drawRoundRect(
-    			0,0,tamanhoQuadradoSelecao, tamanhoQuadradoSelecao,0);
-    	
-    	quadradosSelecao.topLeft.x = 0 - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.topLeft.y = 0 - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.topRigth.x = largura - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.topRigth.y = 0 - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.bottomLeft.x = 0 - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.bottomLeft.y = altura - tamanhoQuadradoSelecao/2;
-    	
-    	quadradosSelecao.bottomRigth.x = largura - tamanhoQuadradoSelecao/2;
-    	quadradosSelecao.bottomRigth.y = altura - tamanhoQuadradoSelecao/2;
+    	rect = getRetangulo(objetoSelecionado.parent);
+		rect.graphics.clear();
+		rect.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill(corFundo).drawRoundRect( //adiciona na posicao zero,zero
+				0,0,largura,altura,3);
+		
+		qt = new createjs.Shape();
+		qt.graphics.beginFill(corRetanguloSelecao).drawRoundRect(
+    			0,0,alturaQuadradoTamanho, alturaQuadradoTamanho,0);
+		qt.name = "quadradoTamanho";
+		objetoSelecionado.parent.addChild(qt);
+		qt.x = largura - alturaQuadradoTamanho/2;
+		qt.y = altura - alturaQuadradoTamanho/2;
+		
+    	return renderizarMapa();
     };
 
-    
-    
-    
     /**
      * calcula os novos pontos de interconexao entre conceitos ou palavras de ligacao conectados
      */
@@ -581,10 +478,10 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	var ligacaoX = parseFloat(ligacaoContainer.x);
     	var ligacaoY = parseFloat(ligacaoContainer.y);
     	
-    	var larguraConceito = conceitoContainer.getBounds().width;
-    	var alturaConceito = conceitoContainer.getBounds().height;
-    	var larguraLigacao = ligacaoContainer.getBounds().width;
-    	var alturaLigacao = ligacaoContainer.getBounds().height;
+    	var larguraConceito = gerenciadorLigacao.getLargura(conceitoContainer);
+    	var alturaConceito = gerenciadorLigacao.getAltura(conceitoContainer);
+    	var larguraLigacao = gerenciadorLigacao.getLargura(ligacaoContainer);
+    	var alturaLigacao = gerenciadorLigacao.getAltura(ligacaoContainer);
     	
     	
     	for(var i=0;i<8;i++){
@@ -677,12 +574,44 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	}	
     }
     
+    
+    function getAlturaRS(retanguloSelecao){
+    	return retanguloSelecao.getBounds().height;
+    }
+    
+    function getLarguraRS(retanguloSelecao){
+    	return retanguloSelecao.getBounds().width;
+    }
+    
+    
     /**
      * 
      */
-    function getAltura(ligacaoContainer) {
-    	return ligacaoContainer.getBounds().height;
-    }
+    this.getAltura = function getAltura(ligacaoContainer) {
+    	var retangulo;
+    	
+    	retangulo = getRetangulo(ligacaoContainer);
+        return retangulo.getBounds().height;
+    };
+    
+    
+    this.getAlturaMinima = function getAlturaMinima( ligacaoContainer ){
+    	var label;
+    	var alturaMin;
+    	
+    	label = getLabel(ligacaoContainer);
+    	alturaMin = label.getMeasuredHeight();
+    	return alturaMin;
+    };
+    
+    this.getLarguraMinima = function getLarguraMinima( ligacaoContainer ){
+    	var label;
+    	var larguraMin;
+    	
+    	label = getLabel(ligacaoContainer);
+    	larguraMin = label.getMeasuredWidth();
+    	return larguraMin;
+    };
     
     
     /**
@@ -698,44 +627,15 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	return stageCanvas.getChildIndex(ligacaoContainer);
     };
     
-    
-    
     /**
      * 
      */
-    this.getIdConceitoPai = function(){
-    	return idConceitoPai;
+    this.getLargura = function getLargura(ligacaoContainer) {
+    	var retangulo;
+    	
+    	retangulo = getRetangulo(ligacaoContainer);
+        return retangulo.getBounds().width;
     };
-    
-    /**
-     * 
-     */
-    this.getIdConceitoFilho = function(){
-    	return idConceitoFilho;
-    };
-    
-    /**
-     * 
-     */
-    this.getIdLinhaPai = function(){
-    	return mapaConceitual.getStageCanvas().getChildIndex(linhaPai);
-    };
-    
-    /**
-     * 
-     */
-    this.getIdLinhaFilho = function(){
-    	return mapaConceitual.getStageCanvas().getChildIndex(linhaFilho);
-    };
-    
-    
-
-    /**
-     * 
-     */
-    function getLargura(ligacaoContainer) {
-        return ligacaoContainer.getBounds().width;
-    }
    
     
     /**
@@ -745,22 +645,6 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	var linhaContainer = mapa.getStageCanvas().getChildAt(idLinha);
     	return linhaContainer;
     };
-    
-    
-    /**
-     * 
-     */
-    this.getLinhaPaiContainer = function(){
-        return linhaPai;
-    };
-    
-    /**
-     * 
-     */
-    this.getLinhaFilhoContainer = function(){
-        return linhaFilho;
-    };
-    
    
     
     /**
@@ -788,17 +672,9 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     /**
      * 
      */
-    function getQuadradroSelecao(ligacaoContainer, nome) {
+    function getQuadradroTamanho(ligacaoContainer, nome) {
     	return ligacaoContainer.getChildByName(nome);
     }
-    
-    
-    /**
-     * 
-     */
-    this.getTamanhoFonte = function() {
-    	return tamanhoFonte;
-    };
     
  
     /**
@@ -826,7 +702,7 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	var largura;
     	
     	retangulo = getRetangulo(ligacaoContainer);
-    	largura = getLargura(ligacaoContainer);
+    	largura = gerenciadorLigacao.getLargura(ligacaoContainer);
     	retangulo.setBounds(0,0,largura,novaAltura);
     };
     
@@ -835,25 +711,123 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	var altura;
     	
     	retangulo = getRetangulo(ligacaoContainer);
-    	altura = getAltura(ligacaoContainer);
+    	altura = gerenciadorLigacao.getAltura(ligacaoContainer);
     	retangulo.setBounds(0,0,novaLargura,altura);
     };
 
-    this.redesenharLigacaoAposEdicao = function(idLigacao, getCorFundo, stageCanvas){
-    	var altura;
-    	var largura;
-    	var corFundo;
-    	var ligacaoContainer;
+    function redesenharRSAoAlterarTamanho(retanguloSelecao, novaAltura, novaLargura){
+    	var hit; 
+    	
+    	hit = new createjs.Shape();
+    	retanguloSelecao.graphics.clear();
+    	
+    	
+    	retanguloSelecao.setBounds(0,0,novaLargura,novaAltura);
+    	
+    	retanguloSelecao.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
+				0,0,novaLargura,novaAltura,3);
+		hit.graphics.beginFill("#000").rect(0,
+				0, novaLargura - (2 * espessuraRetanguloSelecao), novaAltura - (2 * espessuraRetanguloSelecao));
+		retanguloSelecao.hitArea = hit;
+    }
+    
+    
+    this.redesenharLigacaoAposEdicao = function(ligacaoContainer, propriedades, stageCanvas, setAlturaMinimaNaLista, setLarguraMinimaNaLista, getAlturaMinimaNaLista, getLarguraMinimaNaLista, renderizarMapa){
     	var rect;
     	
-    	ligacaoContainer = gerenciadorLigacao.getLigacaoContainerViaId(idLigacao, stageCanvas);
     	rect = getRetangulo(ligacaoContainer);
-    	corFundo = getCorFundo(idLigacao);
-    	altura = getAltura(ligacaoContainer);
-    	largura = getLargura(ligacaoContainer);
+    	label = getLabel(ligacaoContainer);
     	
-    	rect.graphics.clear();
-		rect.graphics.beginFill(corFundo).drawRoundRect( //adiciona na posicao zero,zero
-				0,0,largura,altura,3);
+    	if(!propriedades.texto){ //se nao houver texto, altera-se apenas o tamanho
+	    	rect.graphics.clear();
+			rect.graphics.beginFill(propriedades.corFundo).drawRoundRect( //adiciona na posicao zero,zero
+					0,0,propriedades.largura, propriedades.altura, 3);
+			qt = getQuadradroTamanho(ligacaoContainer, "quadradoTamanho");
+			ligacaoContainer.removeChild(qt);
+		}
+    	else{ //caso tenha - altera-se a label
+			
+    		if(propriedades.altura || propriedades.largura){ // veio do servidor
+    			
+    			gerenciadorLigacao.setAltura(ligacaoContainer, propriedades.altura);
+    			gerenciadorLigacao.setLargura(ligacaoContainer, propriedades.largura);
+				
+				label.color = propriedades.corFonte;
+				label.text = propriedades.texto;
+				label.font = propriedades.tamanhoFonte + " " + propriedades.fonte;
+				gerenciadorLigacao.recentralizarLabel(ligacaoContainer);
+				
+				setAlturaMinimaNaLista(propriedades.idObjeto, propriedades.alturaMinima );
+				setLarguraMinimaNaLista(propriedades.idObjeto, propriedades.larguraMinima );
+				
+				//alterando o retangulo
+				rect.graphics.clear();
+				rect.graphics.beginFill(propriedades.corFundo).drawRoundRect( //adiciona na posicao zero,zero
+						0,0,propriedades.largura, propriedades.altura, 3);
+				
+				if(ligacaoContainer.getChildByName("quadradoTamanho") != undefined){
+					var qt = getQuadradroTamanho(ligacaoContainer, "quadradoTamanho");
+					ligacaoContainer.removeChild(qt);
+					gerenciadorLigacao.selecionarLigacao(label, propriedades.corFundo, stageCanvas,renderizarMapa);
+				}	
+				else{
+					renderizarMapa();
+				}
+    		}
+    		
+    		
+    		else{ //edicao local
+    			
+    			var alturaLigacao;
+    			var larguraLigacao;
+    			var alturaLabel;
+    			var larguraLabel;
+    			var labelAux;
+    			
+    			alturaLigacao = gerenciadorLigacao.getAltura(ligacaoContainer);
+    			larguraLigacao = gerenciadorLigacao.getLargura(ligacaoContainer);
+    			
+    			labelAux = new createjs.Text();
+    			labelAux.text = propriedades.texto;
+    			labelAux.font = propriedades.tamanhoFonte + " " + propriedades.fonte;
+    			alturaLabel = labelAux.getMeasuredHeight();
+    			larguraLabel = labelAux.getMeasuredWidth();
+    			
+    			if(alturaLigacao < alturaLabel){
+    				alturaLigacao = alturaLabel;
+    				gerenciadorLigacao.setAltura(ligacaoContainer, alturaLigacao);
+    			}
+    			
+    			if(larguraLigacao < larguraLabel){
+    				larguraLigacao = larguraLabel;
+    				gerenciadorLigacao.setLargura(ligacaoContainer, larguraLigacao);
+    			}
+    			
+    			setAlturaMinimaNaLista(propriedades.idObjeto, alturaLabel );
+				setLarguraMinimaNaLista(propriedades.idObjeto, larguraLabel );
+    		
+    			label.color = propriedades.corFonte;
+    			label.text = labelAux.text;
+    			label.font = labelAux.font;
+    			gerenciadorLigacao.recentralizarLabel(ligacaoContainer);
+    			
+    			//alterando o retangulo
+    			rect.graphics.clear();
+    			rect.graphics.beginFill(propriedades.corFundo).drawRoundRect( //adiciona na posicao zero,zero
+    					0,0,larguraLigacao, alturaLigacao, 3);
+    			
+    			if(ligacaoContainer.getChildByName("quadradoTamanho") != undefined){
+    				var qt = getQuadradroTamanho(ligacaoContainer, "quadradoTamanho");
+    				ligacaoContainer.removeChild(qt);
+    				gerenciadorLigacao.selecionarLigacao(label, propriedades.corFundo, stageCanvas,renderizarMapa);
+    			}
+    				
+    			else{
+    				renderizarMapa();
+    			}
+    		}
+			
+			
+		}
     };
 }

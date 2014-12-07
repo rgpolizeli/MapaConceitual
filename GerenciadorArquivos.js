@@ -187,6 +187,8 @@ function GerenciadorArquivos(){
 			"<y>" + 0 + "</y>" +
 			"<largura>" + 'default' + "</largura>" +
 			"<altura>" + 'default' + "</altura>" +
+			"<larguraMinima>" + 'default' + "</larguraMinima>" +
+			"<alturaMinima>" + 'default' + "</alturaMinima>" +
 			"<texto>" + conceito.texto + "</texto>" +
 			"<fonte>" + conceito.fonte + "</fonte>" + 
 			"<tamanhoFonte>" + conceito.tamanhoFonte + "</tamanhoFonte>" + 
@@ -214,6 +216,8 @@ function GerenciadorArquivos(){
 			"<y>" + 'default' + "</y>" +
 			"<largura>" + 'default' + "</largura>" +
 			"<altura>" + 'default' + "</altura>" +
+			"<larguraMinima>" + 'default' + "</larguraMinima>" +
+			"<alturaMinima>" + 'default' + "</alturaMinima>" +
 			"<texto>" + ligacao.texto + "</texto>" +
 			"<fonte>" + ligacao.fonte + "</fonte>" + 
 			"<tamanhoFonte>" + ligacao.tamanhoFonte + "</tamanhoFonte>" + 
@@ -402,54 +406,95 @@ function GerenciadorArquivos(){
 		});
 	}
 	
-	
+	/*
+	 * retorna -1 se o tamanho enviado ja for invalido - ou seja, a altura ou a largura sao menores do que as medidas minimas
+	 * retorna 1 se sucesso
+	 */
 	this.alterarTamanhoConceito = function(mensagem){
 		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(mensagem.idMapa);
+		var resultado;
 				
 		listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
 		    var id = parseInt( $( element ).find( "id" ).text() );
 			if( id == mensagem.idConceito ){
+				var larguraMin;
+				var alturaMin;
 				
-				//Alterando largura e altura
-				$( element ).find('largura').text(mensagem.novaLargura);
-				$( element ).find('altura').text(mensagem.novaAltura);
+				larguraMin = $( element ).find('larguraMinima').text();
+				alturaMin = $( element ).find('alturaMinima').text();
+				if(larguraMin == "default"){
+					larguraMin = mensagem.larguraMinima;
+					alturaMin = mensagem.alturaMinima;
+				}
 				
-				//Alterando posicao x e y
-				var conceito = {
-	    				idConceito : mensagem.idConceito,
-						novoX : mensagem.novoX,
-						novoY : mensagem.novoY
-	    		};
-	    		
-				//inserir no arquivo xml
-				gerenciador.alterarPosicaoConceito(mensagem.idMapa, conceito);
+				larguraMin = parseFloat(larguraMin);
+				if(mensagem.novaLargura < larguraMin){
+					return resultado = -1;
+				}
+				else{
+					alturaMin = parseFloat(alturaMin);
+					if(mensagem.novaAltura < alturaMin){
+						return resultado = -1;
+					}
+					else{
+						$( element ).find('largura').text(mensagem.novaLargura);
+						$( element ).find('altura').text(mensagem.novaAltura);
+						
+						$( element ).find('larguraMinima').text(mensagem.larguraMinima);
+						$( element ).find('alturaMinima').text(mensagem.alturaMinima);
+						
+						return resultado = 1;
+					}
+				}
 			}
 		});
+		return resultado;
 	};	
 	
-	
+	/*
+	 * retorna -1 se o tamanho enviado ja for invalido
+	 * retorna 1 se sucesso
+	 */
 	this.alterarTamanhoLigacao = function(mensagem){
 		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(mensagem.idMapa);
-				
+		var resultado;
+		
 		listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, element ){
 		    var id = parseInt( $( element ).find( "id" ).text() );
 			if( id == mensagem.idLigacao ){
+				var larguraMin;
+				var alturaMin;
 				
-				//Alterando largura e altura
-				$( element ).find('largura').text(mensagem.novaLargura);
-				$( element ).find('altura').text(mensagem.novaAltura);
+				larguraMin = $( element ).find('larguraMinima').text();
+				alturaMin = $( element ).find('alturaMinima').text();
+				if(larguraMin == "default"){
+					larguraMin = mensagem.larguraMinima;
+					alturaMin = mensagem.alturaMinima;
+				}
 				
-				//Alterando posicao x e y
-				var ligacao = {
-	    				idLigacao : mensagem.idLigacao,
-						novoX : mensagem.novoX,
-						novoY : mensagem.novoY
-	    		};
-	    		
-				//inserir no arquivo xml
-				gerenciador.alterarPosicaoLigacao(mensagem.idMapa, ligacao);
+				larguraMin = parseFloat(larguraMin);
+				if(mensagem.novaLargura < larguraMin){
+					return resultado = -1;
+				}
+				else{
+					alturaMin = parseFloat(alturaMin);
+					if(mensagem.novaAltura < alturaMin){
+						return resultado = -1;
+					}
+					else{
+						$( element ).find('largura').text(mensagem.novaLargura);
+						$( element ).find('altura').text(mensagem.novaAltura);
+						
+						$( element ).find('larguraMinima').text(mensagem.larguraMinima);
+						$( element ).find('alturaMinima').text(mensagem.alturaMinima);
+						
+						return resultado = 1;
+					}
+				}
 			}
 		});
+		
+		return resultado;
 	};	
 
 	
@@ -459,6 +504,30 @@ function GerenciadorArquivos(){
 		listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
 		    var id = parseInt( $( element ).find( "id" ).text() );
 			if( id == mensagem.idObjeto ){
+			
+				$( element ).find('fonte').text(mensagem.fonte);
+				$( element ).find('corFonte').text(mensagem.corFonte);
+				$( element ).find('corFundo').text(mensagem.corFundo);
+				$( element ).find('tamanhoFonte').text(mensagem.tamanhoFonte);
+				$( element ).find('texto').text(mensagem.texto);
+				$( element ).find('alturaMinima').text(mensagem.alturaMinima);
+				$( element ).find('larguraMinima').text(mensagem.larguraMinima);
+				
+				if(mensagem.altura)
+					$( element ).find('altura').text(mensagem.altura);
+				if(mensagem.largura)
+					$( element ).find('largura').text(mensagem.largura);
+				
+			}
+		});
+	};
+	
+	this.editarLigacao = function(mensagem){
+		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(mensagem.idMapa);
+		
+		listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, element ){
+		    var id = parseInt( $( element ).find( "id" ).text() );
+			if( id == mensagem.idObjeto ){
 				
 				//Alterando largura e altura
 				$( element ).find('fonte').text(mensagem.fonte);
@@ -466,11 +535,16 @@ function GerenciadorArquivos(){
 				$( element ).find('corFundo').text(mensagem.corFundo);
 				$( element ).find('tamanhoFonte').text(mensagem.tamanhoFonte);
 				$( element ).find('texto').text(mensagem.texto);
+				$( element ).find('alturaMinima').text(mensagem.alturaMinima);
+				$( element ).find('larguraMinima').text(mensagem.larguraMinima);
+				
+				if(mensagem.altura)
+					$( element ).find('altura').text(mensagem.altura);
+				if(mensagem.largura)
+					$( element ).find('largura').text(mensagem.largura);
 			}
 		});
 	};
-	
-	this.editarLigacao = function(mensagem){};
 	
 	
 	
