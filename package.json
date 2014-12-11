@@ -19,6 +19,8 @@
      "socket.io" : "latest",
      "express-session": "latest",
      "jquery":"latest",
-    "stochator": "latest"		
+    "stochator": "latest", 
+    "jsdom": "latest",
+    "mysql": "latest"
   }
 }

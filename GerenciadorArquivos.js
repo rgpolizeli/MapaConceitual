@@ -7,9 +7,9 @@ function MapaAberto(idMapa, interval, arqXml){
 function GerenciadorArquivos(){
 	
 	
-	var jsdom = require("jsdom");
+	var jsdom = require("jsdom").jsdom;
 	var fs = require('fs');
-	var $  = require('jquery')(jsdom.jsdom().createWindow());
+	var $  = require('jquery')( jsdom().parentWindow );
 	var Stochator = require('stochator'); //gerar numeros aleatorios
 	
 	var gerenciador = this;

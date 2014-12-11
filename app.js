@@ -6,15 +6,14 @@ function Servidor(Ip,Porta){
 	var porta = Porta;
 	
 	
-	var jsdom = require("jsdom");
-	var $  = require('jquery')(jsdom.jsdom().createWindow());
+	var jsdom = require("jsdom").jsdom;
+	var $  = require('jquery')(jsdom().parentWindow);
 	
 	
 	var express = require('express');
 	var session = require('express-session');
 	var path = require('path');
 	var favicon = require('static-favicon');
-	var logger = require('morgan');
 	var cookieParser = require('cookie-parser');
 	var bodyParser = require('body-parser');
 	
@@ -57,7 +56,7 @@ function Servidor(Ip,Porta){
 		app.set('view engine', 'ejs'); // set up ejs for templating
 
 		app.use(favicon());
-		app.use(logger('dev'));
+		//app.use(logger('dev'));
 		app.use(cookieParser('h4s9omm'));
 		app.use(bodyParser.json());
 		app.use(bodyParser.urlencoded());
@@ -638,7 +637,7 @@ function Servidor(Ip,Porta){
 	}
 }
 
-	var servidor = new Servidor('186.207.240.130',3000);
+	var servidor = new Servidor('localhost',3000);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);

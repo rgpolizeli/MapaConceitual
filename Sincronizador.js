@@ -10,8 +10,8 @@ function Sincronizador(id){
 	
 	var idMapa = id;
 	
-	var jsdom = require("jsdom");
-	var $  = require('jquery')(jsdom.jsdom().createWindow());
+	var jsdom = require("jsdom").jsdom;
+	var $  = require('jquery')( jsdom().parentWindow );
 	
 	var listaSincronizacao = new ListaSincronizacao();
 
