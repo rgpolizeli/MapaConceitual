@@ -5,7 +5,7 @@ function GerenciadorConceito(){
 	var paddingW = 12; 
 	var espessuraRetanguloSelecao = 3;
 	var corRetanguloSelecao = "#F00";
-	var alturaQuadradoTamanho = 20;
+	var alturaQuadradoTamanho = 40;
     
     /**
      * 
@@ -50,8 +50,6 @@ function GerenciadorConceito(){
     			var novaLargura;
     			var deslocamentoX;
     			var deslocamentoY;
-    			
-    			console.log(evt.target.name);
     			
     			if(stageCanvas.getChildByName("retanguloSelecaoAT") == null){ //AT de alterarTamanho
         			var retangulo = new createjs.Shape();
@@ -132,7 +130,7 @@ function GerenciadorConceito(){
 	        		conceitoContainer.y = novoY;
 	        		
 	        		removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
-	        		//atualizar as linhas de ligacao na tela e atualiza na lista as coordenadas de ponta de ligacao
+	        		//atualizar as linhas de ligacao na tela
 	        	    atualizarLigacoesAoMoverConceito(idConceito, conceitoContainer, conceitoNaLista, getLigacaoLista, stageCanvas);
 	        	    renderizarMapa();
 	        	    
@@ -509,8 +507,7 @@ function GerenciadorConceito(){
 		retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT");
     	
     	if(!propriedades.texto){ //se nao houver texto, altera-se apenas o tamanho
-    		
-    		
+
     		rect.graphics.clear();
 			rect.graphics.beginFill(propriedades.corFundo).drawRoundRect( //adiciona na posicao zero,zero
 					0,0,propriedades.largura, propriedades.altura, 3);

@@ -52,33 +52,44 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     
     
     this.editar = function( propriedades ){
-    	var containerObjeto;
-    	
-    	containerObjeto = mapa.getContainerViaId(propriedades.idObjeto);
-    	if(containerObjeto.name == "conceito"){
-    		var conceitoNaLista;
+
+    	//para o caso do objeto ter sido deletado por um usuario e mensagens para edita-lo terem chegado logo em seguida.
+    	// propriedades.idObjeto vem de getObjetoSelecionado, que se foi deletado, retornara undefined
+    	if(propriedades.idObjeto){ 
     		
-    		conceitoNaLista = gerenciadorLista.getConceito(propriedades.idObjeto);
-    		gerenciadorConceito.redesenharConceitoAposEdicao(containerObjeto, propriedades, stageCanvas, 
-    				gerenciadorLista.setAlturaMinima, gerenciadorLista.setLarguraMinima, 
-    				gerenciadorLista.getAlturaMinima, gerenciadorLista.getLarguraMinima, renderizar);
-    		gerenciadorLigacao.atualizarLigacoesAoMoverConceito(propriedades.idObjeto, containerObjeto, conceitoNaLista, 
-    				gerenciadorLista.getLigacao, stageCanvas);
-    		gerenciadorLista.setCorFundo(propriedades.idObjeto, propriedades.corFundo);
-    		renderizar();
-    	}
-    	else
-    		if(containerObjeto.name == "ligacao"){
-    			var ligacaoNaLista;
-    			
-    			ligacaoNaLista = gerenciadorLista.getLigacao(propriedades.idObjeto);
-    			gerenciadorLigacao.redesenharLigacaoAposEdicao(containerObjeto, propriedades, stageCanvas, 
-    					gerenciadorLista.setAlturaMinima, gerenciadorLista.setLarguraMinima, 
-        				gerenciadorLista.getAlturaMinima, gerenciadorLista.getLarguraMinima, renderizar);
-    			gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(containerObjeto, ligacaoNaLista, stageCanvas);
+    		var containerObjeto;
+    		containerObjeto = mapa.getContainerViaId(propriedades.idObjeto);
+    		
+    		if(containerObjeto.name == "conceito"){
+        		var conceitoNaLista;
+        		
+        		conceitoNaLista = gerenciadorLista.getConceito(propriedades.idObjeto);
+        		gerenciadorConceito.redesenharConceitoAposEdicao(containerObjeto, propriedades, stageCanvas, 
+        				gerenciadorLista.setAlturaMinima, gerenciadorLista.setLarguraMinima, 
+        				gerenciadorLista.getAlturaMinima, gerenciadorLista.getLarguraMinima, removerFilho, renderizar);
+        		gerenciadorLigacao.atualizarLigacoesAoMoverConceito(propriedades.idObjeto, containerObjeto, conceitoNaLista, 
+        				gerenciadorLista.getLigacao, stageCanvas);
         		gerenciadorLista.setCorFundo(propriedades.idObjeto, propriedades.corFundo);
         		renderizar();
-    		}
+        		return true;
+        	}
+        	else
+        		if(containerObjeto.name == "ligacao"){
+        			var ligacaoNaLista;
+        			
+        			ligacaoNaLista = gerenciadorLista.getLigacao(propriedades.idObjeto);
+        			gerenciadorLigacao.redesenharLigacaoAposEdicao(containerObjeto, propriedades, stageCanvas, 
+        					gerenciadorLista.setAlturaMinima, gerenciadorLista.setLarguraMinima, 
+            				gerenciadorLista.getAlturaMinima, gerenciadorLista.getLarguraMinima, removerFilho, renderizar);
+        			gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(containerObjeto, ligacaoNaLista, stageCanvas);
+            		gerenciadorLista.setCorFundo(propriedades.idObjeto, propriedades.corFundo);
+            		renderizar();
+            		return true;
+        		}
+    	}
+    	else{
+    		return false;
+    	}
     };
     
     this.getPropriedadesObjetoSelecionado = function(){
@@ -120,7 +131,6 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     this.atualizarPosicaoConceito = function (mensagem){
 		var conceitoContainer;
 		
-		
 		conceitoContainer = gerenciadorConceito.getConceitoContainerViaId(mensagem.idConceito, stageCanvas);
 		
 		if(conceitoContainer.parent){ //para o caso do conceito ter sido deletado por um usuario e mensagens para mover este conceito terem chegado logo em seguida.
@@ -152,11 +162,12 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 	
 	this.atualizarPosicaoLigacao = function (mensagem){
 		var ligacaoContainer;
-		var ligacaoNaLista;
 		
 		ligacaoContainer = gerenciadorLigacao.getLigacaoContainerViaId(mensagem.idLigacao, stageCanvas);
 		
-		if(ligacaoContainer.parent){
+		if(ligacaoContainer.parent){ //para o caso do conceito ter sido deletado por um usuario e mensagens para mover este conceito terem chegado logo em seguida.
+			var ligacaoNaLista;
+			var retanguloSelecaoAT;
 			
 			if(mensagem.novoX != "default")
 				gerenciadorLigacao.setX(mensagem.idLigacao, mensagem.novoX, stageCanvas);
@@ -166,6 +177,18 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 			ligacaoNaLista = gerenciadorLista.getLigacao(mensagem.idLigacao);
 			//atualiza a linhas de ligacao na tela
 			gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
+			
+			//necessario remover o retangulo selecao AT pois a ligacao mudou de posicao. O MV nao precisa ser removido
+			retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT"); 
+			if(retanguloSelecaoAT){ //tem o retanguloSelecaoAT
+				
+				var indexRetanguloSelecao;
+				
+				mapa.desselecionar(); //necessario para parar o evento pressmove disparado sobre a ligacao
+				indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecaoAT);
+				removerFilho(stageCanvas, indexRetanguloSelecao);
+				selecionarLigacao( ligacaoContainer.getChildAt(0) ); // necessario passar um filho do conceito
+			}
 			
 			renderizar();
 		}
@@ -335,7 +358,6 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     	objetosSelecionados[0] = gerenciadorLigacao.getId(objetoSelecionado.parent, stageCanvas); //id do objeto no stage
     	corFundo = gerenciadorLista.getCorFundo(objetosSelecionados[0]);
     	gerenciadorLigacao.selecionarLigacao(objetoSelecionado,corFundo, stageCanvas, renderizar);
-    	renderizar();
     	
     	return selecionarCallback;
     }
@@ -350,7 +372,10 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 		$(msg).children().each( function(index, element){
 			switch( $(element).attr("title") ){
 				case "conceito":
-					var idConceito = parseInt($(element).attr('id'));
+					var idConceito;
+					var retanguloSelecao;
+					
+					idConceito = parseInt($(element).attr('id'));
 					
 					//remover as linhas graficamente
 					$(msg).children("li[title='linha']").each( function(index, subElement){
@@ -358,17 +383,38 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 						removerFilho(stageCanvas, idLinha);
 					});
 					
-					
 					var conceitoContainer = stageCanvas.getChildAt( idConceito );
 					conceitoContainer.removeAllEventListeners("pressmove");
 					mapa.desselecionar();
 					removerFilho(stageCanvas, idConceito);
+					
+					//necessario remover o retangulo selecao AT ou MV caso o usuario local o esteja alterando ou movendo.
+					retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT"); 
+					if(retanguloSelecao){ //tem o retanguloSelecaoAT
+						var indexRetanguloSelecao;
+						
+						indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+						removerFilho(stageCanvas, indexRetanguloSelecao);
+					}
+					else{
+						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV"); 
+						if(retanguloSelecao){ //tem o retanguloSelecaoMV
+							var indexRetanguloSelecao;
+							
+							indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+							removerFilho(stageCanvas, indexRetanguloSelecao);
+						}
+					}
+					
 					renderizar();
 					gerenciadorLista.excluirConceitoDaLista( idConceito );
 					
 				break;
 				case "ligacao":
-					var idLigacao = parseInt($(element).attr('id'));
+					var idLigacao;
+					var retanguloSelecao;
+					
+					idLigacao = parseInt($(element).attr('id'));
 					
 					//remover as linhas graficamente
 					$(msg).children("li[title='linha']").each( function(index, subElement){
@@ -380,6 +426,25 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 					ligacaoContainer.removeAllEventListeners("pressmove");
 					mapa.desselecionar();
 					removerFilho(stageCanvas, idLigacao);
+					
+					//necessario remover o retangulo selecao AT ou MV caso o usuario local o esteja alterando ou movendo.
+					retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT"); 
+					if(retanguloSelecao){ //tem o retanguloSelecaoAT
+						var indexRetanguloSelecao;
+						
+						indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+						removerFilho(stageCanvas, indexRetanguloSelecao);
+					}
+					else{
+						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV"); 
+						if(retanguloSelecao){ //tem o retanguloSelecaoMV
+							var indexRetanguloSelecao;
+							
+							indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+							removerFilho(stageCanvas, indexRetanguloSelecao);
+						}
+					}
+					
 					renderizar();
 					gerenciadorLista.excluirLigacaoDaLista( idLigacao );
 				break;
@@ -394,43 +459,47 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 		var larguraMin;
 		
 		conceitoContainer = mapa.getContainerViaId(mensagem.idConceito);
-		alturaMin = mapa.getAlturaMinima(mensagem.idConceito);
-		larguraMin = mapa.getLarguraMinima(mensagem.idConceito);
+		if(conceitoContainer.parent){ //para o caso do conceito ter sido deletado por um usuario e mensagens para alterar seu tamanho terem chegado logo em seguida.
 		
-		if(alturaMin == 0){ // o tamanho nunca foi alterado, nem por edicao nem por alteracao de tamanho e o mapa nao esta sendo carregado
-			alturaMin = mensagem.alturaMinima;
-			larguraMin = mensagem.larguraMinima;
+			alturaMin = mapa.getAlturaMinima(mensagem.idConceito);
+			larguraMin = mapa.getLarguraMinima(mensagem.idConceito);
 			
-			gerenciadorLista.setAlturaMinima(mensagem.idConceito, alturaMin);
-			gerenciadorLista.setLarguraMinima(mensagem.idConceito, larguraMin);
-		}
-		
-		if(mensagem.novaAltura >= alturaMin && mensagem.novaLargura >= larguraMin){
+			if(alturaMin == 0){ // o tamanho nunca foi alterado, nem por edicao nem por alteracao de tamanho e o mapa nao esta sendo carregado
+				alturaMin = mensagem.alturaMinima;
+				larguraMin = mensagem.larguraMinima;
+				
+				gerenciadorLista.setAlturaMinima(mensagem.idConceito, alturaMin);
+				gerenciadorLista.setLarguraMinima(mensagem.idConceito, larguraMin);
+			}
 			
-			var conceitoNaLista;
-			var corFundo;
-			var propriedades;
+			if(mensagem.novaAltura >= alturaMin && mensagem.novaLargura >= larguraMin){
+				
+				var conceitoNaLista;
+				var corFundo;
+				var propriedades;
+				
+				conceitoNaLista = gerenciadorLista.getConceito(mensagem.idConceito);
+				corFundo = gerenciadorLista.getCorFundo(mensagem.idConceito);
+				
+				gerenciadorConceito.setAltura(conceitoContainer, mensagem.novaAltura);
+				gerenciadorConceito.setLargura(conceitoContainer, mensagem.novaLargura);
+				
+				propriedades = {
+						altura: mensagem.novaAltura,
+						largura: mensagem.novaLargura,
+						corFundo: corFundo
+				};
+				gerenciadorConceito.redesenharConceitoAposEdicao(conceitoContainer, propriedades, stageCanvas, null, null, null, null, removerFilho, renderizar);
+				gerenciadorLigacao.atualizarLigacoesAoMoverConceito(mensagem.idConceito, conceitoContainer, conceitoNaLista, 
+						gerenciadorLista.getLigacao, stageCanvas);
+				gerenciadorConceito.recentralizarLabel(conceitoContainer);
+				
+				if(objetosSelecionados[0] == mensagem.idConceito) //se o conceito alterado estiver selecionado
+					gerenciadorConceito.selecionarConceito(conceitoContainer.getChildAt(0), corFundo, stageCanvas, renderizar); // devo mandar a label devido a implementacao da funcao selecionar
+				
+				renderizar();
+			}
 			
-			conceitoNaLista = gerenciadorLista.getConceito(mensagem.idConceito);
-			corFundo = gerenciadorLista.getCorFundo(mensagem.idConceito);
-			
-			gerenciadorConceito.setAltura(conceitoContainer, mensagem.novaAltura);
-			gerenciadorConceito.setLargura(conceitoContainer, mensagem.novaLargura);
-			
-			propriedades = {
-					altura: mensagem.novaAltura,
-					largura: mensagem.novaLargura,
-					corFundo: corFundo
-			};
-			gerenciadorConceito.redesenharConceitoAposEdicao(conceitoContainer, propriedades, stageCanvas, null, null, null, null, removerFilho, renderizar);
-			gerenciadorLigacao.atualizarLigacoesAoMoverConceito(mensagem.idConceito, conceitoContainer, conceitoNaLista, 
-					gerenciadorLista.getLigacao, stageCanvas);
-			gerenciadorConceito.recentralizarLabel(conceitoContainer);
-			
-			if(objetosSelecionados[0] == mensagem.idConceito) //se o conceito alterado estiver selecionado
-				gerenciadorConceito.selecionarConceito(conceitoContainer.getChildAt(0), corFundo, stageCanvas, renderizar); // devo mandar a label devido a implementacao da funcao selecionar
-			
-			renderizar();
 		}
 	};
     
@@ -441,43 +510,47 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 		var larguraMin;
 		
 		ligacaoContainer = mapa.getContainerViaId(mensagem.idLigacao);
-		alturaMin = mapa.getAlturaMinima(mensagem.idLigacao);
-		larguraMin = mapa.getLarguraMinima(mensagem.idLigacao);
-
-		if(alturaMin == 0){ // o tamanho nunca foi alterado, nem por edicao nem por alteracao de tamanho e o mapa nao esta sendo carregado
-			alturaMin = mensagem.alturaMinima;
-			larguraMin = mensagem.larguraMinima;
-			
-			gerenciadorLista.setAlturaMinima(mensagem.idLigacao, alturaMin);
-			gerenciadorLista.setLarguraMinima(mensagem.idLigacao, larguraMin);
-		}
 		
-		if(mensagem.novaAltura >= alturaMin && mensagem.novaLargura >= larguraMin){
+		if(ligacaoContainer.parent){ //para o caso da ligacao ter sido deletada por um usuario e mensagens para alterar seu tamanho terem chegado logo em seguida.
+		
+			alturaMin = mapa.getAlturaMinima(mensagem.idLigacao);
+			larguraMin = mapa.getLarguraMinima(mensagem.idLigacao);
+		
+			if(alturaMin == 0){ // o tamanho nunca foi alterado, nem por edicao nem por alteracao de tamanho e o mapa nao esta sendo carregado
+				alturaMin = mensagem.alturaMinima;
+				larguraMin = mensagem.larguraMinima;
+				
+				gerenciadorLista.setAlturaMinima(mensagem.idLigacao, alturaMin);
+				gerenciadorLista.setLarguraMinima(mensagem.idLigacao, larguraMin);
+			}
 			
-			var ligacaoNaLista;
-			var corFundo;
-			var propriedades;
-			
-			ligacaoNaLista = gerenciadorLista.getLigacao(mensagem.idLigacao);
-			corFundo = gerenciadorLista.getCorFundo(mensagem.idLigacao);
-			
-			gerenciadorLigacao.setAltura(ligacaoContainer, mensagem.novaAltura);
-			gerenciadorLigacao.setLargura(ligacaoContainer, mensagem.novaLargura);
-			
-			propriedades = {
-					altura: mensagem.novaAltura,
-					largura: mensagem.novaLargura,
-					corFundo:corFundo
-			};
-			
-			gerenciadorLigacao.redesenharLigacaoAposEdicao(ligacaoContainer, propriedades, stageCanvas, renderizar);
-			gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
-			gerenciadorLigacao.recentralizarLabel(ligacaoContainer);
-			
-			if(objetosSelecionados[0] == mensagem.idLigacao) //se o conceito alterado estiver selecionado
-				gerenciadorLigacao.selecionarLigacao(ligacaoContainer.getChildAt(0), corFundo, stageCanvas, renderizar); // devo mandar a label devido a implementacao da funcao selecionar
-			
-			renderizar();
+			if(mensagem.novaAltura >= alturaMin && mensagem.novaLargura >= larguraMin){
+				
+				var ligacaoNaLista;
+				var corFundo;
+				var propriedades;
+				
+				ligacaoNaLista = gerenciadorLista.getLigacao(mensagem.idLigacao);
+				corFundo = gerenciadorLista.getCorFundo(mensagem.idLigacao);
+				
+				gerenciadorLigacao.setAltura(ligacaoContainer, mensagem.novaAltura);
+				gerenciadorLigacao.setLargura(ligacaoContainer, mensagem.novaLargura);
+				
+				propriedades = {
+						altura: mensagem.novaAltura,
+						largura: mensagem.novaLargura,
+						corFundo:corFundo
+				};
+				
+				gerenciadorLigacao.redesenharLigacaoAposEdicao(ligacaoContainer, propriedades, stageCanvas, null, null, null, null, removerFilho, renderizar);
+				gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
+				gerenciadorLigacao.recentralizarLabel(ligacaoContainer);
+				
+				if(objetosSelecionados[0] == mensagem.idLigacao) //se a ligacao alterada estiver selecionada
+					gerenciadorLigacao.selecionarLigacao(ligacaoContainer.getChildAt(0), corFundo, stageCanvas, renderizar); // devo mandar a label devido a implementacao da funcao selecionar
+				
+				renderizar();
+			}
 		}
 	};
     

@@ -241,6 +241,7 @@ function GerenciadorArquivos(){
 	
 	//
 	this.alterarPosicaoConceito = function (idMapa, conceito){
+		var alterado = false;
 		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(idMapa);
 		
 		listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
@@ -248,12 +249,15 @@ function GerenciadorArquivos(){
 			if( id == conceito.idConceito ){
 				$( element ).find('x').text(conceito.novoX);
 				$( element ).find('y').text(conceito.novoY);
+				alterado = true;
 			}
 		});
+		return alterado;
 	};
 	
 	
 	this.alterarPosicaoLigacao = function (idMapa, ligacao){
+		var alterado = false;
 		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(idMapa);
 		
 		listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, element ){
@@ -261,8 +265,10 @@ function GerenciadorArquivos(){
 			if( id == ligacao.idLigacao ){
 				$( element ).find('x').text(ligacao.novoX);
 				$( element ).find('y').text(ligacao.novoY);
+				alterado = true;
 			}
 		});
+		return alterado;
 	};
 	
 	this.adicionarSemiLigacao = function (idMapa, semiLigacao){
@@ -499,6 +505,7 @@ function GerenciadorArquivos(){
 
 	
 	this.editarConceito = function(mensagem){
+		var resultado= false;
 		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(mensagem.idMapa);
 		
 		listaMapasAbertos[posicaoMapa].arqXml.find('conceito').each( function( index, element ){
@@ -517,12 +524,15 @@ function GerenciadorArquivos(){
 					$( element ).find('altura').text(mensagem.altura);
 				if(mensagem.largura)
 					$( element ).find('largura').text(mensagem.largura);
-				
+			
+				resultado= true;
 			}
 		});
+		return resultado;
 	};
 	
 	this.editarLigacao = function(mensagem){
+		var resultado= false;
 		var posicaoMapa = gerenciador.buscarPosicaoMapaNaLista(mensagem.idMapa);
 		
 		listaMapasAbertos[posicaoMapa].arqXml.find('palavraLigacao').each( function( index, element ){
@@ -542,8 +552,12 @@ function GerenciadorArquivos(){
 					$( element ).find('altura').text(mensagem.altura);
 				if(mensagem.largura)
 					$( element ).find('largura').text(mensagem.largura);
+				
+				resultado = true;
 			}
 		});
+		
+		return resultado;
 	};
 	
 	

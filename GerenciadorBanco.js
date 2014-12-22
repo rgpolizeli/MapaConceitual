@@ -85,7 +85,21 @@ function GerenciadorBanco(){
 		
 		connection.query('INSERT INTO mapas SET nome = ?, idProprietario = ?',[nomeMapa, idProprietario], function(err, result) {		
 			if(err) {
-				//fazer algum tratamento
+				if(err.code == 'ER_NO_SUCH_TABLE'){ // se a tabela nao tiver sido criada
+					connection.query('CREATE TABLE mapas(id INT NOT NULL AUTO_INCREMENT, nome VARCHAR(30) NOT NULL, idProprietario INT NOT NULL, PRIMARY KEY (id) )');
+					connection.query('INSERT INTO mapas SET nome = ?, idProprietario = ?',[nomeMapa, idProprietario], function(err, result) {
+						if(err) console.log(err);
+						else{
+							idMapaNovo = result.insertId;
+							adicionarPermissoes(idMapaNovo, nomeMapa, permissoes);
+							gerenciadorBanco.eventEmitter.once('permissoesAdicionadas', function(){ 
+								gerenciadorBanco.eventEmitter.emit('mapaCriado', result.insertId);
+							});
+						}
+					});
+				}
+				else
+					console.log(err);
 			}
 			else { 
 				idMapaNovo = result.insertId;

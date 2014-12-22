@@ -430,12 +430,15 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 	
 	function editar(propriedades){
 		var msg;
+		var r;
 			
 		propriedades.idObjeto = mapaConceitual.getIdObjetoSelecionado();
-		mapaConceitual.editar(propriedades);
+		r = mapaConceitual.editar(propriedades);
 		
-		msg = montarMensagemAoEditar(propriedades);
-		enviarMensagemAoServidor(msg);
+		if(r){// se edicao deu certo
+			msg = montarMensagemAoEditar(propriedades);
+			enviarMensagemAoServidor(msg);
+		}
 	}
 	
 	
@@ -571,7 +574,7 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 					mapaConceitual.alterarTamanhoLigacao(mensagem);
 				break;
 				
-				case 9: //objeto alterado por algum usuario
+				case 9: //objeto editado por algum usuario
 					delete mensagem.tipoMensagem;
 					mapaConceitual.editar(mensagem);
 				break;

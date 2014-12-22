@@ -8,7 +8,7 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     var gerenciadorLigacao = this;
     var espessuraRetanguloSelecao = 3;
 	var corRetanguloSelecao = "#F00";
-	var alturaQuadradoTamanho = 20;
+	var alturaQuadradoTamanho = 40;
 	
 	
     /**
@@ -25,11 +25,11 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     		altura = gerenciadorLigacao.getAltura(ligacaoContainer);
     		largura = gerenciadorLigacao.getLargura(ligacaoContainer);
     		
-    		if(evt.target.name != "quadradoTamanho"){
+    		if(evt.target.name != "quadradoTamanho"){ // movimentando o retangulo selecao
     			
-    			if(stageCanvas.getChildByName("retanguloSelecao") == null){
+    			if(stageCanvas.getChildByName("retanguloSelecaoMV") == null){ // MV de movimentacao
         			var retangulo = new createjs.Shape();
-            		retangulo.name = "retanguloSelecao";
+            		retangulo.name = "retanguloSelecaoMV";
             		var hit = new createjs.Shape();
             		
             		retangulo.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
@@ -45,20 +45,22 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
         		}
         		
         		else{
-        			var retangulo = stageCanvas.getChildByName("retanguloSelecao"); 
+        			var retangulo = stageCanvas.getChildByName("retanguloSelecaoMV"); 
         			retangulo.x = (evt.stageX - (largura/2) - stageCanvas.x);
         			retangulo.y = (evt.stageY - (altura/2) - stageCanvas.y);
         		}
     		}
-    		else{//alterando o tamanho
+    		else{ //alterando o tamanho do retangulo selecao
     			var novaAltura;
     			var novaLargura;
     			var deslocamentoX;
     			var deslocamentoY;
+    			
+    			console.log(evt.target.name);
         			
-    			if(stageCanvas.getChildByName("retanguloSelecao") == null){
+    			if(stageCanvas.getChildByName("retanguloSelecaoAT") == null){ //AT de alterarTamanho
         			var retangulo = new createjs.Shape();
-            		retangulo.name = "retanguloSelecao";
+            		retangulo.name = "retanguloSelecaoAT";
             		var hit = new createjs.Shape();
             		
             		retangulo.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
@@ -73,24 +75,24 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
             		retangulo.y = ligacaoContainer.y;
         		}
     			else{
-    				var retanguloSelecao = stageCanvas.getChildByName("retanguloSelecao"); 
+    				var retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT"); 
     				
-    				if ( (ligacaoContainer.x + largura) <= evt.stageX) {
-	    				deslocamentoX = evt.stageX - (ligacaoContainer.x + largura);
+    				if ( (ligacaoContainer.x + largura) <= (evt.stageX - stageCanvas.x) ) {
+	    				deslocamentoX = (evt.stageX - stageCanvas.x) - (ligacaoContainer.x + largura);
 	    				novaLargura = largura + deslocamentoX;
 	        		}
 	    			else{
-	    				deslocamentoX = (ligacaoContainer.x + largura) - evt.stageX;
+	    				deslocamentoX = (ligacaoContainer.x + largura) - (evt.stageX - stageCanvas.x);
 	    				novaLargura = largura - deslocamentoX;
 	    			}
 	    			
-	        		if ( (ligacaoContainer.y + altura) <= evt.stageY) {
-	        			deslocamentoY = evt.stageY - (ligacaoContainer.y + altura);
+	        		if ( (ligacaoContainer.y + altura) <= (evt.stageY - stageCanvas.y) ) {
+	        			deslocamentoY = (evt.stageY - stageCanvas.y) - (ligacaoContainer.y + altura);
 	    				novaAltura = altura + deslocamentoY;
 	    				
 	        		}
 	        		else{
-	        			deslocamentoY = (ligacaoContainer.y + altura) - evt.stageY;
+	        			deslocamentoY = (ligacaoContainer.y + altura) - (evt.stageY - stageCanvas.y);
 	    				novaAltura = altura - deslocamentoY;
 	        		}
             		
@@ -107,94 +109,98 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	
     	
     	ligacaoContainer.addEventListener("pressup", function ligacaoPressUp(evt){
-    		
-    		var retanguloSelecao;
-    		
-    		retanguloSelecao = stageCanvas.getChildByName("retanguloSelecao");
-    		
-    		if(retanguloSelecao){ // necessario pois quando o usuario clica uma unica vez sem pressionar, tambem gera o pressup
-    			
-    			var ligacaoNaLista;
-    	    	var idLigacao;
-    	    	var msg;
-        		var indexRetanguloSelecao;
         		
-        		indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
-        		idLigacao = gerenciadorLigacao.getId(ligacaoContainer, stageCanvas);
-        		ligacaoNaLista = getLigacaoLista(idLigacao);
+        		var retanguloSelecaoAT;
+        		var retanguloSelecaoMV;
         		
-    			if(evt.target.name != "quadradoTamanho"){
-    				var novoX;
-    				var novoY;
-    				
-	        		novoX = retanguloSelecao.x;
-	        		novoY = retanguloSelecao.y;
-	        		
-	        		ligacaoContainer.x = novoX;
-	        		ligacaoContainer.y = novoY;
-	        		
-	        		removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
-	        		//atualizar as linhas de ligacao na tela e atualiza na lista as coordenadas de ponta de ligacao
-	        		gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
-	        	    renderizarMapa();
-	        	    
-	        	    msg = montarMensagemAoMoverLigacao(idLigacao, idMapa, novoX, novoY);
-	    			enviarMensagemAoServidor(msg);
-    			}
-    			
-    			else{ //alterando o tamanho
-    				
-    				var novaAltura;
-        			var novaLargura;
-        			var corFundo;
-        			var alturaMin;
-        			var larguraMin;
-        			var label;
-        			var propriedades;
-    				
-        			label = getLabel(ligacaoContainer);
-        			corFundo = getCorFundo(idLigacao);
-        			alturaMin = getAlturaMinima(idLigacao);
-        			larguraMin = getLarguraMinima(idLigacao);
-        			novaLargura = getLarguraRS(retanguloSelecao);
-        			novaAltura = getAlturaRS(retanguloSelecao);
-        			removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
-        			propriedades = new Object();
+        		retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT");
+        		retanguloSelecaoMV = stageCanvas.getChildByName("retanguloSelecaoMV");
+        		
+        		if(retanguloSelecaoAT || retanguloSelecaoMV){ // necessario pois quando o usuario clica uma unica vez sem pressionar, tambem gera o pressup
+        		
+        			var ligacaoNaLista;
+        	    	var idLigacao;
+        	    	var msg;
+            		var indexRetanguloSelecao;
         			
-        			if(alturaMin == 0){ //ligacao ainda nao foi editada
-        				alturaMin = label.getMeasuredHeight();
-        				larguraMin = label.getMeasuredWidth();
-        				
-        				propriedades.alturaMinima = alturaMin;
-        				propriedades.larguraMinima = larguraMin;
-        			}
-        			
-    				if(novaLargura < larguraMin){
-    					novaLargura = larguraMin;
-	        		}
-    				gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
-    				
-            		if(novaAltura < alturaMin){
-            			novaAltura = alturaMin;
-            		}
-            		gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
-            		
-            		propriedades.idLigacao = idLigacao;
-            		propriedades.corFundo = corFundo;
-            		propriedades.altura = novaAltura;
-            		propriedades.largura = novaLargura;
-            		
-            		gerenciadorLigacao.redesenharLigacaoAposEdicao(ligacaoContainer, propriedades, stageCanvas, renderizarMapa);
-            		gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
-					gerenciadorLigacao.recentralizarLabel(ligacaoContainer);
-					gerenciadorLigacao.selecionarLigacao(label, corFundo, stageCanvas, renderizarMapa); // devo mandar a label devido a implementacao da funcao selecionar
-					
-					msg = montarMensagemAoAlterarTamanhoLigacao(idMapa, propriedades);
-	    			enviarMensagemAoServidor(msg);
-    			}
-    		}
+            		idLigacao = gerenciadorLigacao.getId(ligacaoContainer, stageCanvas);
+            		ligacaoNaLista = getLigacaoLista(idLigacao);
+        		
+	    			if(evt.target.name != "quadradoTamanho"){ //movimentando ligacao
+	    				var novoX;
+	    				var novoY;
+	    				
+	    				indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecaoMV);
+	    				
+		        		novoX = retanguloSelecaoMV.x;
+		        		novoY = retanguloSelecaoMV.y;
+		        		ligacaoContainer.x = novoX;
+		        		ligacaoContainer.y = novoY;
+		        		
+		        		removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+		        		//atualizar as linhas de ligacao na tela
+		        		gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
+		        	    renderizarMapa();
+		        	    
+		        	    msg = montarMensagemAoMoverLigacao(idLigacao, idMapa, novoX, novoY);
+		    			enviarMensagemAoServidor(msg);
+	    			}
+	    			
+	    			else{ //alterando o tamanho da ligacao
+	    				
+	    				var novaAltura;
+	        			var novaLargura;
+	        			var corFundo;
+	        			var alturaMin;
+	        			var larguraMin;
+	        			var label;
+	        			var propriedades;
+	    				
+	        			label = getLabel(ligacaoContainer);
+	        			corFundo = getCorFundo(idLigacao);
+	        			alturaMin = getAlturaMinima(idLigacao);
+	        			larguraMin = getLarguraMinima(idLigacao);
+	        			novaLargura = getLarguraRS(retanguloSelecaoAT);
+	        			novaAltura = getAlturaRS(retanguloSelecaoAT);
+	        			indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecaoAT);
+	        			removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+	        			propriedades = new Object();
+	        			
+	        			if(alturaMin == 0){ //ligacao ainda nao foi editada
+	        				alturaMin = label.getMeasuredHeight();
+	        				larguraMin = label.getMeasuredWidth();
+	        				
+	        				propriedades.alturaMinima = alturaMin;
+	        				propriedades.larguraMinima = larguraMin;
+	        			}
+	        			
+	    				if(novaLargura < larguraMin){
+	    					novaLargura = larguraMin;
+		        		}
+	    				gerenciadorLigacao.setLargura(ligacaoContainer, novaLargura);
+	    				
+	            		if(novaAltura < alturaMin){
+	            			novaAltura = alturaMin;
+	            		}
+	            		gerenciadorLigacao.setAltura(ligacaoContainer, novaAltura);
+	            		
+	            		propriedades.idLigacao = idLigacao;
+	            		propriedades.corFundo = corFundo;
+	            		propriedades.altura = novaAltura;
+	            		propriedades.largura = novaLargura;
+	            		
+	            		gerenciadorLigacao.redesenharLigacaoAposEdicao(ligacaoContainer, propriedades, stageCanvas, renderizarMapa);
+	            		gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
+						gerenciadorLigacao.recentralizarLabel(ligacaoContainer);
+						gerenciadorLigacao.selecionarLigacao(label, corFundo, stageCanvas, renderizarMapa); // devo mandar a label devido a implementacao da funcao selecionar
+						
+						msg = montarMensagemAoAlterarTamanhoLigacao(idMapa, propriedades);
+		    			enviarMensagemAoServidor(msg);
+	    			}
+	    		}
+	    	
+	    	});
     	
-    	});
     	
     };
     
@@ -732,11 +738,17 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     }
     
     
-    this.redesenharLigacaoAposEdicao = function(ligacaoContainer, propriedades, stageCanvas, setAlturaMinimaNaLista, setLarguraMinimaNaLista, getAlturaMinimaNaLista, getLarguraMinimaNaLista, renderizarMapa){
+    this.redesenharLigacaoAposEdicao = function(ligacaoContainer, propriedades, stageCanvas, setAlturaMinimaNaLista, setLarguraMinimaNaLista, getAlturaMinimaNaLista, getLarguraMinimaNaLista, removerFilhoStageCanvas, renderizarMapa){
     	var rect;
+    	var retanguloSelecao;
+    	var label;
     	
     	rect = getRetangulo(ligacaoContainer);
     	label = getLabel(ligacaoContainer);
+    	
+    	//necessario remover o retangulo selecao quando o qt e removido pois quem dispara o evento do retangulo selecao e o qt
+    	//necessario nao remover o RS quando o usuario estiver movimentando o RS e chegar uma mensagem para atualizar o tamanho do conceito
+		retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT");
     	
     	if(!propriedades.texto){ //se nao houver texto, altera-se apenas o tamanho
 	    	rect.graphics.clear();
@@ -744,6 +756,30 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
 					0,0,propriedades.largura, propriedades.altura, 3);
 			qt = getQuadradroTamanho(ligacaoContainer, "quadradoTamanho");
 			ligacaoContainer.removeChild(qt);
+			
+			if(retanguloSelecao){ //tem o retanguloSelecaoAT
+				var indexRetanguloSelecao;
+				indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+				removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+			}
+			else{
+				retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+				if(retanguloSelecao){
+					var novaAltura;
+					var novaLargura;
+					var antigaAltura;
+					var antigaLargura;
+					
+					antigaAltura = getAlturaRS(retanguloSelecao);
+					antigaLargura = getLarguraRS(retanguloSelecao);
+					novaAltura = gerenciadorLigacao.getAltura(ligacaoContainer);
+					novaLargura = gerenciadorLigacao.getLargura(ligacaoContainer);
+					redesenharRSAoAlterarTamanho(retanguloSelecao, novaAltura,  novaLargura);
+					retanguloSelecao.x = (retanguloSelecao.x - (novaLargura/2 - antigaLargura/2) - stageCanvas.x);
+					retanguloSelecao.y = (retanguloSelecao.y - (novaAltura/2 - antigaAltura/2) - stageCanvas.y);
+				}
+			}
+			
 		}
     	else{ //caso tenha - altera-se a label
 			
@@ -768,6 +804,30 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
 				if(ligacaoContainer.getChildByName("quadradoTamanho") != undefined){
 					var qt = getQuadradroTamanho(ligacaoContainer, "quadradoTamanho");
 					ligacaoContainer.removeChild(qt);
+					
+					if(retanguloSelecao){ //tem o retanguloSelecaoAT
+						var indexRetanguloSelecao;
+						indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+						removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+					}
+					else{
+						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+						if(retanguloSelecao){
+							var novaAltura;
+							var novaLargura;
+							var antigaAltura;
+							var antigaLargura;
+							
+							antigaAltura = getAlturaRS(retanguloSelecao);
+							antigaLargura = getLarguraRS(retanguloSelecao);
+							novaAltura = gerenciadorLigacao.getAltura(ligacaoContainer);
+							novaLargura = gerenciadorLigacao.getLargura(ligacaoContainer);
+							redesenharRSAoAlterarTamanho(retanguloSelecao, novaAltura,  novaLargura);
+							retanguloSelecao.x = (retanguloSelecao.x - (novaLargura/2 - antigaLargura/2) - stageCanvas.x);
+							retanguloSelecao.y = (retanguloSelecao.y - (novaAltura/2 - antigaAltura/2) - stageCanvas.y);
+						}
+					}
+					
 					gerenciadorLigacao.selecionarLigacao(label, propriedades.corFundo, stageCanvas,renderizarMapa);
 				}	
 				else{
@@ -819,6 +879,30 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     			if(ligacaoContainer.getChildByName("quadradoTamanho") != undefined){
     				var qt = getQuadradroTamanho(ligacaoContainer, "quadradoTamanho");
     				ligacaoContainer.removeChild(qt);
+    				
+    				if(retanguloSelecao){ //tem o retanguloSelecaoAT
+    					var indexRetanguloSelecao;
+    					indexRetanguloSelecao = stageCanvas.getChildIndex(retanguloSelecao);
+    					removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
+    				}
+    				else{
+    					retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+    					if(retanguloSelecao){
+    						var novaAltura;
+    						var novaLargura;
+    						var antigaAltura;
+    						var antigaLargura;
+    						
+    						antigaAltura = getAlturaRS(retanguloSelecao);
+    						antigaLargura = getLarguraRS(retanguloSelecao);
+    						novaAltura = gerenciadorLigacao.getAltura(ligacaoContainer);
+    						novaLargura = gerenciadorLigacao.getLargura(ligacaoContainer);
+    						redesenharRSAoAlterarTamanho(retanguloSelecao, novaAltura,  novaLargura);
+    						retanguloSelecao.x = (retanguloSelecao.x - (novaLargura/2 - antigaLargura/2) - stageCanvas.x);
+    						retanguloSelecao.y = (retanguloSelecao.y - (novaAltura/2 - antigaAltura/2) - stageCanvas.y);
+    					}
+    				}
+    				
     				gerenciadorLigacao.selecionarLigacao(label, propriedades.corFundo, stageCanvas,renderizarMapa);
     			}
     				

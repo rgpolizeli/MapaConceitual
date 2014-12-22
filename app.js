@@ -377,8 +377,11 @@ function Servidor(Ip,Porta){
 						
 						case 2: //conceito movido por algum usuario
 				    		var idMapa;
+				    		var alterado;
 				    		
 				    		idMapa = mensagem.idMapa;
+				    		alterado = false;
+				    		
 				    		//visualizador nao tem permissao para isso
 				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
 				    		
@@ -389,22 +392,25 @@ function Servidor(Ip,Porta){
 					    		};
 					    		
 								//inserir no arquivo xml
-						    	gerenciadorArquivos.alterarPosicaoConceito(idMapa, conceito);
+						    	alterado = gerenciadorArquivos.alterarPosicaoConceito(idMapa, conceito);
 						    	
-						    	delete mensagem.idMapa;
+						    	if(alterado){
+						    		delete mensagem.idMapa;
 						    		
-						    	//manda para todos os usuarios, inclusive quem criou o conceito
-						    	enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
-						    	
+							    	//manda para todos os usuarios, inclusive quem criou o conceito
+							    	enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
+						    	}
 				    		}
 						
 						break;
 						
 						case 4: //palavra de ligacao movida por algum usuario
 							var idMapa;
-							
+							var alterado;
 				    		
 				    		idMapa = mensagem.idMapa;
+				    		alterado = false;
+				    		
 				    		//visualizador nao tem permissao para isso
 				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
 				    		
@@ -415,13 +421,14 @@ function Servidor(Ip,Porta){
 					    		};
 					    		
 								//inserir no arquivo xml
-					    		gerenciadorArquivos.alterarPosicaoLigacao(idMapa, ligacao);
+					    		alterado = gerenciadorArquivos.alterarPosicaoLigacao(idMapa, ligacao);
 					    		
-				    			delete mensagem.idMapa;
-					    		
-					    		//manda para todos os usuarios, inclusive quem criou o conceito
-					    		enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
-					    		
+					    		if(alterado){
+					    			delete mensagem.idMapa;
+						    		
+						    		//manda para todos os usuarios, inclusive quem criou o conceito
+						    		enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
+					    		}
 				    		}
 						break;
 					
@@ -464,26 +471,31 @@ function Servidor(Ip,Porta){
 						
 						case 9: //objeto editado por algum usuario
 							var idMapa;
+							var alterado;
 							
 							idMapa = mensagem.idMapa;
+							alterado = false;
 							
 							//visualizador nao tem permissao para isso
 				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
 					    		
 								if(mensagem.tipoObjeto == "conceito"){
-									gerenciadorArquivos.editarConceito(mensagem);
+									alterado = gerenciadorArquivos.editarConceito(mensagem);
 								}
 								else{
 									if(mensagem.tipoObjeto == "ligacao"){
-										gerenciadorArquivos.editarLigacao(mensagem);
+										alterado = gerenciadorArquivos.editarLigacao(mensagem);
 									}
 								}
-				    			
-								//Remove uma propriedade de um objeto
-								delete mensagem.idMapa;
-								delete mensagem.tipoObjeto;
 								
-								enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
+								if(alterado){
+									//Remove uma propriedade de um objeto
+									delete mensagem.idMapa;
+									delete mensagem.tipoObjeto;
+									
+									enviarParaTodosUsuariosAtivos(idMapa, mensagem, socket);
+								}
+								
 				    		}
 						break;
 					}
@@ -491,8 +503,6 @@ function Servidor(Ip,Porta){
 			});
 			
 			socket.on('disconnect', function () { 
-				
-				console.log("Usuario desconectou-se.");
 				var idsMapas = gerenciadorUsuariosAtivos.getIdsMapasDoUsuario(socket);
 				
 				for(var i=0; i< idsMapas.length; i++){
@@ -504,6 +514,7 @@ function Servidor(Ip,Porta){
 					}
 				}
 				
+				console.log("Usuario desconectou-se.");
 			});
 			
 		});
@@ -637,7 +648,7 @@ function Servidor(Ip,Porta){
 	}
 }
 
-	var servidor = new Servidor('localhost',3000);
+	var servidor = new Servidor('192.168.0.101',3000);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);
