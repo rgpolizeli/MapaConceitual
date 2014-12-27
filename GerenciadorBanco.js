@@ -6,11 +6,26 @@ function GerenciadorBanco(){
 	  host     : 'localhost',
 	  user: 'root',
 	  password: 'ricardo',
-	  database: 'mapas'
+	  database: 'teste'
 	});
 	
 	var gerenciadorBanco = this;
 	this.eventEmitter = new events.EventEmitter(); 
+	
+	
+	this.excluirMapa = function excluirMapa (idMapa){
+		
+		connection.query('DELETE FROM mapas WHERE id = ?',[idMapa], function(err, result) {		
+			if(err) {
+				gerenciadorBanco.eventEmitter.emit('fimExclusaoMapa', err.code);
+			}
+			else{
+				gerenciadorBanco.eventEmitter.emit('fimExclusaoMapa', 1);
+			}
+		});
+		
+	};
+	
 	
 
 	this.perquisarMapas = function (idUsuario){
@@ -20,7 +35,29 @@ function GerenciadorBanco(){
 		connection.query('SELECT idMapa,nomeMapa FROM permissoes WHERE idUsuario = ?',[idUsuario], function(err, result) {		
 			if(err) {
 				if(err.code == 'ER_NO_SUCH_TABLE'){
-					connection.query('CREATE TABLE permissoes(idUsuario INT NOT NULL, idMapa INT NOT NULL, nomeMapa VARCHAR(30) NOT NULL, tipoPermissao INT NOT NULL, PRIMARY KEY (idUsuario,idMapa) )');
+					connection.query(
+							'CREATE TABLE mapas('+
+								'id INT NOT NULL AUTO_INCREMENT,'+ 
+								'nome VARCHAR(30) NOT NULL,'+ 
+								'idProprietario INT NOT NULL,'+ 
+								'PRIMARY KEY (id),'+
+								' FOREIGN KEY (idProprietario) REFERENCES usuarios (id)'+
+								' ON DELETE CASCADE'+
+							') ENGINE=InnoDB'
+					);
+					connection.query(
+						'CREATE TABLE permissoes(' +
+							'idUsuario INT NOT NULL,'+
+							'idMapa INT NOT NULL,'+ 
+							'nomeMapa VARCHAR(30) NOT NULL,'+
+							'tipoPermissao INT NOT NULL,'+
+							'FOREIGN KEY (idUsuario) REFERENCES usuarios (id)'+
+							' ON DELETE CASCADE,'+
+							' FOREIGN KEY (idMapa) REFERENCES mapas (id)'+
+							' ON DELETE CASCADE,'+
+							'PRIMARY KEY (idUsuario,idMapa)'+
+						') ENGINE=InnoDB'
+					);
 					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapas', mapas);
 				}
 				else{
@@ -86,7 +123,16 @@ function GerenciadorBanco(){
 		connection.query('INSERT INTO mapas SET nome = ?, idProprietario = ?',[nomeMapa, idProprietario], function(err, result) {		
 			if(err) {
 				if(err.code == 'ER_NO_SUCH_TABLE'){ // se a tabela nao tiver sido criada
-					connection.query('CREATE TABLE mapas(id INT NOT NULL AUTO_INCREMENT, nome VARCHAR(30) NOT NULL, idProprietario INT NOT NULL, PRIMARY KEY (id) )');
+					connection.query(
+						'CREATE TABLE mapas('+
+							'id INT NOT NULL AUTO_INCREMENT,'+ 
+							'nome VARCHAR(30) NOT NULL,'+ 
+							'idProprietario INT NOT NULL,'+ 
+							'PRIMARY KEY (id),'+
+							' FOREIGN KEY (idProprietario) REFERENCES usuarios (id)'+
+							' ON DELETE CASCADE'+
+						') ENGINE=InnoDB'
+					);
 					connection.query('INSERT INTO mapas SET nome = ?, idProprietario = ?',[nomeMapa, idProprietario], function(err, result) {
 						if(err) console.log(err);
 						else{

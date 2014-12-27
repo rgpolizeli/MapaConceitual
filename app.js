@@ -22,7 +22,7 @@ function Servidor(Ip,Porta){
 	  host     : 'localhost',
 	  user: 'root',
 	  password: 'ricardo',
-	  database: 'mapas'
+	  database: 'teste'
 	});
 
 	
@@ -108,13 +108,20 @@ function Servidor(Ip,Porta){
 		});
 		
 		app.post('/abrir', function(req,res){
-			var msg = {
-					idUsuario: req.user.id, 
-					idMapa: req.body.optionsRadios,
-					ip: ip,
-					porta: porta
-			};
-			routes.pagina(req,res,'editarMapa', msg);
+			
+			if(req.body.idMapa){ //se usuario selecionou algum mapa
+				var msg = {
+						idUsuario: req.user.id, 
+						idMapa: req.body.idMapa, // vem da pagina mapas.ejs
+						ip: ip,
+						porta: porta
+				};
+				routes.pagina(req,res,'editarMapa', msg);
+			}
+			else{
+				res.redirect('/mapas');
+			}
+			
 		});
 		
 		app.get('/criarMapa', function(req,res){
@@ -170,30 +177,130 @@ function Servidor(Ip,Porta){
 			
 		});
 		
+		
+		app.post('/excluirMapa', passport.verificarAutenticacao, function(req,res){
+			var idUsuario; 
+			var idMapa; // vem da pagina mapas.ejs
+			
+			idUsuario = req.user.id;
+			idMapa = req.body.idMapa;
+			
+			if(idMapa){ //se o usuario selecionou algum mapa
+				
+				gerenciadorBanco.verificarTipoPermissao(idUsuario, idMapa); //Obtendo a permissao do usuario
+				gerenciadorBanco.eventEmitter.once('tipoPermissao', function(tipoPermissao){ 
+					
+					if(tipoPermissao == 0 || tipoPermissao == 1){ // se for o gerente ou administrador
+						var numUsersAtivos;
+						numUsersAtivos = gerenciadorUsuariosAtivos.getQuantidadeUsuariosAtivos(idMapa);
+						
+						if(numUsersAtivos == 0 || numUsersAtivos == -1 ){ //nenhum usuario ativo no mapa, pode excluir
+							var r;
+							
+							gerenciadorBanco.excluirMapa(idMapa);
+							gerenciadorBanco.eventEmitter.once('fimExclusaoMapa', function(resultado){ 
+								
+								if(resultado == 1){ //excluido com sucesso do banco
+									
+									r = gerenciadorArquivos.excluirMapa(idMapa);
+									if(r == 1){ //mapa excluido com sucesso
+										var msg;
+										
+										gerenciadorBanco.perquisarMapas(req.user.id);
+										gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+											msg = {
+													alerta: "Mapa excluido com sucesso!",
+													mensagem: mapas
+											}; 
+											routes.pagina(req,res,'mapas', msg);
+										});
+									}
+									else{ //se erro ao excluir o arquivo
+										var msg;
+										
+										gerenciadorBanco.perquisarMapas(req.user.id);
+										gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+											msg = {
+													alerta: "Ocorreu o seguinte erro ao excluir: " + r, // r armazena o tipo de erro
+													mensagem: mapas
+											}; 
+											routes.pagina(req,res,'mapas', msg);
+										});
+									}
+									
+								}
+								else{ //erro ao excluir do banco
+									var msg;
+									
+									gerenciadorBanco.perquisarMapas(req.user.id);
+									gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+										msg = {
+												alerta: "Ocorreu o seguinte erro ao excluir: " + r, // r armazena o tipo de erro
+												mensagem: mapas
+										}; 
+										routes.pagina(req,res,'mapas', msg);
+									});
+									
+								}
+							});
+							
+								
+						}
+						else{ // algum usuario ativo no mapa
+							var msg;
+							
+							gerenciadorBanco.perquisarMapas(req.user.id);
+							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+								msg = {
+										alerta: "O mapa nao pode ser excluido, pois alguns usuarios estao editando este mapa!",
+										mensagem: mapas
+								}; 
+								routes.pagina(req,res,'mapas', msg);
+							});
+						}
+					}
+					else{ // nao tem permissao
+						var msg;
+						
+						gerenciadorBanco.perquisarMapas(req.user.id);
+						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+							msg = {
+									alerta: "Voce nao tem permissao para isso!",
+									mensagem: mapas
+							}; 
+							routes.pagina(req,res,'mapas', msg);
+						});
+					}
+				});
+			}
+			else{
+				res.redirect('/mapas');
+			}
+
+		});
+		
+		
 		app.post(
 			'/autenticar',
-			function(req,res,next){
-				passport.ppt.authenticate(
-					'local', 
-					function(err, user){
-						if(err){
-							console.log(err);
+			function(req, res){
+				passport.ppt.authenticate('local', function handleAuthenticate(err, user){
+					if(err){
+						console.log(err);
+						res.redirect('/');
+					}
+					else{
+						if(!user){
 							return res.redirect('/');
 						}
 						else{
-							if(!user){
-								return res.redirect('/');
-							}
-							else{
-								req.login(user, function(err) {
-									if (err) { return next(err); }
-									return res.redirect('/mapas');
-								});
-								
-							}
+							req.login(user, function(err) {
+								if (err) { return next(err); }
+								return res.redirect('/mapas');
+							});
+							
 						}
 					}
-				)(req,res,next);	
+				})(req, res);
 			}
 		);
 		

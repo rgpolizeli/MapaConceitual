@@ -21,16 +21,32 @@
 			var href = location.origin + "/" + "logout";
 			window.location = href;
 		}
+		function abrirMapa(){
+			$("#mapasFormulario").attr("action","/abrir");
+			$("#mapasFormulario").submit();
+		}
 		function criarMapa(){
 			var href = location.origin + "/" + "criarMapa";
 			window.location = href;
 		}
-		
+		function excluirMapa(){
+			$("#mapasFormulario").attr("action","/excluirMapa");
+			$("#mapasFormulario").submit();
+		}
     </script>
 
   </head>
 
   <body>
+  	
+  	<!-- DIV PARA ALERTA -->
+	<% if(typeof(alerta) != 'undefined'){ %>
+	  	<div class="alert alert-warning alert-dismissible" role="alert">
+	  		<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	  		<%= alerta %>
+		</div>
+  	<% } %>
+  	
 	  
 	  <div class="container">
 
@@ -39,8 +55,9 @@
 			<h1><span class="fa fa-sign-in"></span> Mapas</h1>
 			
 
-			<!-- LOGIN FORM -->
-			<form action="/abrir" method="post">
+			<!-- FORMULARIO MAPAS -->
+			<!-- Sera encaminhado para pagina abrir.ejs ou excluirMapa.ejs -->
+			<form id="mapasFormulario" action="" method="post">
 				
 				<div class="col-lg-6">
 					<div class="input-group">
@@ -52,7 +69,7 @@
 							
 							<div class="radio">
 								<label>
-									<input type="radio" name="optionsRadios" id="optionsRadios1" value="<%= mensagem[i].idMapa %>" required autofocus>
+									<input type="radio" name="idMapa" id="idsMapas" value="<%= mensagem[i].idMapa %>" required autofocus>
 									<%= item %>
 								</label>
 							</div>
@@ -62,8 +79,9 @@
 					</div><!-- /input-group  -->
 				</div><!-- /.col-lg-6 -->
 				
-				<button type="submit" class="btn btn-lg btn-primary btn-block">Abrir</button>
-				<button id="criarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="criarMapa();">Criar novo Mapa</button>
+				<button id="abrirMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="abrirMapa();">Abrir</button>
+				<button id="criarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="criarMapa();">Criar novo mapa</button>
+				<button id="excluirMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="excluirMapa();">Excluir mapa</button>
 			</form>
 			
 		</div>

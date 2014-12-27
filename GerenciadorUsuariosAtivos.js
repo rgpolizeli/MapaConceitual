@@ -125,7 +125,11 @@ function GerenciadorUsuariosAtivos(){
 	
 	this.getQuantidadeUsuariosAtivos = function(idMapa){
 		var posicao = buscarPosicaoMapa( idMapa );
-		return listaUsuariosAtivos[posicao].usuarios.length;
+		
+		if(posicao == -1)
+			return posicao;
+		else
+			return listaUsuariosAtivos[posicao].usuarios.length;
 	};
 	
 	

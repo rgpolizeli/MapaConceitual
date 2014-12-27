@@ -18,6 +18,20 @@ function GerenciadorArquivos(){
 	
 	
 	
+	this.excluirMapa = function excluirMapa(idMapa){
+		var path;
+		
+		path = './public/mapas/' + idMapa + '.xml';
+		try{
+			fs.unlinkSync(path);
+			return 1;
+		}catch(err){
+			return err.code;
+		}
+		
+	};
+	
+	
 	this.abrirMapa = function ( idMapa ){
 		var path = './public/mapas/' + idMapa + '.xml';
 		var xmlStr = fs.readFileSync(path, "utf8");

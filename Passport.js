@@ -3,9 +3,9 @@ function Passport(connection){
 	this.ppt = require('passport');
 	var localStrategy = require('passport-local').Strategy;
 	
-	var bb = function(usuario,password, connection,done){
+	function bb(usuario,password, connection,done){
 			connection.query('SELECT id,usuario,password FROM usuarios WHERE usuario = ? AND password = ?',[usuario,password], function(err, result) {		
-				if(err) {
+				if(err){
 					return done(err, false);
 				}
 				else { 
@@ -21,13 +21,13 @@ function Passport(connection){
 						return done(null, false);
 				}
 			});	
-	};
+	}
 	
 	
 	this.verificarAutenticacao = function(req, res, next) {
 		if (req.isAuthenticated()) { return next(); }
 		else return res.redirect('/');
-	}
+	};
 	
 	
 	// serialize user to session
