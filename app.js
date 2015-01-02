@@ -25,9 +25,6 @@ function Servidor(Ip,Porta){
 	  database: 'teste'
 	});
 
-	
-	var events = require('events');
-
 	var Passport = require('./Passport.js');
 	var passport;
 	
@@ -98,7 +95,10 @@ function Servidor(Ip,Porta){
 			//a variavel receptora do evento deve ser a mesma que emitiu.
 			//once ao inves de on, pois o evento emitido num outro login continua valendo para relogin, executando routes.pagina duas vezes.
 			gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
-				routes.pagina(req,res,'mapas', {mensagem:mapas});
+				if(req.query.desconectado)
+					routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois o gerente ou o administrador esta alterando as permissoes deste mapa.", mensagem: mapas} ); 
+				else
+					routes.pagina(req,res,'mapas', {mensagem:mapas});
 			});
 			
 		});
@@ -158,6 +158,7 @@ function Servidor(Ip,Porta){
 		app.post('/criarMapa', function(req,res){
 			
 			var permissoes = new Array();
+			//as propriedades sao duas: nomeMapa e usuario+idUsuario. O ultimo tipo e o de mais elementos e contem o tipo de permissao do usuario que nomeia o tipo.
 			var propriedades = Object.getOwnPropertyNames(req.body);
 			
 			for(var i=0; i < propriedades.length; i++){
@@ -173,6 +174,166 @@ function Servidor(Ip,Porta){
 			gerenciadorBanco.eventEmitter.once('mapaCriado', function(idMapa){ 
 				gerenciadorArquivos.criarMapa(idMapa, req.body.nomeMapa);
 				return res.redirect('mapas');
+			});
+			
+		});
+		
+		app.post('/obterInfoMapa', passport.verificarAutenticacao, function(req,res){
+			var idUsuario; 
+			var idMapa; // vem da pagina mapas.ejs
+			
+			idUsuario = req.user.id;
+			idMapa = req.body.idMapa;
+			
+			if(idMapa){ //se o usuario selecionou algum mapa
+				var nomeMapa;
+				
+				//buscar nome do mapa
+				gerenciadorBanco.buscarNomeMapa(idMapa);
+				gerenciadorBanco.eventEmitter.once('fimBuscaNomeMapa', function(resultado){ 
+					
+					if(resultado.erro){ //erro na busca do nome do mapa
+						
+						var msg;
+						gerenciadorBanco.perquisarMapas(idUsuario);
+						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+							msg = {
+									alerta: "Ocorreu o seguinte erro ao tentar configurar o mapa: "+ resultado.erro,
+									mensagem: mapas
+							}; 
+							return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+						});
+					}
+					else{ //sucesso na busca do nome do mapa
+						nomeMapa = resultado;
+					}
+					
+				});
+				
+				//busca usuarios com permissao para este mapa
+				gerenciadorBanco.pesquisarUsuariosComPermissao(idMapa);
+				gerenciadorBanco.eventEmitter.once('fimPesquisaUsuariosPermissao', function(resultado){ 
+					
+					if(resultado.erro){ //erro na busca dos usuarios com permissao
+						
+						var msg;
+						gerenciadorBanco.perquisarMapas(idUsuario);
+						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+							msg = {
+									alerta: "Ocorreu o seguinte erro ao tentar configurar o mapa: "+ resultado.erro,
+									mensagem: mapas
+							}; 
+							return routes.pagina(req,res,'mapas', msg);
+						});
+						
+					}
+					else{ //sucesso na busca dos usuarios com permissao
+						
+						var listaUsuariosPermitidos;
+						
+						listaUsuariosPermitidos = resultado;
+						
+						//necessario saber a permissao do usuario, pois so administrador e gerente podem mudar permissoes
+						var i=0;
+						while( i < listaUsuariosPermitidos.length && listaUsuariosPermitidos[i].id != idUsuario)
+							i++;
+						
+						if(listaUsuariosPermitidos[i].tipoPermissao == "Gerente" || listaUsuariosPermitidos[i].tipoPermissao == "Administrador"){
+							
+							//necessario buscar o nome de todos os usuarios
+							gerenciadorBanco.buscarNomeTodosUsuarios();
+							gerenciadorBanco.eventEmitter.once('nomeTodosUsuarios', function(listaTodosUsuarios){
+								
+								if(listaTodosUsuarios.erro){ //erro ao pesquisar todos os usuarios
+									
+									var msg;
+									gerenciadorBanco.perquisarMapas(idUsuario);
+									gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+										msg = {
+												alerta: "Ocorreu o seguinte erro ao tentar configurar o mapa: "+ resultado.erro,
+												mensagem: mapas
+										}; 
+										return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+									});
+								}
+								else{ //sucesso ao pesquisar todos os usuarios
+									var msg;
+									msg = {
+										listaUsuariosPermitidos: listaUsuariosPermitidos,
+										nomeMapa: nomeMapa,
+										idMapa: idMapa,
+										listaTodosUsuarios: listaTodosUsuarios
+									};
+									routes.pagina(req,res,'configurarMapa', msg);
+								}
+							});
+						}
+						
+						else{ //nao e administrador nem gerente
+							var msg;
+							gerenciadorBanco.perquisarMapas(idUsuario);
+							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+								msg = {
+										alerta: "Voce nao tem permissao para configurar este mapa!",
+										mensagem: mapas
+								}; 
+								return routes.pagina(req,res,'mapas', msg);
+							});
+						}
+					}
+					
+				});
+			}
+			else{ //usuario nao selecionou um mapa
+				res.redirect('/mapas');
+			}
+		});
+		
+		
+		app.post('/configurarMapa', passport.verificarAutenticacao, function(req,res){
+			var permissoes = new Array();
+			//as propriedades sao duas: nomeMapa e usuario+idUsuario. O ultimo tipo e o de mais elementos e contem o tipo de permissao do usuario que nomeia o tipo.
+			var propriedades = Object.getOwnPropertyNames(req.body);
+			
+			for(var i=0; i < propriedades.length; i++){
+				if(propriedades[i] != "nomeMapa" && propriedades[i] != "idMapa"){
+					var permissao = new Object();
+					permissao.idUsuario = parseInt(propriedades[i].replace("usuario", ""));
+					permissao.tipoPermissao = req.body[propriedades[i]];
+					permissoes.push(permissao);
+				}
+			}
+			
+			gerenciadorBanco.configurarMapa(req.body.idMapa, req.body.nomeMapa, req.user.id, permissoes);
+			gerenciadorBanco.eventEmitter.once('fimConfigurarMapa', function(resultado){ 
+				if(resultado.erro){ //erro ao pesquisar todos os usuarios
+					
+					var msg;
+					gerenciadorBanco.perquisarMapas(req.user.id);
+					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+						msg = {
+								alerta: resultado.erro,
+								mensagem: mapas
+						}; 
+						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+					});
+				}
+				else{ //sucesso ao configurar mapa
+					var msg;
+					
+					//desconectar os usuarios que estao logados no mapa
+					msg = {tipoMensagem: 10};
+					enviarParaTodosUsuariosAtivos(req.body.idMapa,msg);
+					
+					gerenciadorBanco.perquisarMapas(req.user.id);
+					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+						msg = {
+								alerta: resultado,
+								mensagem: mapas
+						}; 
+						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+					});
+				}
 			});
 			
 		});
@@ -755,7 +916,7 @@ function Servidor(Ip,Porta){
 	}
 }
 
-	var servidor = new Servidor('192.168.0.101',3000);
+	var servidor = new Servidor('192.168.0.102',3000);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);

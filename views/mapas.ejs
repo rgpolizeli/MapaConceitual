@@ -33,6 +33,10 @@
 			$("#mapasFormulario").attr("action","/excluirMapa");
 			$("#mapasFormulario").submit();
 		}
+		function configurarMapa(){
+			$("#mapasFormulario").attr("action","/obterInfoMapa");
+			$("#mapasFormulario").submit();
+		}
     </script>
 
   </head>
@@ -81,6 +85,7 @@
 				
 				<button id="abrirMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="abrirMapa();">Abrir</button>
 				<button id="criarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="criarMapa();">Criar novo mapa</button>
+				<button id="configurarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="configurarMapa();">Configurar mapa</button>
 				<button id="excluirMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="excluirMapa();">Excluir mapa</button>
 			</form>
 			

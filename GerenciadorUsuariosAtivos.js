@@ -100,9 +100,11 @@ function GerenciadorUsuariosAtivos(){
 		var posicao = buscarPosicaoMapa( idMapa );
 		var socketUsuariosAtivos = new Array();
 		
-		for(var i=0; i < listaUsuariosAtivos[posicao].usuarios.length; i++ ){
-			socketUsuariosAtivos[i] = listaUsuariosAtivos[posicao].usuarios[i].socket;
+		if(posicao != -1){ //mapa aberto
+			for(var i=0; i < listaUsuariosAtivos[posicao].usuarios.length; i++ )
+				socketUsuariosAtivos[i] = listaUsuariosAtivos[posicao].usuarios[i].socket;
 		}
+
 		return socketUsuariosAtivos;
 	};
 	

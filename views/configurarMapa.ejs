@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="../../assets/ico/favicon.ico">
+
+    <title>Configurar mapa</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./stylesheets/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="./stylesheets/signin.css" rel="stylesheet">
+	
+	
+	<script src="./javascripts/jquery-2.1.1.min.js"></script>
+	<script src="./javascripts/bootstrap.min.js"></script>
+
+    <!-- Just for debugging purposes. Don't actually copy this line! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script>
+	    function alterarInputPermissao(novaPermissao, idUsuario){
+			idUsuario = idUsuario.replace("permissoesUsuario","");
+			$("input#usuario" + idUsuario).attr("value",novaPermissao);
+		}
+    
+    	$(document).ready(function(){
+    		
+			$('#abrirModal').click(function(){ $('#selecaoPermissoes').modal('show');});
+			
+			$('#voltarParaMapas').click(function(){
+				var href = location.origin + "/" + "mapas";
+				window.location = href;
+			});
+			
+			$('#excluirPermissao').click(function (){
+				excluirUsuariosAdicionados("tabelaPermissoes");
+			});
+			
+			$('#adicionarPermissao').click(function (){
+				adicionarPermissao("tabelaPermissoes");
+			});
+			
+			function excluirUsuariosAdicionados(nomeTabela){
+				
+				if(nomeTabela == "tabelaPermissoes"){
+					
+					adicionarPermissao("tabelaUsuarios");
+					$("#tabelaPermissoes input:checked").each(function (){
+						var tipoPermissao;
+						tipoPermissao = $(this).parent().parent().find("td.tipoPermissao").text();
+						if( $.trim(tipoPermissao) == "Gerente" || $.trim(tipoPermissao) == "Administrador"){
+							$("#alertDeletarGerente").modal('show');
+						}
+						else{
+							$(this).parent().parent().remove();
+						}
+						
+					});
+					
+				}
+				else{
+					$("#tabelaUsuarios input:checked").each(function (){
+						$(this).attr("checked",false);
+						$(this).parent().parent().hide();
+					});
+				}
+				
+			}
+			
+			function adicionarPermissao(nomeTabela){
+				
+				if(nomeTabela == "tabelaPermissoes"){
+					$("#tabelaUsuarios input:checked").each(function (){
+						
+						var tr = $(this).parent().parent();
+						
+						var idUsuario = $(tr).find("td.idUsuario").text();
+						var nomeUsuario = $(tr).find("td.nomeUsuario").text();
+						var tipoPermissao = $(tr).find("td.tipoPermissao select option:selected").text();
+						
+						if(tipoPermissao == "Editor"){
+							$("#tabelaPermissoes tbody").append(
+									"<tr>" +
+										"<input name='usuario" + idUsuario +"' id='usuario" + idUsuario +"' type='hidden' value='" + tipoPermissao + "'>" + 
+									    "<td><input type='checkbox'></td>" +
+									    "<td class='idUsuario'>" + idUsuario + "</td>" +
+									    "<td class='nomeUsuario'>" + nomeUsuario + "</td>" +
+									    "<td class='tipoPermissao'>" +
+										    "<select id='permissoesUsuario" + idUsuario+ "' onchange='alterarInputPermissao(this.value, this.id);'>" +
+													"<option value='Editor'>Editor</option>" +
+													"<option value='Visualizador'>Visualizador</option>" +
+											"</select>" +
+									    "</td>" + 
+									"</tr>"
+							);
+						}
+						else{ //e visualizador
+							$("#tabelaPermissoes tbody").append(
+									"<tr>" +
+										"<input name='usuario" + idUsuario +"' id='usuario" + idUsuario +"' type='hidden' value='" + tipoPermissao + "'>" + 
+									    "<td><input type='checkbox'></td>" +
+									    "<td class='idUsuario'>" + idUsuario + "</td>" +
+									    "<td class='nomeUsuario'>" + nomeUsuario + "</td>" +
+									    "<td class='tipoPermissao'>" +
+										    "<select id='permissoesUsuario" + idUsuario + "' onchange='alterarInputPermissao(this.value, this.id);'>" +
+													"<option value='Visualizador'>Visualizador</option>" +
+													"<option value='Editor'>Editor</option>" +
+											"</select>" +
+									    "</td>" + 
+									"</tr>"
+							);
+						}
+						
+						
+					});
+					
+					excluirUsuariosAdicionados("tabelaUsuarios");
+					$('#selecaoPermissoes').modal('hide');
+				}
+				else{ //tabela Usuarios
+					
+					$("#tabelaPermissoes input:checked").each(function (){
+					
+						var tr = $(this).parent().parent();
+						
+						var idUsuario = $(tr).find("td.idUsuario").text();
+						var tipoPermissao = $(tr).find("td.tipoPermissao select option:selected").text();
+						if($.trim(tipoPermissao) != 'Gerente' && $.trim(tipoPermissao) != 'Administrador'){
+						
+							var nomeUsuario = $(tr).find("td.nomeUsuario").text();
+							$("#tabelaUsuarios").find("tr").each(function (){
+								if($(this).find("td.idUsuario").text() == idUsuario){
+									$(this).show();
+								}
+							});
+						}
+					});
+				}
+			}
+			
+		});
+    </script> 
+    
+  </head>
+
+  <body>
+
+	<div class="container">
+
+		<div class="col-sm-6 col-sm-offset-3">
+		
+			<h1><span class="fa fa-sign-in"></span> Configurando o mapa conceitual</h1>
+		
+			<!-- LOGIN FORM -->
+			<form action="/configurarMapa" method="post">
+				<div class="form-group">
+					<label>Nome do Mapa</label>
+					<input type="text" class="form-control" name="nomeMapa" value='<%= nomeMapa %>' required>
+					<input style="display:none" type="text" name="idMapa" value='<%= idMapa %>'>
+				</div>
+				
+				<label>Permissões Atuais</label>
+				<div class="panel panel-default">
+				  	<!-- Table -->
+		  			<table class="table" id="tabelaPermissoes" name="tabelaPermissoes">
+			  			<thead>
+				  			<tr>
+				    			<th>#</th>
+				    			<th>ID</th>
+				    			<th>Nome</th>
+				    			<th>Tipo de Permissão</th>
+				  			</tr>
+			  			</thead>
+			  			
+			  			<tbody>
+			  				<% for(var i = 0; i < listaUsuariosPermitidos.length; i++){ %>
+				  				<tr>
+				  					<input name=<%= "usuario" + listaUsuariosPermitidos[i].id %> id=<%= "usuario" + listaUsuariosPermitidos[i].id %> type="hidden" value=<%= listaUsuariosPermitidos[i].tipoPermissao %>>
+								    <td><input type="checkbox"></td>
+								     <td class="idUsuario"><%= listaUsuariosPermitidos[i].id %></td>
+								    <td class="nomeUsuario"><%= listaUsuariosPermitidos[i].nome %></td>
+								    <td class="tipoPermissao">
+								    	<select id=<%= "permissoesUsuario" + listaUsuariosPermitidos[i].id %> onchange="alterarInputPermissao(this.value, this.id);">
+								    		<% if(listaUsuariosPermitidos[i].tipoPermissao == 'Administrador' || listaUsuariosPermitidos[i].tipoPermissao == 'Gerente'){ %>
+												<option value='<%= listaUsuariosPermitidos[i].tipoPermissao %>'><%= listaUsuariosPermitidos[i].tipoPermissao %></option>
+										    <% } else{ %>
+											    <% if (listaUsuariosPermitidos[i].tipoPermissao == 'Editor'){ %>
+													<option value="Editor">Editor</option>
+													<option value="Visualizador">Visualizador</option>
+											    <% } else{ %>
+													<option value="Visualizador">Visualizador</option>
+													<option value="Editor">Editor</option>
+										    	<% } %>
+										    <% } %>
+										    
+										</select>
+								    </td>
+								</tr>
+							<%}%>
+			  			</tbody>
+			  		</table>
+				  	<div class="panel-body">
+		    			<a id="abrirModal">Adicionar permissão</a> | <a id="excluirPermissao">Excluir permissão</a>
+		  			</div>
+				</div>
+				
+				<button type="submit" class="btn btn-lg btn-primary btn-block">Salvar alterações</button>
+				<button id="voltarParaMapas" type="button" class="btn btn-lg btn-primary btn-block">Voltar aos Mapas</button>
+			</form>
+		</div>
+
+</div>
+
+
+  <div id="selecaoPermissoes" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
+			<h4 class="modal-title">Selecionar Permissões</h4>
+		  </div>
+		  <div class="modal-body">
+				<label>Permissões</label>
+				<div class="panel panel-default">
+				  	<!-- Table -->
+		  			<table class="table" id="tabelaUsuarios">
+			  			<thead>
+				  			<tr>
+				    			<th>#</th>
+				    			<th>ID</th>
+				    			<th>Nome</th>
+				    			<th>Tipo de Permissão</th>
+				  			</tr>
+			  			</thead>
+			  			
+			  			<tbody>
+			  				<% for(var i = 0; i < listaTodosUsuarios.length; i++){ %>
+				  				<% var estaNaLista = false %>
+				  				<% var indiceNaLista %>
+				  				<% for(var j=0; j < listaUsuariosPermitidos.length && !estaNaLista; j++) { %>
+				  					<% if(listaTodosUsuarios[i].id == listaUsuariosPermitidos[j].id){ %>
+				  					<% estaNaLista = true %>
+				  					<% indiceNaLista= j %>
+				  					<% } %>
+				  				<% } %>
+				  				<% if(!estaNaLista) { %>
+					  				<tr>
+									    <td><input type="checkbox"></td>
+									     <td class="idUsuario"><%= listaTodosUsuarios[i].id %></td>
+									    <td class="nomeUsuario"><%= listaTodosUsuarios[i].nome %></td>
+									    <td class="tipoPermissao">
+									    	<select id="permissoes">
+											    <option value="Editor">Editor</option>
+											    <option value="Visualizador">Visualizador</option>
+											</select>
+									    </td>
+									</tr>
+								<%} else{ %>
+									<% if(listaUsuariosPermitidos[indiceNaLista].tipoPermissao != 'Gerente' && listaUsuariosPermitidos[indiceNaLista].tipoPermissao != 'Administrador') {%>
+										<tr style="display:none">
+									    <td><input type="checkbox"></td>
+									     <td class="idUsuario"><%= listaTodosUsuarios[i].id %></td>
+									    <td class="nomeUsuario"><%= listaTodosUsuarios[i].nome %></td>
+									    <td class="tipoPermissao">
+									    	<select id="permissoes">
+											    <option value="Editor">Editor</option>
+											    <option value="Visualizador">Visualizador</option>
+											</select>
+									    </td>
+									</tr>
+									<% } %>
+								<%}%>
+							<%}%>
+			  			</tbody>
+			  		</table>
+				</div> <!-- div panel -->
+			</div>	<!-- modal-body -->
+		  <div class="modal-footer">
+		  	<button type="submit" id="adicionarPermissao" class="btn btn-primary">Adicionar</button>
+			<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar</button>
+		  </div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+
+	<!-- Alert para o caso de querer excluir o gerente -->
+	<div id="alertDeletarGerente" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
+			<h4 class="modal-title">Atenção!</h4>
+		  </div>
+		  <div class="modal-body">Você não pode excluir sua permissao nem a do Administrador.</div>
+		  <div class="modal-footer">
+			<button data-dismiss="modal" id="cancel" class="btn btn-default">OK</button>
+		  </div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+
+  </body>
+</html>

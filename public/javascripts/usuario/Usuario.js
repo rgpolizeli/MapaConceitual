@@ -578,11 +578,21 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 					delete mensagem.tipoMensagem;
 					mapaConceitual.editar(mensagem);
 				break;
+				
+				case 10: //desconectado devido a mudança de permissao
+					desconectarDoMapa();
+				break;
 			}
 		}
 		
     };
 
+    
+    function desconectarDoMapa(){
+    	var href = "http://" + ip + ":" + porta + "/" + "mapas/?desconectado=1";
+    	window.location = href;
+    }
+    
 
     function desselecionar() {
     	interfaceUsuario.desabilitarBotaoNovaLigacao();
