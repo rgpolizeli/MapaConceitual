@@ -12,6 +12,9 @@ function GerenciadorConceito(){
      */
     this.adicionarDragDrop = function(idMapa,conceitoContainer, stageCanvas, getConceitoLista, getLigacaoLista, getCorFundo, getAlturaMinima, getLarguraMinima, atualizarLigacoesAoMoverConceito, removerFilhoStageCanvas, renderizarMapa, montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor){
 
+    	var idConceito;
+    	idConceito = gerenciadorConceito.getId(conceitoContainer, stageCanvas);
+    	
     	conceitoContainer.addEventListener("pressmove", function(evt){
     		var altura;
         	var largura;
@@ -21,9 +24,9 @@ function GerenciadorConceito(){
     		
     		if(evt.target.name != "quadradoTamanho"){ // movimentando o retangulo selecao
     			
-    			if(stageCanvas.getChildByName("retanguloSelecaoMV") == null){ // MV de movimentacao
+    			if(stageCanvas.getChildByName("retanguloSelecaoMV" + idConceito) == null){ // MV de movimentacao
         			var retangulo = new createjs.Shape();
-            		retangulo.name = "retanguloSelecaoMV";
+            		retangulo.name = "retanguloSelecaoMV" + idConceito;
             		var hit = new createjs.Shape();
             		
             		retangulo.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
@@ -39,7 +42,7 @@ function GerenciadorConceito(){
         		}
         		
         		else{
-        			var retangulo = stageCanvas.getChildByName("retanguloSelecaoMV"); 
+        			var retangulo = stageCanvas.getChildByName("retanguloSelecaoMV" + idConceito); 
         			retangulo.x = (evt.stageX - (largura/2) - stageCanvas.x);
         			retangulo.y = (evt.stageY - (altura/2) - stageCanvas.y);
         		}
@@ -51,9 +54,9 @@ function GerenciadorConceito(){
     			var deslocamentoX;
     			var deslocamentoY;
     			
-    			if(stageCanvas.getChildByName("retanguloSelecaoAT") == null){ //AT de alterarTamanho
+    			if(stageCanvas.getChildByName("retanguloSelecaoAT" + idConceito) == null){ //AT de alterarTamanho
         			var retangulo = new createjs.Shape();
-            		retangulo.name = "retanguloSelecaoAT";
+            		retangulo.name = "retanguloSelecaoAT" + idConceito;
             		var hit = new createjs.Shape();
             		
             		retangulo.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
@@ -68,7 +71,7 @@ function GerenciadorConceito(){
             		retangulo.y = conceitoContainer.y;
         		}
     			else{
-    				var retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT"); 
+    				var retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT" + idConceito); 
     				
     				if ( (conceitoContainer.x + largura) <= (evt.stageX - stageCanvas.x)) {
         				deslocamentoX = (evt.stageX - stageCanvas.x) - (conceitoContainer.x + largura);
@@ -105,17 +108,16 @@ function GerenciadorConceito(){
     		var retanguloSelecaoAT;
     		var retanguloSelecaoMV;
     		
-    		retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT");
-    		retanguloSelecaoMV = stageCanvas.getChildByName("retanguloSelecaoMV");
+    		retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT" + idConceito);
+    		retanguloSelecaoMV = stageCanvas.getChildByName("retanguloSelecaoMV" + idConceito);
     		
     		if(retanguloSelecaoAT || retanguloSelecaoMV){ // necessario pois quando o usuario clica uma unica vez sem pressionar, tambem gera o pressup
     			
     			var conceitoNaLista;
-    	    	var idConceito;
     	    	var msg;
         		var indexRetanguloSelecao;
         		
-        		idConceito = gerenciadorConceito.getId(conceitoContainer, stageCanvas);
+        		
         		conceitoNaLista = getConceitoLista(idConceito);
         		
     			if(evt.target.name != "quadradoTamanho"){ //movimentando conceito
@@ -498,13 +500,15 @@ function GerenciadorConceito(){
     	var rect;
     	var retanguloSelecao;
     	var label;
-		
+    	var idConceito;
+    	
+    	idConceito = gerenciadorConceito.getId(conceitoContainer, stageCanvas);
     	rect = getRetangulo(conceitoContainer);
     	label = getLabel(conceitoContainer);
     	
     	//necessario remover o retangulo selecao quando o qt e removido pois quem dispara o evento do retangulo selecao e o qt
     	//necessario nao remover o RS quando o usuario estiver movimentando o RS e chegar uma mensagem para atualizar o tamanho do conceito
-		retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT");
+		retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT" + idConceito);
     	
     	if(!propriedades.texto){ //se nao houver texto, altera-se apenas o tamanho
 
@@ -520,7 +524,7 @@ function GerenciadorConceito(){
 				removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
 			}
 			else{
-				retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+				retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV" + idConceito);
 				if(retanguloSelecao){
 					var novaAltura;
 					var novaLargura;
@@ -570,7 +574,7 @@ function GerenciadorConceito(){
 						removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
 					}
 					else{
-						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV" + idConceito);
 						if(retanguloSelecao){
 							var novaAltura;
 							var novaLargura;
@@ -646,7 +650,7 @@ function GerenciadorConceito(){
 						removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
 					}
 					else{
-						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV" + idConceito);
 						if(retanguloSelecao){
 							var novaAltura;
 							var novaLargura;

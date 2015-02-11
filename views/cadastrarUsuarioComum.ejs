@@ -31,6 +31,14 @@
   </head>
 
   <body>
+  
+  <!-- DIV PARA ALERTA -->
+	<% if(typeof(alerta) != 'undefined'){ %>
+	  	<div class="alert alert-warning alert-dismissible" role="alert">
+	  		<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	  		<%= alerta %>
+		</div>
+  	<% } %>
 
 	<div class="container">
 
@@ -39,7 +47,7 @@
 	<h1><span class="fa fa-sign-in"></span> Cadastre-se</h1>
 
 	<!-- LOGIN FORM -->
-	<form action="/cadastrar" method="post">
+	<form action="/cadastrarUsuarioComum" method="post">
 		<div class="form-group">
 			<label>Usuário</label>
 			<input type="text" class="form-control" name="usuario" required>

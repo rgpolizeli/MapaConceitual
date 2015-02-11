@@ -14,6 +14,30 @@ function GerenciadorBanco(){
 	this.eventEmitter = new events.EventEmitter(); 
 	
 	
+	/*
+	 * Cadastra usuario comum com tipo 1 e coordenador com tipo 1.
+	 */
+	
+	this.cadastrarUsuario = function cadastrarUsuario(usuario, password, nome, email, tipo){ 
+
+		connection.query('INSERT INTO usuarios SET usuario = ?, password = ?, nome = ?, email = ?, tipo = ?',[usuario, password, nome, email, tipo], function(err, result) {
+			if(err){
+				if(err.code == 'ER_NO_SUCH_TABLE'){
+					connection.query('CREATE TABLE usuarios(id INT NOT NULL AUTO_INCREMENT, usuario VARCHAR(30), password VARCHAR(7), nome VARCHAR(100), email VARCHAR(100), tipo INT NOT NULL, PRIMARY KEY (id) )');
+					connection.query('INSERT INTO usuarios SET usuario = ?, password = ?, nome = ?, email = ?, tipo = ?',[usuario, password, nome, email, tipo], function(err, result) {
+						if(err) gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', err.code);
+						else gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', 1);
+					});
+				}
+				else
+					gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', err.code);
+			}
+			else gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', 1);
+		});
+	};
+	
+	
+	
 	this.excluirMapa = function excluirMapa (idMapa){
 		
 		connection.query('DELETE FROM mapas WHERE id = ?',[idMapa], function(err, result) {		
@@ -41,6 +65,7 @@ function GerenciadorBanco(){
 								'id INT NOT NULL AUTO_INCREMENT,'+ 
 								'nome VARCHAR(30) NOT NULL,'+ 
 								'idProprietario INT NOT NULL,'+ 
+								'idCoordenador INT NOT NULL,'+ 
 								'PRIMARY KEY (id),'+
 								' FOREIGN KEY (idProprietario) REFERENCES usuarios (id)'+
 								' ON DELETE CASCADE'+

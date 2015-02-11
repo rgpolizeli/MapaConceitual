@@ -9,6 +9,8 @@ function Servidor(Ip,Porta){
 	var jsdom = require("jsdom").jsdom;
 	var $  = require('jquery')(jsdom().parentWindow);
 	
+	//Arquivo json com as senhas do sistema
+	var configuracoes = require('./configuracoes.json');
 	
 	var express = require('express');
 	var session = require('express-session');
@@ -84,8 +86,12 @@ function Servidor(Ip,Porta){
 		});
 		
 		//definindo as routes
-		app.get('/cadastrar', function(req,res){
-			routes.pagina(req,res,'cadastrar',null);
+		app.get('/cadastrarUsuarioComum', function(req,res){
+			routes.pagina(req,res,'cadastrarUsuarioComum',null);
+		});
+		
+		app.get('/cadastrarCoordenador', function(req,res){
+			routes.pagina(req,res,'cadastrarCoordenador',null);
 		});
 		
 		app.get('/mapas', passport.verificarAutenticacao, function(req,res){
@@ -103,8 +109,33 @@ function Servidor(Ip,Porta){
 			
 		});
 		
-		app.post('/cadastrar', function(req,res){
-			routes.cadastrar(req,res,connection);		
+		app.post('/cadastrarUsuarioComum', function(req,res){
+			gerenciadorBanco.cadastrarUsuario(req.body.usuario, req.body.password, req.body.nome, req.body.email, 1); //1 de usuario comum
+			gerenciadorBanco.eventEmitter.once('fimCadastroUsuario', function(resultado){ 
+				if(resultado == 1)
+					routes.pagina(req,res,'index', {alerta: "Cadastro de usuario comum realizado com sucesso."} ); 
+				else
+					routes.pagina(req,res,'cadastrarUsuarioComum', {alerta: "Ocorreu o seguinte erro na tentativa de cadastro: " + resultado + " . Tente novamente."} );
+			});
+		});
+		
+		app.post('/cadastrarCoordenador', function(req,res){
+			
+			if(req.body.passwordCadastroCoordenador == configuracoes["senhaCadastroCoordenador"]){
+				
+				gerenciadorBanco.cadastrarUsuario(req.body.usuario, req.body.password, req.body.nome, req.body.email, 0); //0 de coordenador
+				gerenciadorBanco.eventEmitter.once('fimCadastroUsuario', function(resultado){ 
+					if(resultado == 1)
+						routes.pagina(req,res,'index', {alerta: "Cadastro de coordenador realizado com sucesso."} ); 
+					else
+						routes.pagina(req,res,'cadastrarCoordenador', {alerta: "Ocorreu o seguinte erro na tentativa de cadastro: " + resultado + " . Tente novamente."} );
+				});
+				
+			}
+			else{
+				routes.pagina(req,res,'cadastrarCoordenador', {alerta: "Senha para cadastro de coordenador incorreta!"} );
+			}
+			
 		});
 		
 		app.post('/abrir', function(req,res){
@@ -916,7 +947,7 @@ function Servidor(Ip,Porta){
 	}
 }
 
-	var servidor = new Servidor('192.168.0.102',3000);
+	var servidor = new Servidor('localhost',4000);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);

@@ -16,6 +16,8 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
      */
     this.adicionarDragDrop = function(idMapa,ligacaoContainer, stageCanvas, getLigacaoLista, getCorFundo, getAlturaMinima, getLarguraMinima, removerFilhoStageCanvas, renderizarMapa, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor){
     	
+    	var idLigacao;
+    	idLigacao = gerenciadorLigacao.getId(ligacaoContainer, stageCanvas);
     	
     	ligacaoContainer.addEventListener("pressmove", function(evt){
     		
@@ -27,9 +29,9 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     		
     		if(evt.target.name != "quadradoTamanho"){ // movimentando o retangulo selecao
     			
-    			if(stageCanvas.getChildByName("retanguloSelecaoMV") == null){ // MV de movimentacao
+    			if(stageCanvas.getChildByName("retanguloSelecaoMV" + idLigacao) == null){ // MV de movimentacao
         			var retangulo = new createjs.Shape();
-            		retangulo.name = "retanguloSelecaoMV";
+            		retangulo.name = "retanguloSelecaoMV" + idLigacao;
             		var hit = new createjs.Shape();
             		
             		retangulo.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
@@ -45,7 +47,7 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
         		}
         		
         		else{
-        			var retangulo = stageCanvas.getChildByName("retanguloSelecaoMV"); 
+        			var retangulo = stageCanvas.getChildByName("retanguloSelecaoMV" + idLigacao); 
         			retangulo.x = (evt.stageX - (largura/2) - stageCanvas.x);
         			retangulo.y = (evt.stageY - (altura/2) - stageCanvas.y);
         		}
@@ -58,9 +60,9 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     			
     			console.log(evt.target.name);
         			
-    			if(stageCanvas.getChildByName("retanguloSelecaoAT") == null){ //AT de alterarTamanho
+    			if(stageCanvas.getChildByName("retanguloSelecaoAT" + idLigacao) == null){ //AT de alterarTamanho
         			var retangulo = new createjs.Shape();
-            		retangulo.name = "retanguloSelecaoAT";
+            		retangulo.name = "retanguloSelecaoAT" + idLigacao;
             		var hit = new createjs.Shape();
             		
             		retangulo.graphics.setStrokeStyle(espessuraRetanguloSelecao,"round").beginStroke(corRetanguloSelecao).beginFill().drawRoundRect( //adiciona na posicao zero,zero
@@ -75,7 +77,7 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
             		retangulo.y = ligacaoContainer.y;
         		}
     			else{
-    				var retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT"); 
+    				var retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT" + idLigacao); 
     				
     				if ( (ligacaoContainer.x + largura) <= (evt.stageX - stageCanvas.x) ) {
 	    				deslocamentoX = (evt.stageX - stageCanvas.x) - (ligacaoContainer.x + largura);
@@ -113,17 +115,15 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
         		var retanguloSelecaoAT;
         		var retanguloSelecaoMV;
         		
-        		retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT");
-        		retanguloSelecaoMV = stageCanvas.getChildByName("retanguloSelecaoMV");
+        		retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT" + idLigacao);
+        		retanguloSelecaoMV = stageCanvas.getChildByName("retanguloSelecaoMV" + idLigacao);
         		
         		if(retanguloSelecaoAT || retanguloSelecaoMV){ // necessario pois quando o usuario clica uma unica vez sem pressionar, tambem gera o pressup
         		
         			var ligacaoNaLista;
-        	    	var idLigacao;
         	    	var msg;
             		var indexRetanguloSelecao;
         			
-            		idLigacao = gerenciadorLigacao.getId(ligacaoContainer, stageCanvas);
             		ligacaoNaLista = getLigacaoLista(idLigacao);
         		
 	    			if(evt.target.name != "quadradoTamanho"){ //movimentando ligacao
@@ -742,13 +742,15 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	var rect;
     	var retanguloSelecao;
     	var label;
+    	var idLigacao;
     	
+    	idLigacao = gerenciadorLigacao.getId(ligacaoContainer, stageCanvas);
     	rect = getRetangulo(ligacaoContainer);
     	label = getLabel(ligacaoContainer);
     	
     	//necessario remover o retangulo selecao quando o qt e removido pois quem dispara o evento do retangulo selecao e o qt
     	//necessario nao remover o RS quando o usuario estiver movimentando o RS e chegar uma mensagem para atualizar o tamanho do conceito
-		retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT");
+		retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT" + idLigacao);
     	
     	if(!propriedades.texto){ //se nao houver texto, altera-se apenas o tamanho
 	    	rect.graphics.clear();
@@ -763,7 +765,7 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
 				removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
 			}
 			else{
-				retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+				retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV" + idLigacao);
 				if(retanguloSelecao){
 					var novaAltura;
 					var novaLargura;
@@ -811,7 +813,7 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
 						removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
 					}
 					else{
-						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV" + idLigacao);
 						if(retanguloSelecao){
 							var novaAltura;
 							var novaLargura;
@@ -886,7 +888,7 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     					removerFilhoStageCanvas(stageCanvas, indexRetanguloSelecao);
     				}
     				else{
-    					retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV");
+    					retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV" + idLigacao);
     					if(retanguloSelecao){
     						var novaAltura;
     						var novaLargura;

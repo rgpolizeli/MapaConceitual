@@ -32,6 +32,15 @@
   </head>
 
   <body>
+  
+  <!-- DIV PARA ALERTA -->
+	<% if(typeof(alerta) != 'undefined'){ %>
+	  	<div class="alert alert-warning alert-dismissible" role="alert">
+	  		<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	  		<%= alerta %>
+		</div>
+  	<% } %>
+  
 
 	<div id="recuperarSenhaModal" class="modal fade">
 	  <div class="modal-dialog">
@@ -54,6 +63,39 @@
 		</div><!-- /.modal-content -->
 	  </div><!-- /.modal-dialog -->
 	</div><!-- /.modal -->
+	
+	
+	<div id="tipoCadastroModal" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
+			<h4 class="modal-title">Selecione o tipo de cadastro:</h4>
+		  </div>
+		  <div class="modal-body">
+		  	<p>
+		  		 <div class="input-group">
+		  		 	<input type="text" class="form-control" placeholder="É o criador dos mapas conceituais.">
+			      	<span class="input-group-btn">
+			        	<a href="./cadastrarUsuarioComum"><button class="btn btn-primary" type="button">Usuário Comum</button></a>
+			     	 </span>
+			    </div><!-- /input-group -->
+			</p>
+			<p>    
+			    <div class="input-group">
+		  		 	<input type="text" class="form-control" placeholder="É o orientador na criação dos mapas conceituais.">
+			      	<span class="input-group-btn">
+			        	<a href="./cadastrarCoordenador"><button class="btn btn-primary" type="button">Coordenador</button></a>
+			     	 </span>
+			    </div><!-- /input-group -->
+			</p>
+		  </div>
+		  <div class="modal-footer">
+		  	<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar cadastro</button>
+		  </div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
   
   
     <div class="container">
@@ -65,7 +107,7 @@
         <label class="checkbox">
           <input type="checkbox" value="remember-me">Lembrar-me</label>
         <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
-		<a id="cadastrar" href="./cadastrar">Cadastre-se</a> | <a id="recuperarSenha" href="#">Recuperar senha</a> 
+		<a id="cadastrarLink" href="#">Cadastre-se</a> | <a id="recuperarSenhaLink" href="#">Recuperar senha</a> 
       </form>
 		
 		
