@@ -11,7 +11,158 @@ function GerenciadorBanco(){
 	});
 	
 	var gerenciadorBanco = this;
-	this.eventEmitter = new events.EventEmitter(); 
+	this.eventEmitter = new events.EventEmitter();
+	
+	//define o numero de listeners associados a um EventEmitter. Como cada busca pelo nome de grupos adiciona um listener, deixei ilimitado. 
+	//this.eventEmitter.setMaxListeners(0);
+	
+	
+	this.verificarTipoUsuario = function verificarTipoUsuario(idUsuario){
+		connection.query('SELECT tipo FROM usuarios WHERE id = ?',[idUsuario], function(err, result) {		
+			if(err){
+				gerenciadorBanco.eventEmitter.emit('fimVerificarTipoUsuario', -1);
+			}
+			else
+				gerenciadorBanco.eventEmitter.emit('fimVerificarTipoUsuario', result[0].tipo);
+		});	
+	};
+	
+	
+	
+	function adicionarMembros(idGrupo, membros){
+		var tiposMembro = {
+			"Coordenador": 0,
+			"Comum": 1
+		};
+		
+		var membrosRestantes = new Array();
+		
+		for(var i=0; i < membros.length; i++){
+			membrosRestantes.push(i);
+		}
+		
+		
+		for(var k=0; k < membros.length; k++){
+			connection.query('INSERT INTO membros SET idUsuario = ?, idGrupo = ?, tipoMembro = ?',[membros[k].idUsuario, idGrupo, tiposMembro[membros[k].tipoMembro]], function(err, result) {		
+				if(err) {
+					//fazer algum tratamento
+					membrosRestantes.pop();
+					if(membrosRestantes.length == 0){
+						gerenciadorBanco.eventEmitter.emit('membrosAdicionados');
+					}
+				}
+				else{
+					membrosRestantes.pop();
+					if(membrosRestantes.length == 0){
+						gerenciadorBanco.eventEmitter.emit('membrosAdicionados');
+					}
+				}
+			});
+		}	
+		
+	}
+	
+	this.inserirNovoGrupo = function (nomeGrupo, membros){
+		var idGrupoNovo;
+		
+		connection.query('INSERT INTO grupos SET nome = ?',[nomeGrupo], function(err, result) {		
+			if(err) {
+				if(err.code == 'ER_NO_SUCH_TABLE'){ // se a tabela nao tiver sido criada
+					connection.query(
+						'CREATE TABLE grupos('+
+							'id INT NOT NULL AUTO_INCREMENT,'+ 
+							'nome VARCHAR(30) NOT NULL,'+ 
+							'PRIMARY KEY (id)' +
+						') ENGINE=InnoDB'
+					);
+					connection.query('INSERT INTO grupos SET nome = ?',[nomeGrupo], function(err, result) {
+						if(err) console.log(err);
+						else{
+							idGrupoNovo = result.insertId;
+							adicionarMembros(idGrupoNovo, membros);
+							gerenciadorBanco.eventEmitter.once('membrosAdicionados', function(){ 
+								gerenciadorBanco.eventEmitter.emit('grupoCriado', result.insertId);
+							});
+						}
+					});
+				}
+				else //outro erro
+					console.log(err);
+			}
+			else { 
+				idGrupoNovo = result.insertId;
+				adicionarMembros(idGrupoNovo, membros);
+				gerenciadorBanco.eventEmitter.once('membrosAdicionados', function(){ 
+					gerenciadorBanco.eventEmitter.emit('grupoCriado', result.insertId);
+				});
+			}
+		});
+	};
+	
+	function pesquisarNomeGrupo(idGrupo, indice){
+		
+		connection.query('SELECT nome FROM grupos WHERE id = ?',[idGrupo], function(err, result) {		
+			if(err){
+				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeGrupo' + indice, null, indice);
+			}
+			else{
+				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeGrupo' + indice, result[0].nome, indice);
+			}
+		});	
+	}
+	
+	
+	this.obterGrupos = function obterGrupos(idUsuario){
+		var grupos = new Array();
+		
+		connection.query('SELECT idGrupo FROM membros WHERE idUsuario = ? AND tipoMembro = ?',[idUsuario, 0], function(err, result) {		
+			if(err) {
+				if(err.code == 'ER_NO_SUCH_TABLE'){
+					connection.query(
+							'CREATE TABLE grupos('+
+								'id INT NOT NULL AUTO_INCREMENT,'+ 
+								'nome VARCHAR(30) NOT NULL,'+
+								'PRIMARY KEY (id)'+
+							') ENGINE=InnoDB'
+					);
+					connection.query(
+						'CREATE TABLE membros(' +
+							'idUsuario INT NOT NULL,'+
+							'idGrupo INT NOT NULL,'+ 
+							'tipoMembro INT NOT NULL,'+
+							'FOREIGN KEY (idUsuario) REFERENCES usuarios (id)'+
+							' ON DELETE CASCADE,'+
+							' FOREIGN KEY (idGrupo) REFERENCES grupos (id)'+
+							' ON DELETE CASCADE,'+
+							'PRIMARY KEY (idUsuario,idGrupo)'+
+						') ENGINE=InnoDB'
+					);
+					gerenciadorBanco.eventEmitter.emit('fimObterGrupos', grupos);
+				}
+				else{
+					gerenciadorBanco.eventEmitter.emit('fimObterGrupos', grupos);
+				}
+			}
+			else{ 
+				for(var i=0; i < result.length; i++){
+					grupos[i] = new Object();
+					grupos[i].idGrupo = parseInt(result[i].idGrupo);
+					
+					pesquisarNomeGrupo(grupos[i].idGrupo, i);
+					
+					//.on pois eh para atender todos os eventos deste tipo
+					gerenciadorBanco.eventEmitter.once('fimPesquisaNomeGrupo' + i, function retornoNomeGrupoPesquisado(nomeGrupo, indice){ 
+						grupos[indice].nomeGrupo = nomeGrupo;
+						
+						// so vou emitir o termino de obterGrupos quando o nome do ultimo grupo tiver acabado de ser pesquisado.
+						if(indice == result.length - 1)
+							gerenciadorBanco.eventEmitter.emit('fimObterGrupos', grupos);
+					});
+				}
+				
+			}
+		});	
+	};
 	
 	
 	/*
@@ -63,12 +214,8 @@ function GerenciadorBanco(){
 					connection.query(
 							'CREATE TABLE mapas('+
 								'id INT NOT NULL AUTO_INCREMENT,'+ 
-								'nome VARCHAR(30) NOT NULL,'+ 
-								'idProprietario INT NOT NULL,'+ 
-								'idCoordenador INT NOT NULL,'+ 
-								'PRIMARY KEY (id),'+
-								' FOREIGN KEY (idProprietario) REFERENCES usuarios (id)'+
-								' ON DELETE CASCADE'+
+								'nome VARCHAR(30) NOT NULL,'+
+								'PRIMARY KEY (id)'+
 							') ENGINE=InnoDB'
 					);
 					connection.query(
@@ -138,28 +285,19 @@ function GerenciadorBanco(){
 
 	
 	this.inserirNovoMapa = function (nomeMapa, permissoes){
-		var i, idProprietario, idMapaNovo;
+		var idMapaNovo;
 		
-		i=0;
-		while(permissoes[i].tipoPermissao != "Gerente"){
-			i++;
-		}
-		idProprietario = permissoes[i].idUsuario;
-		
-		connection.query('INSERT INTO mapas SET nome = ?, idProprietario = ?',[nomeMapa, idProprietario], function(err, result) {		
+		connection.query('INSERT INTO mapas SET nome = ?',[nomeMapa], function(err, result) {		
 			if(err) {
 				if(err.code == 'ER_NO_SUCH_TABLE'){ // se a tabela nao tiver sido criada
 					connection.query(
 						'CREATE TABLE mapas('+
 							'id INT NOT NULL AUTO_INCREMENT,'+ 
 							'nome VARCHAR(30) NOT NULL,'+ 
-							'idProprietario INT NOT NULL,'+ 
-							'PRIMARY KEY (id),'+
-							' FOREIGN KEY (idProprietario) REFERENCES usuarios (id)'+
-							' ON DELETE CASCADE'+
+							'PRIMARY KEY (id)' +
 						') ENGINE=InnoDB'
 					);
-					connection.query('INSERT INTO mapas SET nome = ?, idProprietario = ?',[nomeMapa, idProprietario], function(err, result) {
+					connection.query('INSERT INTO mapas SET nome = ?',[nomeMapa], function(err, result) {
 						if(err) console.log(err);
 						else{
 							idMapaNovo = result.insertId;

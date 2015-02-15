@@ -85,6 +85,93 @@ function Servidor(Ip,Porta){
 			
 		});
 		
+		
+		app.get('/grupos', passport.verificarAutenticacao, function(req,res){ //deve estar autenticado
+			
+			gerenciadorBanco.verificarTipoUsuario(req.user.id);
+			gerenciadorBanco.eventEmitter.once('fimVerificarTipoUsuario', function(tipoUsuario){ 
+				
+				if(tipoUsuario == 0){ // se for coordenador
+					
+					gerenciadorBanco.obterGrupos(req.user.id);
+					
+					//a variavel receptora do evento deve ser a mesma que emitiu.
+					//once ao inves de on, pois o evento emitido num outro login continua valendo para relogin, executando routes.pagina duas vezes.
+					gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+						routes.pagina(req,res,'grupos', {mensagem:grupos});
+					});
+				}
+				else{ //nao eh coordenador
+					gerenciadorBanco.perquisarMapas(req.user.id);
+					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+						msg = {
+								alerta: "Voce nao e coordenador para gerenciar grupos!",
+								mensagem: mapas
+						}; 
+						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+					}); 
+				}
+				
+			});
+			
+		});
+		
+		
+		app.get('/criarGrupo', function(req,res){
+			if(!req.isAuthenticated()){
+				routes.pagina(req,res,'index',null);
+			}
+			else{
+				
+				var idUsuario, nomeUsuario, achou, msg;
+				
+				idUsuario = req.user.id;
+				gerenciadorBanco.buscarNomeTodosUsuarios();
+				gerenciadorBanco.eventEmitter.once('nomeTodosUsuarios', function(listaUsuarios){
+					
+					achou = false;
+					
+					for(var i=0; (i < listaUsuarios.length) && !achou; i++){
+						if(listaUsuarios[i].id == idUsuario){
+							nomeUsuario = listaUsuarios[i].nome;
+							achou = true;
+						}
+					}
+
+					msg = {
+							nomeUsuario: nomeUsuario,
+							idUsuario: idUsuario,
+							listaUsuarios: listaUsuarios
+					};
+					routes.pagina(req,res,'criarGrupo', msg);
+				});
+			}
+		});
+		
+		
+		app.post('/criarGrupo', function(req,res){
+			
+			var membros = new Array();
+			//as propriedades sao duas: nomeGrupo e usuario+idUsuario. O ultimo tipo eh o de mais elementos e contem o tipo de permissao do usuario que nomeia o tipo.
+			var propriedades = Object.getOwnPropertyNames(req.body);
+			
+			for(var i=0; i < propriedades.length; i++){
+				if(propriedades[i] != "nomeGrupo"){
+					var membro = new Object();
+					membro.idUsuario = parseInt(propriedades[i].replace("usuario", ""));
+					membro.tipoMembro = req.body[propriedades[i]];
+					membros.push(membro);
+				}
+			}
+			
+			gerenciadorBanco.inserirNovoGrupo(req.body.nomeGrupo, membros);
+			gerenciadorBanco.eventEmitter.once('grupoCriado', function(idGrupo){ 
+				return res.redirect('/grupos');
+			});
+			
+		});
+		
+		
 		//definindo as routes
 		app.get('/cadastrarUsuarioComum', function(req,res){
 			routes.pagina(req,res,'cadastrarUsuarioComum',null);

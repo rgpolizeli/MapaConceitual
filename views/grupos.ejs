@@ -21,21 +21,17 @@
 			var href = location.origin + "/" + "logout";
 			window.location = href;
 		}
-		function abrirMapa(){
-			$("#mapasFormulario").attr("action","/abrir");
-			$("#mapasFormulario").submit();
-		}
-		function criarMapa(){
-			var href = location.origin + "/" + "criarMapa";
+		function criarGrupo(){
+			var href = location.origin + "/" + "criarGrupo";
 			window.location = href;
 		}
-		function excluirMapa(){
-			$("#mapasFormulario").attr("action","/excluirMapa");
-			$("#mapasFormulario").submit();
+		function excluirGrupo(){
+			$("#gruposFormulario").attr("action","/excluirGrupo");
+			$("#gruposFormulario").submit();
 		}
-		function configurarMapa(){
-			$("#mapasFormulario").attr("action","/obterInfoMapa");
-			$("#mapasFormulario").submit();
+		function configurarGrupo(){
+			$("#gruposFormulario").attr("action","/obterInfoGrupo");
+			$("#gruposFormulario").submit();
 		}
     </script>
 
@@ -55,26 +51,26 @@
 	  <div class="container">
 
 		<div class="col-sm-6 col-sm-offset-3">
-			<a href="/grupos"><button type="button" style="float:right">Grupos</button></a>
+			<a href="/mapas"><button type="button" id="mapas" style="float:right">Mapas</button></a>
 			<button type="button" id="logout" style="float:right" onclick="logout()">Sair</button>
-			<h1><span class="fa fa-sign-in"></span> Mapas</h1>
+			<h1><span class="fa fa-sign-in"></span> Grupos</h1>
 			
 
 			<!-- FORMULARIO MAPAS -->
 			<!-- Sera encaminhado para pagina abrir.ejs ou excluirMapa.ejs -->
-			<form id="mapasFormulario" action="" method="post">
+			<form id="gruposFormulario" action="" method="post">
 				
 				<div class="col-lg-6">
 					<div class="input-group">
 						
 						<!-- show any messages that come back with authentication -->
 						<% for (var i=0; i < mensagem.length; i++) { %>
-							<% var item = mensagem[i].idMapa +  " - " + mensagem[i].nomeMapa;%>
+							<% var item = mensagem[i].idGrupo +  " - " + mensagem[i].nomeGrupo%>
 							
 							
 							<div class="radio">
 								<label>
-									<input type="radio" name="idMapa" id="idsMapas" value="<%= mensagem[i].idMapa %>" required autofocus>
+									<input type="radio" name="idMapa" id="idsMapas" value="<%= mensagem[i].idGrupo %>" required autofocus>
 									<%= item %>
 								</label>
 							</div>
@@ -84,10 +80,9 @@
 					</div><!-- /input-group  -->
 				</div><!-- /.col-lg-6 -->
 				
-				<button id="abrirMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="abrirMapa();">Abrir</button>
-				<button id="criarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="criarMapa();">Criar novo mapa</button>
-				<button id="configurarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="configurarMapa();">Configurar mapa</button>
-				<button id="excluirMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="excluirMapa();">Excluir mapa</button>
+				<button id="criarGrupoButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="criarGrupo();">Criar grupo</button>
+				<button id="configurarGrupoButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="configurarGrupo();">Configurar grupo</button>
+				<button id="excluirGrupoButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="excluirGrupo();">Excluir grupo</button>
 			</form>
 			
 		</div>
