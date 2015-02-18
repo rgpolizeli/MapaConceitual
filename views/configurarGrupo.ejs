@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="../../assets/ico/favicon.ico">
+
+    <title>Configurar grupo</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./stylesheets/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="./stylesheets/signin.css" rel="stylesheet">
+	
+	
+	<script src="./javascripts/jquery-2.1.1.min.js"></script>
+	<script src="./javascripts/bootstrap.min.js"></script>
+
+    <!-- Just for debugging purposes. Don't actually copy this line! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script>
+    	$(document).ready(function(){
+    		
+			$('#abrirModal').click(function(){ $('#selecaoUsuarios').modal('show');});
+			
+			$('#voltarParaGrupos').click(function(){
+				var href = location.origin + "/" + "grupos";
+				window.location = href;
+			});
+			
+			$('#excluirMembro').click(function (){
+				excluirUsuariosAdicionados("tabelaMembros");
+			});
+			
+			$('#adicionarMembro').click(function (){
+				adicionarMembro("tabelaMembros");
+			});
+			
+			function excluirUsuariosAdicionados(nomeTabela){
+				
+				if(nomeTabela == "tabelaMembros"){
+					
+					adicionarMembro("tabelaUsuarios");
+					$("#tabelaMembros input:checked").each(function (){
+						
+						var tipoMembro;
+						tipoMembro = $(this).parent().parent().find("td.tipoMembro").text();
+						if( $.trim(tipoMembro) == "Coordenador"){
+							$("#alertDeletarCoordenador").modal('show');
+						}
+						else{
+							$(this).parent().parent().remove();
+						}
+					});
+					
+				}
+				else{
+					$("#tabelaUsuarios input:checked").each(function (){
+						$(this).attr("checked",false);
+						$(this).parent().parent().hide();
+					});
+				}
+				
+			}
+			
+			function adicionarMembro(nomeTabela){
+				
+				if(nomeTabela == "tabelaMembros"){
+					$("#tabelaUsuarios input:checked").each(function (){
+						
+						var tr = $(this).parent().parent();
+						
+						var idUsuario = $(tr).find("td.idUsuario").text();
+						var nomeUsuario = $(tr).find("td.nomeUsuario").text();
+						
+						$("#tabelaMembros tbody").append(
+								"<tr>" +
+									"<input name='usuario" + idUsuario +"' type='hidden' value='Comum'>" + 
+								    "<td><input type='checkbox'></td>" +
+								    "<td class='idUsuario'>" + idUsuario + "</td>" +
+								    "<td class='nomeUsuario'>" + nomeUsuario + "</td>" + 
+								    "<td class='tipoMembro'>Comum</td>" + 
+								"</tr>"
+						);
+					});
+					
+					excluirUsuariosAdicionados("tabelaUsuarios");
+					$('#selecaoUsuarios').modal('hide');
+				}
+				else{ //tabela Usuarios
+					
+					$("#tabelaMembros input:checked").each(function (){
+					
+						var tr = $(this).parent().parent();
+						
+						var idUsuario = $(tr).find("td.idUsuario").text();
+						var tipoMembro = $(tr).find("td.tipoMembro").text();
+						if($.trim(tipoMembro) != 'Coordenador'){
+						
+							var nomeUsuario = $(tr).find("td.nomeUsuario").text();
+							$("#tabelaUsuarios").find("tr").each(function (){
+								if($(this).find("td.idUsuario").text() == idUsuario){
+									$(this).show();
+								}
+							});
+						}
+					});
+				}
+				
+				
+			}
+			
+		});
+    </script> 
+    
+  </head>
+
+  <body>
+
+	<div class="container">
+
+		<div class="col-sm-6 col-sm-offset-3">
+		
+			<h1><span class="fa fa-sign-in"></span> Configurando o grupo</h1>
+		
+			<!-- LOGIN FORM -->
+			<form action="/configurarGrupo" method="post">
+				<div class="form-group">
+					<label>Nome do Grupo</label>
+					<input type="text" class="form-control" name="nomeGrupo" value='<%= nomeGrupo %>' required>
+					<input style="display:none" type="text" name="idGrupo" value='<%= idGrupo %>'>
+				</div>
+				
+				<label>Membros</label>
+				<div class="panel panel-default">
+				  	<!-- Table -->
+		  			<table class="table" id="tabelaMembros" name="tabelaMembros">
+			  			<thead>
+				  			<tr>
+				    			<th>#</th>
+				    			<th>ID</th>
+				    			<th>Nome</th>
+				    			<th>Tipo de Membro</th>
+				  			</tr>
+			  			</thead>
+			  			
+			  			<tbody>
+			  				<% for(var i = 0; i < listaMembros.length; i++){ %>
+				  				<tr>
+				  					<input name=<%= "usuario" + listaMembros[i].id %> type="hidden" value=<%= listaMembros[i].tipoMembro %>>
+								    <td><input type="checkbox"></td>
+								    <td class="idUsuario"><%= listaMembros[i].id %></td>
+								    <td class="nomeUsuario"><%= listaMembros[i].nome %></td>
+								    <td class="tipoMembro"><%= listaMembros[i].tipoMembro %></td>
+								</tr>
+							<%}%>
+			  			</tbody>
+			  		</table>
+				  	<div class="panel-body">
+		    			<a id="abrirModal">Adicionar membro</a> | <a id="excluirMembro">Excluir membro</a>
+		  			</div>
+				</div>
+				
+				<button type="submit" class="btn btn-lg btn-primary btn-block">Salvar alterações</button>
+				<button id="voltarParaGrupos" type="button" class="btn btn-lg btn-primary btn-block">Voltar aos Grupos</button>
+			</form>
+		</div>
+
+</div>
+
+
+  <div id="selecaoUsuarios" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
+			<h4 class="modal-title">Selecionar Membros</h4>
+		  </div>
+		  <div class="modal-body">
+				<label>Membros</label>
+				<div class="panel panel-default">
+				  	<!-- Table -->
+		  			<table class="table" id="tabelaUsuarios">
+			  			<thead>
+				  			<tr>
+				    			<th>#</th>
+				    			<th>ID</th>
+				    			<th>Nome</th>
+				  			</tr>
+			  			</thead>
+			  			
+			  			<tbody>
+			  				<% for(var i = 0; i < listaUsuarios.length; i++){ %>
+				  				<% var estaNaLista = false %>
+				  				<% var indiceNaLista %>
+				  				<% for(var j=0; j < listaMembros.length && !estaNaLista; j++) { %>
+				  					<% if(listaUsuarios[i].id == listaMembros[j].id){ %>
+				  					<% estaNaLista = true %>
+				  					<% indiceNaLista= j %>
+				  					<% } %>
+				  				<% } %>
+				  				<% if(!estaNaLista) { %>
+					  				<tr>
+									    <td><input type="checkbox"></td>
+									     <td class="idUsuario"><%= listaUsuarios[i].id %></td>
+									    <td class="nomeUsuario"><%= listaUsuarios[i].nome %></td>
+									   
+									</tr>
+								<%} else{ %>
+									<% if(listaMembros[indiceNaLista].tipoMembro != 'Coordenador') {%>
+										<tr style="display:none">
+									    <td><input type="checkbox"></td>
+									     <td class="idUsuario"><%= listaUsuarios[i].id %></td>
+									    <td class="nomeUsuario"><%= listaUsuarios[i].nome %></td>
+									    
+									</tr>
+									<% } %>
+								<%}%>
+							<%}%>
+			  			</tbody>
+			  		</table>
+				</div> <!-- div panel -->
+			</div>	<!-- modal-body -->
+		  <div class="modal-footer">
+		  	<button type="submit" id="adicionarMembro" class="btn btn-primary">Adicionar</button>
+			<button data-dismiss="modal" id="cancel" class="btn btn-default">Cancelar</button>
+		  </div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+
+	<!-- Alert para o caso de querer excluir o gerente -->
+	<div id="alertDeletarCoordenador" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
+			<h4 class="modal-title">Atenção!</h4>
+		  </div>
+		  <div class="modal-body">Você não pode excluir você mesmo do grupo.</div>
+		  <div class="modal-footer">
+			<button data-dismiss="modal" id="cancel" class="btn btn-default">OK</button>
+		  </div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+
+  </body>
+</html>

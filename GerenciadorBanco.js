@@ -17,6 +17,174 @@ function GerenciadorBanco(){
 	//this.eventEmitter.setMaxListeners(0);
 	
 	
+	this.excluirGrupo = function excluirMapa (idGrupo){
+		
+		connection.query('DELETE FROM grupos WHERE id = ?',[idGrupo], function(err, result) {		
+			if(err) {
+				gerenciadorBanco.eventEmitter.emit('fimExclusaoGrupo', {erro: err.code} );
+			}
+			else{
+				gerenciadorBanco.eventEmitter.emit('fimExclusaoGrupo', 1);
+			}
+		});
+		
+	};
+	
+	
+	this.perquisarMapasGrupo = function perquisarMapasGrupo(idGrupo){
+
+		var idMapas = new Array();
+		
+		connection.query('SELECT idMapa FROM permissoes_edicao_grupos WHERE idGrupo = ?',[idGrupo], function(err, result) {		
+			if(err) {
+				if(err.code == 'ER_NO_SUCH_TABLE'){
+					connection.query(
+						'CREATE TABLE permissoes_edicao_grupos(' +
+							'idGrupo INT NOT NULL,'+
+							'idMapa INT NOT NULL,'+ 
+							'tipoPermissao INT NOT NULL,'+
+							'FOREIGN KEY (idGrupo) REFERENCES grupos (id)'+
+							' ON DELETE CASCADE,'+
+							' FOREIGN KEY (idMapa) REFERENCES mapas (id)'+
+							' ON DELETE CASCADE,'+
+							'PRIMARY KEY (idGrupo,idMapa)'+
+						') ENGINE=InnoDB'
+					);
+					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo', idMapas);
+				}
+				else{
+					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo', {erro: err.code});
+				}
+			}
+			else { 
+				for(var i=0; i < result.length; i++){
+					idMapas[i] = result[i].idMapa;
+				}
+				gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo', idMapas);
+			}
+		});	
+	};
+	
+	
+	
+	function TipoMembroGrupoParaNumero (nometipoMembro){
+		var tiposMembro = {
+				"Coordenador": 0,
+				"Comum": 1
+		};
+		return tiposMembro[nometipoMembro];
+	}
+	
+	
+	function alterarConfiguracoesGrupo(idGrupo, nomeGrupo, listaMembrosAtuais, novosMembros){
+		//novosMembros eh uma lista de objetos com duas propriedades: idUsuario em int e tipoMembro em string
+		//listaMembrosAtuais eh uma lista com id do usuario em int, nome do usuario e tipoMembro em string
+		
+		var transacao;
+		var estaNaLista;
+		
+		transacao = 
+			"SET autocommit = 0;" +
+			" START TRANSACTION;" +
+			" UPDATE grupos SET nome='" + nomeGrupo + "' WHERE id=" + idGrupo + ";"
+		;
+		
+		// Para cada membro da lista novosMembros, ou seja, dos usuarios alterados pelo coordenador, verificar:
+		// se o usuario nao era membro, adicionar,
+		// se o usuario estah na lista antiga, mas nao na nova, deleta-lo.
+		 
+		for(var i=0; i < novosMembros.length; i++){
+			estaNaLista = false;
+			
+			for(var j=0; j< listaMembrosAtuais.length && !estaNaLista; j++){
+				if(novosMembros[i].idUsuario == listaMembrosAtuais[j].id){
+					estaNaLista = true;
+					listaMembrosAtuais.splice(j,1);
+				}
+			}
+			
+			if(!estaNaLista){ //usuario completamente novo
+				transacao += 
+					" INSERT INTO membros SET idUsuario =" + novosMembros[i].idUsuario +
+					", idGrupo =" + idGrupo +
+					", tipoMembro =" + TipoMembroGrupoParaNumero(novosMembros[i].tipoMembro) +
+					";"
+				;
+			}
+		}
+		
+		if(listaMembrosAtuais.length > 0){ //membros a serem excluidos
+			for(var j=0; j < listaMembrosAtuais.length; j++){
+				transacao += 
+					" DELETE FROM membros WHERE idUsuario=" + listaMembrosAtuais[j].id +
+					" AND idGrupo=" + idGrupo + ";"
+				;
+			}
+		}
+		
+		
+		//Aplicando a transacao
+		connection.query(transacao, function(err, result) {
+			if(err)
+				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', {erro: err.code});
+			else
+				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', "Alteracoes realizadas com sucesso!");
+		});	
+		
+	}
+	
+	
+	
+	this.configurarGrupo = function configurarGrupo(idGrupo, nomeGrupo, idUsuario, novosMembros){
+		//membros eh uma lista de objetos com duas propriedades: idUsuario em int e tipoMembro em string
+		
+		if(idGrupo){ //se o usuario nao apagou o id do grupo na pagina configurarGrupo.ejs
+			idGrupo = parseInt(idGrupo);
+			
+			gerenciadorBanco.pesquisarMembrosGrupo(idGrupo);
+			gerenciadorBanco.eventEmitter.once('fimPesquisaMembrosGrupo', function(resultado){ 
+				
+				if(resultado.erro){ //erro na busca dos atuais membros
+					gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', {erro: resultado.erro});
+				}
+				else{ //sucesso na busca dos atuais membros
+					
+					var listaMembrosAtuais;
+					listaMembrosAtuais = resultado;
+					
+					//necessario saber o tipo do membro, pois so o coordenador pode alterar as configuracoes do grupo
+					var i=0;
+					while( i < listaMembrosAtuais.length && listaMembrosAtuais[i].id != idUsuario)
+						i++;
+					
+					if( i<listaMembrosAtuais.length && listaMembrosAtuais[i].tipoMembro == "Coordenador" ){
+						alterarConfiguracoesGrupo(idGrupo, nomeGrupo, listaMembrosAtuais, novosMembros);
+						gerenciadorBanco.eventEmitter.once('fimAlterarConfiguracoesGrupo', function(resultado){ 
+							if(resultado.erro){
+								connection.query(" ROLLBACK");
+								gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', {erro: "Alteracoes nao aplicadas, devido ao seguinte erro: " + resultado.erro}); 
+							}
+							else{
+								connection.query(" COMMIT");
+								gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', resultado);
+							}
+						});
+						
+					}
+					else{ //ou nao esta na lista ou nao tem permissao de Adm ou gerente
+						gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', {erro: "Voce nao e o coordenador para configurar este grupo!"}); 
+					}
+				}
+			});
+		}
+		else{ //usuario apagou id do mapa
+			gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', {erro: "O id do grupo foi apagado!"}); 
+		}
+	};
+	
+	
+	
+	
 	this.verificarTipoUsuario = function verificarTipoUsuario(idUsuario){
 		connection.query('SELECT tipo FROM usuarios WHERE id = ?',[idUsuario], function(err, result) {		
 			if(err){
@@ -30,10 +198,6 @@ function GerenciadorBanco(){
 	
 	
 	function adicionarMembros(idGrupo, membros){
-		var tiposMembro = {
-			"Coordenador": 0,
-			"Comum": 1
-		};
 		
 		var membrosRestantes = new Array();
 		
@@ -43,7 +207,7 @@ function GerenciadorBanco(){
 		
 		
 		for(var k=0; k < membros.length; k++){
-			connection.query('INSERT INTO membros SET idUsuario = ?, idGrupo = ?, tipoMembro = ?',[membros[k].idUsuario, idGrupo, tiposMembro[membros[k].tipoMembro]], function(err, result) {		
+			connection.query('INSERT INTO membros SET idUsuario = ?, idGrupo = ?, tipoMembro = ?',[membros[k].idUsuario, idGrupo, TipoMembroGrupoParaNumero(membros[k].tipoMembro)], function(err, result) {		
 				if(err) {
 					//fazer algum tratamento
 					membrosRestantes.pop();
@@ -103,13 +267,59 @@ function GerenciadorBanco(){
 		
 		connection.query('SELECT nome FROM grupos WHERE id = ?',[idGrupo], function(err, result) {		
 			if(err){
-				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeGrupo' + indice, null, indice);
+				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeGrupo' + indice, {erro: err.code}, indice);
 			}
 			else{
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeGrupo' + indice, result[0].nome, indice);
 			}
 		});	
 	}
+	
+	this.buscarNomeGrupo = function buscarNomeGrupo(idGrupo){
+		pesquisarNomeGrupo(idGrupo, "");
+		gerenciadorBanco.eventEmitter.once('fimPesquisaNomeGrupo', function(nomeGrupo){ 
+			gerenciadorBanco.eventEmitter.emit('fimBuscaNomeGrupo', nomeGrupo);
+		});
+	};
+	
+	function converterTipoMembro(numTipoMembro){
+		var tiposMembro = {
+				0: "Coordenador",
+				1: "Comum"
+		};
+		return tiposMembro[numTipoMembro];
+	}
+	
+	
+	this.pesquisarMembrosGrupo = function pesquisarMembrosGrupo(idGrupo){
+		
+		connection.query(
+				'SELECT m.idUsuario, u.nome, m.tipoMembro' +
+				' FROM membros m, usuarios u' +
+				' WHERE m.idGrupo = ? AND m.idUsuario = u.id', [idGrupo], function(err, result) {
+				
+				if(err) {
+					return {erro: err.code};
+				}
+				else{ 
+					
+					var listaMembros;
+					listaMembros = new Array();
+					
+					//converter os tipos de membro de numeros para palavras
+					for(var i=0; i < result.length; i++){
+						listaMembros[i] = {
+								id: result[i].idUsuario,
+								nome: result[i].nome,
+								tipoMembro: converterTipoMembro(result[i].tipoMembro)
+						};
+					}
+					
+					gerenciadorBanco.eventEmitter.emit('fimPesquisaMembrosGrupo', listaMembros);
+				}
+			});	
+		
+	};
 	
 	
 	this.obterGrupos = function obterGrupos(idUsuario){
@@ -355,6 +565,8 @@ function GerenciadorBanco(){
 		});	
 	};
 	
+	
+	
 	//converte as permissoes de numero para palavras
 	function converterPermissao(numTipoPermissao){
 		var tiposPermissao = {
@@ -416,7 +628,7 @@ function GerenciadorBanco(){
 		});	
 	};
 	
-	function alterarConfiguracoes(idMapa, nomeMapa, listaUsuariosPermitidos, novasPermissoes){
+	function alterarConfiguracoesMapa(idMapa, nomeMapa, listaUsuariosPermitidos, novasPermissoes){
 		//novasPermissoes e uma lista de objetos com duas propriedades: idUsuario em int e tipoPermissao em string
 		//listaUsuariosPermitidos e uma lista com id do usuario em int, nome do usuario e tipoPermissao do usuario em string
 		
@@ -508,7 +720,7 @@ function GerenciadorBanco(){
 						i++;
 					
 					if( i<listaUsuariosPermitidos.length && (listaUsuariosPermitidos[i].tipoPermissao == "Gerente" || listaUsuariosPermitidos[i].tipoPermissao == "Administrador") ){
-						alterarConfiguracoes(idMapa, nomeMapa, listaUsuariosPermitidos, permissoes);
+						alterarConfiguracoesMapa(idMapa, nomeMapa, listaUsuariosPermitidos, permissoes);
 						gerenciadorBanco.eventEmitter.once('fimAlterarConfiguracoesMapa', function(resultado){ 
 							if(resultado.erro){
 								connection.query(" ROLLBACK");

@@ -44,13 +44,31 @@ function GerenciadorUsuariosAtivos(){
 		}
 	}
 	
-	function buscarPosicaoUsuario(socketUsuario, posicaoMapa){
+	function buscarPosicaoUsuarioPeloSocket(socketUsuario, posicaoMapa){
 		if(listaUsuariosAtivos[posicaoMapa].usuarios.length == 0){ //lista vazia
 			return -1;
 		}
 		else{
 			var i = 0;
 			while( (listaUsuariosAtivos[posicaoMapa].usuarios[i].socket != socketUsuario) && ( i <  listaUsuariosAtivos[posicaoMapa].usuarios.length) )
+				i++;
+			
+			if (i == listaUsuariosAtivos[posicaoMapa].usuarios.length){
+				return -1;
+			}
+			else{
+				return i;
+			}
+		}
+	}
+	
+	function buscarPosicaoUsuarioPeloId(idUsuario, posicaoMapa){
+		if(listaUsuariosAtivos[posicaoMapa].usuarios.length == 0){ //lista vazia
+			return -1;
+		}
+		else{
+			var i = 0;
+			while( (listaUsuariosAtivos[posicaoMapa].usuarios[i].idUsuario != idUsuario) && ( i <  listaUsuariosAtivos[posicaoMapa].usuarios.length) )
 				i++;
 			
 			if (i == listaUsuariosAtivos[posicaoMapa].usuarios.length){
@@ -91,7 +109,7 @@ function GerenciadorUsuariosAtivos(){
 		var posicaoMapa, posicaoUsuario;
 		
 		posicaoMapa = buscarPosicaoMapa( idMapa );
-		posicaoUsuario = buscarPosicaoUsuario(socketUsuario, posicaoMapa);
+		posicaoUsuario = buscarPosicaoUsuarioPeloSocket(socketUsuario, posicaoMapa);
 		listaUsuariosAtivos[posicaoMapa].usuarios.splice(posicaoUsuario,1);
 	};
 	
@@ -107,6 +125,32 @@ function GerenciadorUsuariosAtivos(){
 
 		return socketUsuariosAtivos;
 	};
+	
+	this.getSocketUsuarioAtivoPeloId = function(idMapa, idUsuario){
+		var posicaoMapa = buscarPosicaoMapa( idMapa );
+		var posicaoUsuarioAtivo = buscarPosicaoUsuarioPeloId(idUsuario, posicaoMapa);
+		var socketUsuarioAtivo;
+		
+		if(posicao != -1){ //mapa aberto
+			socketUsuarioAtivo = listaUsuariosAtivos[posicaoMapa].usuarios[posicaoUsuarioAtivo].socket;
+		}
+
+		return socketUsuarioAtivo;
+	};
+	
+	
+	this.getIdsUsuariosAtivos = function(idMapa){
+		var posicao = buscarPosicaoMapa( idMapa );
+		var idsUsuariosAtivos = new Array();
+		
+		if(posicao != -1){ //mapa aberto
+			for(var i=0; i < listaUsuariosAtivos[posicao].usuarios.length; i++ )
+				idsUsuariosAtivos[i] = listaUsuariosAtivos[posicao].usuarios[i].idUsuario;
+		}
+
+		return idsUsuariosAtivos;
+	};
+	
 	
 	this.getIdsMapasDoUsuario = function (socketUsuario){
 		var idsMapas = new Array();

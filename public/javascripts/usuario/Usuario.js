@@ -580,7 +580,7 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 				break;
 				
 				case 10: //desconectado devido a mudança de permissao
-					desconectarDoMapa();
+					desconectarDoMapa(mensagem.tipoDesconexao);
 				break;
 			}
 		}
@@ -588,8 +588,8 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
     };
 
     
-    function desconectarDoMapa(){
-    	var href = "http://" + ip + ":" + porta + "/" + "mapas/?desconectado=1";
+    function desconectarDoMapa(tipoDesconexao){
+    	var href = "http://" + ip + ":" + porta + "/" + "mapas/?desconectado=" + tipoDesconexao;
     	window.location = href;
     }
     

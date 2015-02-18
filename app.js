@@ -86,6 +86,148 @@ function Servidor(Ip,Porta){
 		});
 		
 		
+		app.post('/excluirGrupo', passport.verificarAutenticacao, function(req,res){
+			var idUsuario; 
+			var idGrupo; // vem da pagina mapas.ejs
+			
+			idUsuario = req.user.id;
+			idGrupo = req.body.idGrupo;
+			
+			if(idGrupo){ //se o usuario selecionou algum grupo
+				
+				gerenciadorBanco.pesquisarMembrosGrupo(idGrupo);
+				gerenciadorBanco.eventEmitter.once('fimPesquisaMembrosGrupo', function(membros){ 
+					
+					var tipoMembro;
+					var indiceCoordenador = 0;
+					while(indiceCoordenador < membros.length && membros[indiceCoordenador].id != idUsuario){
+						indiceCoordenador++;
+					}
+					
+					if(indiceCoordenador == membros.length ) //quer dizer que nao achou o usuario
+						tipoMembro = -1;
+					else //se achou
+						tipoMembro = membros[indiceCoordenador].tipoMembro;
+					
+					if(tipoMembro == "Coordenador"){ // se for o coordenador
+						
+						gerenciadorBanco.perquisarMapasGrupo(idGrupo);
+						gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo', function(idMapas){ 
+							
+							if(idMapas.erro){ //erro ao obter os mapas aos quais o grupo tem acesso
+								
+								gerenciadorBanco.obterGrupos(req.user.id);
+								gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+									
+									msg = {
+											alerta: "Erro ao tentar excluir o grupo. Tente novamente.",
+											mensagem: grupos
+									}; 
+									return routes.pagina(req,res,'grupos', msg);
+								});
+								
+							}
+							
+							else{ //sucesso ao obter os mapas aos quais o grupo tem acesso
+								
+								//verificar se algum usuario membro do grupo estah logado em algum mapa ao qual o grupo tem acesso
+								
+								//Para cada mapa ao qual o grupo tem acesso, obter lista dos usuarios ativos
+								//Para cada usuario ativo, verificar se o seu id é igual a algum dos membros do grupo
+								//Se for, entao nao excluir
+								//Senão, excluir
+								
+								var membroLogado = false; // se houver apenas um membro logado, jah nao pode haver exclusao
+								
+								for(var i=0; i < idMapas.length && !membroLogado; i++){
+									var idsUsuariosAtivos = gerenciadorUsuariosAtivos.getIdsUsuariosAtivos(idMapas[i]);
+									for(var j=0; j < idsUsuariosAtivos.length && !membroLogado; j++){
+										var ehMembro = false;
+										for(var k=0; k < membros.length && !ehMembro; k++){
+											if(idsUsuariosAtivos[j] == membros[k].id){
+												ehMembro = true;
+												membroLogado = true;
+											}
+										}
+									}
+									
+								}
+								
+								if(!membroLogado){ // ou seja, nao ha nenhum membro do grupo conectado a qualquer mapa do gurpo
+									
+									gerenciadorBanco.excluirGrupo(idGrupo);
+									gerenciadorBanco.eventEmitter.once('fimExclusaoGrupo', function(resultado){ 
+										
+										if(resultado.erro){ //erro ao tentar excluir
+											gerenciadorBanco.obterGrupos(req.user.id);
+											gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+												
+												msg = {
+														alerta: "O seguinte erro ocorreu ao se tentar excluir o grupo: " + resultado.erro,
+														mensagem: grupos
+												}; 
+												return routes.pagina(req,res,'grupos', msg);
+											});
+										}
+										else{ //sucesso ao excluir grupo
+											gerenciadorBanco.obterGrupos(req.user.id);
+											gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+												
+												msg = {
+														alerta: "Sucesso ao excluir o grupo!",
+														mensagem: grupos
+												}; 
+												return routes.pagina(req,res,'grupos', msg);
+											});
+										}
+										
+									});
+									
+									
+								}
+								else{ //ha algum membro do grupo conectado a um mapa do grupo, portanto, nao ha exclusao
+									gerenciadorBanco.obterGrupos(req.user.id);
+									gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+										
+										msg = {
+												alerta: "Nao e possivel excluir o grupo, pois algum usuario do grupo esta editando um mapa ao qual o grupo tem acesso.",
+												mensagem: grupos
+										}; 
+										return routes.pagina(req,res,'grupos', msg);
+									});
+								}
+								
+							} //fim else sucesso obter mapas
+							
+						});	//fimPesquisaMapasGrupo
+								
+					} // fim if tipoMembro==0
+					
+					else{ // nao eh o coordenador do grupo
+						gerenciadorBanco.obterGrupos(req.user.id);
+						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+							
+							msg = {
+									alerta: "Voce nao e o coordenador do grupo para poder exclui-lo.",
+									mensagem: grupos
+							}; 
+							return routes.pagina(req,res,'grupos', msg);
+						});
+					}
+					
+							
+				}); //fim fimPesquisaMembrosGrupo
+						
+						
+			} //fecha if idGrupo
+					
+			else{ //se nao selecionou nenhum grupo
+				res.redirect('/grupos');
+			}
+
+		}); //fecha post
+		
+		
 		app.get('/grupos', passport.verificarAutenticacao, function(req,res){ //deve estar autenticado
 			
 			gerenciadorBanco.verificarTipoUsuario(req.user.id);
@@ -117,35 +259,46 @@ function Servidor(Ip,Porta){
 		});
 		
 		
-		app.get('/criarGrupo', function(req,res){
-			if(!req.isAuthenticated()){
-				routes.pagina(req,res,'index',null);
-			}
-			else{
+		app.get('/criarGrupo', passport.verificarAutenticacao, function(req,res){
 				
-				var idUsuario, nomeUsuario, achou, msg;
+			gerenciadorBanco.verificarTipoUsuario(req.user.id);
+			gerenciadorBanco.eventEmitter.once('fimVerificarTipoUsuario', function(tipoUsuario){ 
 				
-				idUsuario = req.user.id;
-				gerenciadorBanco.buscarNomeTodosUsuarios();
-				gerenciadorBanco.eventEmitter.once('nomeTodosUsuarios', function(listaUsuarios){
+				if(tipoUsuario == 0){ // se for coordenador
+					var idUsuario, nomeUsuario, achou, msg;
 					
-					achou = false;
-					
-					for(var i=0; (i < listaUsuarios.length) && !achou; i++){
-						if(listaUsuarios[i].id == idUsuario){
-							nomeUsuario = listaUsuarios[i].nome;
-							achou = true;
+					idUsuario = req.user.id;
+					gerenciadorBanco.buscarNomeTodosUsuarios();
+					gerenciadorBanco.eventEmitter.once('nomeTodosUsuarios', function(listaUsuarios){
+						
+						achou = false;
+						
+						for(var i=0; (i < listaUsuarios.length) && !achou; i++){
+							if(listaUsuarios[i].id == idUsuario){
+								nomeUsuario = listaUsuarios[i].nome;
+								achou = true;
+							}
 						}
-					}
-
-					msg = {
-							nomeUsuario: nomeUsuario,
-							idUsuario: idUsuario,
-							listaUsuarios: listaUsuarios
-					};
-					routes.pagina(req,res,'criarGrupo', msg);
-				});
-			}
+	
+						msg = {
+								nomeUsuario: nomeUsuario,
+								idUsuario: idUsuario,
+								listaUsuarios: listaUsuarios
+						};
+						routes.pagina(req,res,'criarGrupo', msg);
+					});
+				}
+				else{ //nao eh coordenador
+					gerenciadorBanco.perquisarMapas(req.user.id);
+					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+						msg = {
+								alerta: "Voce nao e coordenador para gerenciar grupos!",
+								mensagem: mapas
+						}; 
+						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+					}); 
+				}
+			});
 		});
 		
 		
@@ -172,6 +325,233 @@ function Servidor(Ip,Porta){
 		});
 		
 		
+		app.post('/obterInfoGrupo', passport.verificarAutenticacao, function(req,res){
+			var idUsuario; 
+			var idGrupo; // vem da pagina grupos.ejs
+			
+			idUsuario = req.user.id;
+			idGrupo = req.body.idGrupo;
+			
+			if(idGrupo){ //se o usuario selecionou algum grupo
+				var nomeGrupo;
+				
+				//buscar nome do mapa
+				gerenciadorBanco.buscarNomeGrupo(idGrupo);
+				gerenciadorBanco.eventEmitter.once('fimBuscaNomeGrupo', function(resultado){ 
+					
+					if(resultado.erro){ //erro na busca do nome do grupo
+						
+						var msg;
+						
+						gerenciadorBanco.obterGrupos(req.user.id);
+						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+							
+							msg = {
+									alerta: "Ocorreu o seguinte erro ao tentar configurar o grupo: "+ resultado.erro,
+									mensagem: grupos
+							}; 
+							return routes.pagina(req,res,'grupos', msg);
+						});
+					}
+					else{ //sucesso na busca do nome do grupo
+						nomeGrupo = resultado;
+					}
+					
+				});
+				
+				//busca usuarios membros deste grupo
+				gerenciadorBanco.pesquisarMembrosGrupo(idGrupo);
+				gerenciadorBanco.eventEmitter.once('fimPesquisaMembrosGrupo', function(resultado){ 
+					
+					if(resultado.erro){ //erro na busca dos membros
+						
+						var msg;
+						
+						gerenciadorBanco.obterGrupos(req.user.id);
+						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+							
+							msg = {
+									alerta: "Ocorreu o seguinte erro ao tentar configurar o grupo: "+ resultado.erro,
+									mensagem: grupos
+							}; 
+							return routes.pagina(req,res,'grupos', msg);
+						});
+						
+					}
+					else{ //sucesso na busca dos membros
+						
+						var listaMembros;
+						
+						listaMembros = resultado;
+						
+						//necessario saber qual tipo de membro eh o usuario, pois so o coordenador pode mudar os membros do grupo
+						var i=0;
+						while( i < listaMembros.length && listaMembros[i].id != idUsuario)
+							i++;
+						
+						if(listaMembros[i].tipoMembro == "Coordenador"){
+							
+							//necessario buscar o nome de todos os usuarios
+							gerenciadorBanco.buscarNomeTodosUsuarios();
+							gerenciadorBanco.eventEmitter.once('nomeTodosUsuarios', function(listaTodosUsuarios){
+								
+								if(listaTodosUsuarios.erro){ //erro ao pesquisar todos os usuarios
+									
+									var msg;
+									
+									gerenciadorBanco.obterGrupos(req.user.id);
+									gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+										
+										msg = {
+												alerta: "Ocorreu o seguinte erro ao tentar configurar o grupo: "+ resultado.erro,
+												mensagem: grupos
+										}; 
+										return routes.pagina(req,res,'grupos', msg);
+									});
+								}
+								else{ //sucesso ao pesquisar todos os usuarios
+									var msg;
+									msg = {
+										listaMembros: listaMembros,
+										nomeGrupo: nomeGrupo,
+										idGrupo: idGrupo,
+										listaUsuarios: listaTodosUsuarios
+									};
+									routes.pagina(req,res,'configurarGrupo', msg);
+								}
+							});
+						}
+						
+						else{ //nao eh Coordenador
+							
+							var msg;
+							
+							gerenciadorBanco.obterGrupos(req.user.id);
+							gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+								
+								msg = {
+										alerta: "Voce nao e o coordenador deste grupo para poder configura-lo!",
+										mensagem: grupos
+								}; 
+								return routes.pagina(req,res,'grupos', msg);
+							});
+						}
+					}
+					
+				});
+			}
+			else{ //usuario nao selecionou um grupo
+				res.redirect('/grupos');
+			}
+		});
+		
+		
+		app.post('/configurarGrupo', passport.verificarAutenticacao, function(req,res){
+			var membros = new Array();
+			
+			//as propriedades sao duas: nomeGrupo e usuario+idUsuario. O ultimo tipo eh o de mais elementos e contem o tipo de permissao do usuario que nomeia o tipo.
+			var propriedades = Object.getOwnPropertyNames(req.body);
+			
+			for(var i=0; i < propriedades.length; i++){
+				if(propriedades[i] != "nomeGrupo" && propriedades[i] != "idGrupo"){
+					var membro = new Object();
+					membro.idUsuario = parseInt(propriedades[i].replace("usuario", ""));
+					membro.tipoMembro = req.body[propriedades[i]];
+					membros.push(membro);
+				}
+			}
+			
+			gerenciadorBanco.configurarGrupo(req.body.idGrupo, req.body.nomeGrupo, req.user.id, membros);
+			gerenciadorBanco.eventEmitter.once('fimConfigurarGrupo', function(resultado){ 
+				if(resultado.erro){ //erro ao configurar grupo
+					
+					var msg;
+					
+					gerenciadorBanco.obterGrupos(req.user.id);
+					gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+						
+						msg = {
+								alerta: resultado.erro,
+								mensagem: grupos
+						}; 
+						return routes.pagina(req,res,'grupos', msg);
+					});
+					
+				}
+				else{ //sucesso ao configurar grupo
+					
+					//necessario desconectar usuarios para alteracoes serem aplicadas localmente, Para isso:
+					//obter lista com os mapas aos quais o grupo tem acesso.
+					//para cada mapa, enviar mensagem desconectando o usuario.
+					
+					var msg;
+					
+					gerenciadorBanco.perquisarMapasGrupo(req.body.idGrupo);
+					gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo', function(idMapas){ 
+						
+						if(idMapas.erro){ //erro ao obter os mapas aos quais o grupo tem acesso
+							
+							gerenciadorBanco.obterGrupos(req.user.id);
+							gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+								
+								msg = {
+										alerta: resultado + " Porem, aconteceu um erro que permitira aos membros deletados, a edicao de mapas do grupo ate realizarem logout.",
+										mensagem: grupos
+								}; 
+								return routes.pagina(req,res,'grupos', msg);
+							});
+							
+						}
+						
+						else{ //sucesso ao obter os mapas aos quais o grupo tem acesso
+							
+							//desconectar os usuarios membros do grupo que estao logados em mapas aos quais o grupo tem acesso
+							msg = {
+									tipoMensagem: 10,
+									tipoDesconexao: 2
+							};
+							
+							//Para cada mapa, obter lista dos usuarios ativos
+							//Para cada usuario ativo, verificar se o seu id é igual a algum dos membros do grupo
+							//Se for, então enviar mensagem
+							//Senão, não enviar
+							
+							for(var i=0; i < idMapas.length; i++){
+								var idsUsuariosAtivos = gerenciadorUsuariosAtivos.getIdsUsuariosAtivos(idMapas[i]);
+								for(var j=0; j < idsUsuariosAtivos.length; j++){
+									var ehMembro = false;
+									for(var k=0; k < membros.length && !ehMembro; k++){
+										if(idsUsuariosAtivos[j] == membros[k].idUsuario){
+											ehMembro = true;
+											enviarUnicastParaUsuarioAtivo(idMapas[i],idsUsuariosAtivos[j],msg);
+										}
+									}
+								}
+								
+							}
+							
+							gerenciadorBanco.obterGrupos(req.user.id);
+							gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(grupos){ 
+								
+								msg = {
+										alerta: resultado,
+										mensagem: grupos
+								}; 
+								return routes.pagina(req,res,'grupos', msg);
+							});
+							
+						}
+						
+					});
+					
+				} // fim sucesso ao configurar grupo
+				
+			}); //fim configurarGrupo
+			
+		}); //fecha app.post
+		
+		
+		
 		//definindo as routes
 		app.get('/cadastrarUsuarioComum', function(req,res){
 			routes.pagina(req,res,'cadastrarUsuarioComum',null);
@@ -188,8 +568,14 @@ function Servidor(Ip,Porta){
 			//a variavel receptora do evento deve ser a mesma que emitiu.
 			//once ao inves de on, pois o evento emitido num outro login continua valendo para relogin, executando routes.pagina duas vezes.
 			gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
-				if(req.query.desconectado)
-					routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois o gerente ou o administrador esta alterando as permissoes deste mapa.", mensagem: mapas} ); 
+				if(req.query.desconectado){
+					if(req.query.desconectado == 1){
+						routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois o gerente ou o coordenador esta alterando as permissoes deste mapa.", mensagem: mapas} ); 
+					}
+					else
+						routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois o coordenador esta alterando as permissoes de seu grupo.", mensagem: mapas} ); 
+				}
+					
 				else
 					routes.pagina(req,res,'mapas', {mensagem:mapas});
 			});
@@ -440,7 +826,10 @@ function Servidor(Ip,Porta){
 					var msg;
 					
 					//desconectar os usuarios que estao logados no mapa
-					msg = {tipoMensagem: 10};
+					msg = {
+							tipoMensagem: 10,
+							tipoDesconexao: 1
+					};
 					enviarParaTodosUsuariosAtivos(req.body.idMapa,msg);
 					
 					gerenciadorBanco.perquisarMapas(req.user.id);
@@ -1032,6 +1421,13 @@ function Servidor(Ip,Porta){
 			}
 		}
 	}
+	
+	function enviarUnicastParaUsuarioAtivo(idMapa, idUsuario, msg){
+		var socketUsuario = gerenciadorUsuariosAtivos.getSocketUsuarioAtivoPeloId(idMapa, idUsuario);
+		socketUsuario.send(msg);
+	}
+	
+	
 }
 
 	var servidor = new Servidor('localhost',4000);
