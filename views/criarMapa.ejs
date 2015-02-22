@@ -53,17 +53,26 @@
 					
 					adicionarPermissao("tabelaUsuarios");
 					$("#tabelaPermissoes input:checked").each(function (){
-						if($(this).parent().parent().find("td.idUsuario").text() == <%= idUsuario %>){
-							$("#alertDeletarGerente").modal('show');
+						var elemento = $(this).parent().parent().find("td.idUsuario");
+						
+						if(elemento){ //eh usuario
+							if(elemento.text() == <%= idUsuario %>){
+								$("#alertDeletarGerente").modal('show');
+							}
+							else{
+								$(this).parent().parent().remove();
+							}
 						}
-						else{
+						else{ //eh grupo
 							$(this).parent().parent().remove();
 						}
+						
+						
 						
 					});
 					
 				}
-				else{
+				else{ // tabela usuarios
 					$("#tabelaUsuarios input:checked").each(function (){
 						$(this).attr("checked",false);
 						$(this).parent().parent().hide();
@@ -79,19 +88,40 @@
 						
 						var tr = $(this).parent().parent();
 						
-						var idUsuario = $(tr).find("td.idUsuario").text();
-						var nomeUsuario = $(tr).find("td.nomeUsuario").text();
-						var tipoPermissao = $(tr).find("td.tipoPermissao select option:selected").text();
+						var elemento = $(tr).find("td.idUsuario");
 						
-						$("#tabelaPermissoes tbody").append(
-								"<tr>" +
-									"<input name='usuario" + idUsuario +"' type='hidden' value=" + tipoPermissao + ">" + 
-								    "<td><input type='checkbox'></td>" +
-								    "<td class='idUsuario'>" + idUsuario + "</td>" +
-								    "<td class='nomeUsuario'>" + nomeUsuario + "</td>" +
-								    "<td class='tipoPermissao'>" + tipoPermissao + "</td>" + 
-								"</tr>"
-						);
+						if(elemento.length > 0){ // eh um usuario que esta sendo adicionado
+							var idUsuario = elemento.text();
+							var nomeUsuario = $(tr).find("td.nomeUsuario").text();
+							var tipoPermissao = $(tr).find("td.tipoPermissao select option:selected").text();
+							
+							$("#tabelaPermissoes tbody").append(
+									"<tr>" +
+										"<input name='usuario" + idUsuario +"' type='hidden' value=" + tipoPermissao + ">" + 
+									    "<td><input type='checkbox'></td>" +
+									    "<td class='idUsuario'>" + idUsuario + "</td>" +
+									    "<td class='nomeUsuario'>" + nomeUsuario + "</td>" +
+									    "<td class='tipoPermissao'>" + tipoPermissao + "</td>" + 
+									"</tr>"
+							);
+						}
+						else{ //eh um grupo que esta sendo adicionado
+							elemento = $(tr).find("td.idGrupo");
+							var idGrupo = elemento.text();
+							var nomeGrupo = $(tr).find("td.nomeGrupo").text();
+							var tipoPermissao = $(tr).find("td.tipoPermissao select option:selected").text();
+						
+							$("#tabelaPermissoes tbody").append(
+									"<tr class='success'>" +
+										"<input name='grupo" + idGrupo +"' type='hidden' value=" + tipoPermissao + ">" + 
+									    "<td><input type='checkbox'></td>" +
+									    "<td class='idGrupo'>" + idGrupo + "</td>" +
+									    "<td class='nomeGrupo'>" + nomeGrupo + "</td>" +
+									    "<td class='tipoPermissao'>" + tipoPermissao + "</td>" + 
+									"</tr>"
+							);
+						}
+						
 					});
 					
 					excluirUsuariosAdicionados("tabelaUsuarios");
@@ -102,19 +132,32 @@
 					$("#tabelaPermissoes input:checked").each(function (){
 					
 						var tr = $(this).parent().parent();
+						var elemento = $(tr).find("td.idUsuario");
 						
-						var idUsuario = $(tr).find("td.idUsuario").text();
-						if(parseInt(idUsuario) != <%= idUsuario %>){
-						
-							var nomeUsuario = $(tr).find("td.nomeUsuario").text();
-							var tipoPermissao = $(tr).find("td.tipoPermissao select option:selected").text();
+						if(elemento.length > 0){ //eh usuario
+							var idUsuario = elemento.text();
+							if(parseInt(idUsuario) != <%= idUsuario %>){
+								
+								$("#tabelaUsuarios").find("tr").each(function (){
+									if($(this).find("td.idUsuario").text() == idUsuario){
+										$(this).show();
+									}
+								});
+								
+							}
+						}
+						else{ //eh grupo
+							elemento = $(tr).find("td.idGrupo");
+							var idGrupo = elemento.text();
 							
 							$("#tabelaUsuarios").find("tr").each(function (){
-								if($(this).find("td.idUsuario").text() == idUsuario){
+								if($(this).find("td.idGrupo").text() == idGrupo){
 									$(this).show();
 								}
 							});
+							
 						}
+						
 					});
 				}
 				
@@ -139,6 +182,17 @@
 		<div class="form-group">
 			<label>Nome do Mapa</label>
 			<input type="text" class="form-control" name="nomeMapa" required>
+		</div>
+		
+		<div class="form-group">
+      		<label for="selCoordenador">Coordenador:</label>
+      		<select class="form-control" id="selCoordenador" name="idCoordenador" required>
+      			<% for(var i = 0; i < listaUsuarios.length; i++){ %>
+      				<% if(listaUsuarios[i].tipo == 0) { %>
+		        		<option value=<%= listaUsuarios[i].id %> ><%= listaUsuarios[i].id + " - " + listaUsuarios[i].nome %></option>
+		        	<% } %>
+		        <% } %>
+      		</select>
 		</div>
 		
 		<label>Permissões</label>
@@ -199,6 +253,7 @@
 			  			</thead>
 			  			
 			  			<tbody>
+			  			
 			  				<% for(var i = 0; i < listaUsuarios.length; i++){ %>
 				  				<% if(listaUsuarios[i].id != idUsuario){ %>
 				  				<tr>
@@ -214,6 +269,21 @@
 								</tr>
 								<%}%>
 							<%}%>
+							
+							<% for(var i = 0; i < listaGrupos.length; i++){ %>
+								<tr class="success">
+								    <td><input type="checkbox"></td>
+								     <td class="idGrupo"><%= listaGrupos[i].id %></td>
+								    <td class="nomeGrupo"><%= listaGrupos[i].nome %></td>
+								    <td class="tipoPermissao">
+								    	<select id="permissoes">
+										    <option value="Editor">Editor</option>
+										    <option value="Visualizador">Visualizador</option>
+										</select>
+								    </td>
+								</tr>
+							<% } %>
+							
 			  			</tbody>
 			  		</table>
 				</div> <!-- div panel -->
