@@ -20,7 +20,7 @@
      "express-session": "latest",
      "jquery":"latest",
     "stochator": "latest", 
-    "jsdom": "latest",
+    "jsdom": "3.1.2",
     "mysql": "latest"
   }
 }

@@ -134,9 +134,9 @@ function Servidor(Ip,Porta){
 								//verificar se algum usuario membro do grupo estah logado em algum mapa ao qual o grupo tem acesso
 								
 								//Para cada mapa ao qual o grupo tem acesso, obter lista dos usuarios ativos
-								//Para cada usuario ativo, verificar se o seu id é igual a algum dos membros do grupo
+								//Para cada usuario ativo, verificar se o seu id ï¿½ igual a algum dos membros do grupo
 								//Se for, entao nao excluir
-								//Senão, excluir
+								//Senï¿½o, excluir
 								
 								var membroLogado = false; // se houver apenas um membro logado, jah nao pode haver exclusao
 								
@@ -550,9 +550,9 @@ function Servidor(Ip,Porta){
 							};
 							
 							//Para cada mapa, obter lista dos usuarios ativos
-							//Para cada usuario ativo, verificar se o seu id é igual a algum dos membros do grupo
-							//Se for, então enviar mensagem
-							//Senão, não enviar
+							//Para cada usuario ativo, verificar se o seu id ï¿½ igual a algum dos membros do grupo
+							//Se for, entï¿½o enviar mensagem
+							//Senï¿½o, nï¿½o enviar
 							
 							for(var i=0; i < idMapas.length; i++){
 								var idsUsuariosAtivos = gerenciadorUsuariosAtivos.getIdsUsuariosAtivos(idMapas[i]);
@@ -623,7 +623,7 @@ function Servidor(Ip,Porta){
 						}); 
 					}
 					else{ //sucesso na pesquisa pelos mapas que o usuario tem acesso
-						routes.pagina(req,res,'mapas', {mensagem:mapas});
+						routes.pagina(req,res,'mapas', {mensagem:listaMapas});
 					}
 				});
 				
@@ -758,7 +758,7 @@ function Servidor(Ip,Porta){
 					gerenciadorBanco.perquisarMapas(idUsuario);
 					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 						msg = {
-								alerta: "Mapa nao criado! Ocorreu ao se tentar encontrar o coordenador do mapa. Tente novamente.",
+								alerta: "Mapa nao criado! Ocorreu um erro ao se tentar encontrar o coordenador do mapa. Tente novamente.",
 								mensagem: mapas
 						}; 
 						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
@@ -791,8 +791,22 @@ function Servidor(Ip,Porta){
 					
 					gerenciadorBanco.inserirNovoMapa(req.body.nomeMapa, parseInt(req.body.idCoordenador), idProprietario, permissoesGrupos, permissoesUsuarios);
 					gerenciadorBanco.eventEmitter.once('mapaCriado', function(idMapa){ 
-						gerenciadorArquivos.criarMapa(idMapa, req.body.nomeMapa);
-						return res.redirect('mapas');
+						if(idMapa.erro){
+							var msg;
+							gerenciadorBanco.perquisarMapas(idProprietario);
+							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+								msg = {
+										alerta: "Mapa nao criado! Ocorreu o seguinte erro ao se tentar criar o mapa: " + idMapa.erro,
+										mensagem: mapas
+								}; 
+								return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+							});
+						}
+						else{
+							gerenciadorArquivos.criarMapa(idMapa, req.body.nomeMapa);
+							return res.redirect('mapas');
+						}
+						
 					});
 				}
 			});
@@ -1547,7 +1561,7 @@ function Servidor(Ip,Porta){
 	
 }
 
-	var servidor = new Servidor('localhost',4000);
+	var servidor = new Servidor('localhost',5050);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);

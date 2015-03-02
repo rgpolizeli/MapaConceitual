@@ -54,9 +54,9 @@ function GerenciadorBanco(){
 	};
 	
 	
-	this.perquisarMapasGrupo = function perquisarMapasGrupo(idGrupo){
+	this.pesquisarMapasGrupo = function pesquisarMapasGrupo(idGrupo){
 
-		var idMapas = new Array();
+		var listaMapas = new Array();
 		
 		connection.query('SELECT idMapa FROM permissoes_edicao_grupos WHERE idGrupo = ?',[idGrupo], function(err, result) {		
 			if(err) {
@@ -73,17 +73,28 @@ function GerenciadorBanco(){
 							'PRIMARY KEY (idGrupo,idMapa)'+
 						') ENGINE=InnoDB'
 					);
-					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo', idMapas);
+					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo', listaMapas,idGrupo);
 				}
 				else{
-					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo', {erro: err.code});
+					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo', {erro: err.code}, idGrupo);
 				}
 			}
 			else { 
 				for(var i=0; i < result.length; i++){
-					idMapas[i] = result[i].idMapa;
+					listaMapas[i] = new Object();
+					listaMapas[i].idMapa = result[i].idMapa;
+					pesquisarNomeMapa(listaMapas[i].idMapa, i);
+					gerenciadorBanco.eventEmitter.once('fimPesquisaNomeMapa' + i, function retornoNomeMapaPesquisado(nomeMapa, indice){ 
+						listaMapas[indice].nomeMapa = nomeMapa;
+						
+						// so vou emitir o termino de pesquisarMapas quando o nome do ultimo mapa tiver acabado de ser pesquisado.
+						if(indice == result.length - 1)
+							gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo', listaMapas, idGrupo);
+					});
 				}
-				gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo', idMapas);
+				
+				if(result.length == 0) //se nao houver mapas
+					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo', listaMapas, idGrupo);
 			}
 		});	
 	};
@@ -432,6 +443,10 @@ function GerenciadorBanco(){
 					
 				}
 				
+				if(result.length == 0){ //se resultado da pesquisa vazia
+					gerenciadorBanco.eventEmitter.emit('fimObterGrupos', listaGrupos, listaGruposCoordenados);
+				}
+				
 			}
 		});	
 	};
@@ -555,6 +570,9 @@ function GerenciadorBanco(){
 							gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoEditorOuVisualizador', mapas);
 					});
 				}
+				
+				if(result.length == 0) //se nao houver mapas
+					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoEditorOuVisualizador', mapas);
 			}
 		});	
 	};
@@ -612,6 +630,29 @@ function GerenciadorBanco(){
 		}
 		return listaMapas;
 	}
+	
+	this.pesquisarMapasVariosGrupos = function pesquisarMapasVariosGrupos(listaGrupos){
+		
+		if(listaGrupos.length > 0){ //lista nao vazia
+			for(var i=0; i < listaGrupos.length; i++){
+				gerenciadorBanco.pesquisarMapasGrupo(listaGrupos[i].idGrupo);
+				gerenciadorBanco.eventEmitter.once("fimPesquisaMapasGrupo", function (listaMapasDoGrupo, idGrupo){
+					
+					var posicao = 0; //posicao do grupo na listaGrupos
+					while(idGrupo != listaGrupos[posicao].idGrupo)
+						posicao++;
+					
+					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo' + posicao, listaMapasDoGrupo, posicao);
+					
+				});
+			}
+		}
+		else{ //lista vazia
+			gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo' + 0, new Array(), -1);
+		}
+		
+	};
+	
 	
 	this.pesquisarMapas = function pesquisarMapas(idUsuario){
 		gerenciadorBanco.verificarTipoUsuario(idUsuario);
@@ -675,78 +716,59 @@ function GerenciadorBanco(){
 												}
 												else{ // sucesso na pesquisa dos grupos do user
 													
+													listaMapasGruposCoordenados = new Array();
+													listaMapasGrupos = new Array();
 													
-													//pesquisar para cada grupo coordenado pelo user os mapas aos quais o grupo tem acesso
-													
-													for(var h=0; h < listaGruposCoordenados.length; h++){
-														gerenciadorBanco.pesquisarMapasGrupo(listaGruposCoordenados[h].idGrupo);
-														gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo', function(idMapas){ 
-															if(idMapas.erro){
-																gerenciadorBanco.eventEmitter.emit('fimPesquisaMapas', idMapas.erro);
-															}
-															else{ //sucesso pesquisa mapas dos grupos coordenados pelo user
-																
-																listaMapasGruposCoordenados = new Array();
-																
-																//necessario buscar o nome dos mapas
-																for(var i=0; i < idMapas.length; i++){
-																	gerenciadorBanco.pesquisarNomeMapa(idMapas[i], i);
-																	gerenciadorBanco.eventEmitter.once('fimPesquisaNomeMapa' + i, function(nomeMapa, indice){
-																		listaMapasGruposCoordenados[indice] = new Object();
-																		listaMapasGruposCoordenados[indice].idMapa = idMapas[indice];
-																		listaMapasGruposCoordenados[indice].nomeMapa = nomeMapa;
-																		
-																		// comeco a pesquisar os mapas aos quais os grupos em que o user eh membro, apos ter completado a pesquisa dos mapas dos grupos coordenados
-																		if(indice == idMapas.length - 1){
-																			listaMapas = adicionarNaoRedundantes(listaMapasGruposCoordenados, listaMapas);
-																			
-																			//pesquisar para cada grupo do user os mapas aos quais o grupo tem acesso
-																			
-																			for(var h=0; h < listaGrupos.length; h++){
-																				gerenciadorBanco.pesquisarMapasGrupo(listaGrupos[h].idGrupo);
-																				gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo', function(idMapas){ 
-																					if(idMapas.erro){
-																						gerenciadorBanco.eventEmitter.emit('fimPesquisaMapas', idMapas.erro);
-																					}
-																					else{ //sucesso pesquisa mapas dos grupos nos quais o user eh membro
-																						
-																						listaMapasGrupos = new Array();
-																						
-																						//necessario buscar o nome dos mapas
-																						for(var i=0; i < idMapas.length; i++){
-																							gerenciadorBanco.pesquisarNomeMapa(idMapas[i], i);
-																							gerenciadorBanco.eventEmitter.once('fimPesquisaNomeMapa' + i, function(nomeMapa, indice){
-																								listaMapasGrupos[indice] = new Object();
-																								listaMapasGrupos[indice].idMapa = idMapas[indice];
-																								listaMapasGrupos[indice].nomeMapa = nomeMapa;
-																								
-																								// retorno a lista de mapas final  apos ter completado a pesquisa dos mapas dos grupos que o user eh membro
-																								if(indice == idMapas.length - 1){
-																									listaMapas = adicionarNaoRedundantes(listaMapasGrupos, listaMapas);
-																									gerenciadorBanco.eventEmitter.emit('fimPesquisaMapas', listaMapas);
-																								}
-																								
-																							}); 
-																							
-																						} //FIM FOR -- buscar nome dos mapas dos grupos em que o user eh membro
-																							
-																					} //FIM ELSE -- pesquisa mapas dos grupos coordenados pelo user
-																					
-																				});	//FIM EVENTO -- fimPesquisaMapasGrupo
-																				
-																			} //FIM FOR -- pesquisar para cada grupo do user os mapas aos quais o grupo tem acesso
-																			
-																		} //FIM IF -- completado a pesquisa dos mapas dos grupos coordenados
-																		
-																	}); //FIM EVENTO -- fimPesquisaNomeMapa dos mapas dos grupos coordenados
-																	
-																} // FIM FOR -- buscar o nome dos mapas grupos coordenados
-																
-															} //FIM ELSE -- sucesso pesquisa mapas dos grupos coordenados pelo user
+													var h = 0;
+													do{
+														gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo' + h, function(listaMapasGrupoCoordenado, posicao){ //posicao eh a posicao do grupo na listaGruposCoordenados
+															listaMapasGruposCoordenados =  adicionarNaoRedundantes(listaMapasGrupoCoordenado, listaMapasGruposCoordenados);
 															
-														});	//FIM EVENTO -- fimPesquisaMapasGrupo dos mapas dos grupos coordenados pelo user
+															if(posicao == listaGruposCoordenados.length - 1){//ultimo mapa ou listaGruposCoord vazia
+																gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDosGruposCoordenados', listaMapasGruposCoordenados);
+															}
+															
+														});
 														
-													} // FIM FOR -- pesquisar para cada grupo coordenado pelo user os mapas aos quais o grupo tem acesso
+														h++;
+														
+													} while( h < listaGruposCoordenados.length );
+													
+													
+													
+													//quando os mapas de todos os grupos coordenados tiverem sido obtidos, comeca-se a pesquisa pelos mapas dos grupos em que o user eh membro
+													gerenciadorBanco.eventEmitter.once('fimPesquisaMapasDosGruposCoordenados', function(listaMapasGruposCoordenados){
+														
+														listaMapas = adicionarNaoRedundantes(listaMapasGruposCoordenados, listaMapas);
+														
+														var h = 0;
+														do{
+															gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo' + h, function(listaMapasGrupo, posicao){ //posicao eh a posicao do grupo na listaGrupos
+																listaMapasGrupos =  adicionarNaoRedundantes(listaMapasGrupo, listaMapasGrupos);
+																
+																if(posicao == listaGrupos.length - 1){//ultimo mapa ou listaGrupos vazia
+																	gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDosGrupos', listaMapasGrupos);
+																}
+																
+															});
+															
+															h++;
+															
+														} while( h < listaGrupos.length );
+														gerenciadorBanco.pesquisarMapasVariosGrupos(listaGrupos);
+														
+													});
+													
+													//quando os mapas de todos os grupos tiverem sido obtidos, finda-se a pesquisaMapas
+													gerenciadorBanco.eventEmitter.once('fimPesquisaMapasDosGrupos', function(listaMapasGrupos){
+														
+														listaMapas = adicionarNaoRedundantes(listaMapasGrupos, listaMapas);
+														gerenciadorBanco.eventEmitter.emit('fimPesquisaMapas', listaMapas);
+																
+													});
+													
+													gerenciadorBanco.pesquisarMapasVariosGrupos(listaGruposCoordenados);
+													
 													
 												} //FIM ELSE -- sucesso na pesquisa dos grupos do user
 												
@@ -803,41 +825,33 @@ function GerenciadorBanco(){
 										}
 										else{ // sucesso na pesquisa dos grupos do user
 											
-											//pesquisar para cada grupo do user os mapas aos quais o grupo tem acesso
+											listaMapasGrupos = new Array();
 											
-											for(var h=0; h < listaGrupos.length; h++){
-												gerenciadorBanco.pesquisarMapasGrupo(listaGrupos[h].idGrupo);
-												gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo', function(idMapas){ 
-													if(idMapas.erro){
-														gerenciadorBanco.eventEmitter.emit('fimPesquisaMapas', idMapas.erro);
-													}
-													else{ //sucesso pesquisa mapas dos grupos nos quais o user eh membro
-														
-														listaMapasGrupos = new Array();
-														
-														//necessario buscar o nome dos mapas
-														for(var i=0; i < idMapas.length; i++){
-															gerenciadorBanco.pesquisarNomeMapa(idMapas[i], i);
-															gerenciadorBanco.eventEmitter.once('fimPesquisaNomeMapa' + i, function(nomeMapa, indice){
-																listaMapasGrupos[indice] = new Object();
-																listaMapasGrupos[indice].idMapa = idMapas[indice];
-																listaMapasGrupos[indice].nomeMapa = nomeMapa;
-																
-																// retorno a lista de mapas final  apos ter completado a pesquisa dos mapas dos grupos que o user eh membro
-																if(indice == idMapas.length - 1){
-																	listaMapas = adicionarNaoRedundantes(listaMapasGrupos, listaMapas);
-																	gerenciadorBanco.eventEmitter.emit('fimPesquisaMapas', listaMapas);
-																}
-																
-															}); 
-															
-														} //FIM FOR -- buscar nome dos mapas dos grupos em que o user eh membro
-															
-													} //FIM ELSE -- pesquisa mapas dos grupos coordenados pelo user
+											var h = 0;
+											do{
+												gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo' + h, function(listaMapasGrupo, posicao){ //posicao eh a posicao do grupo na listaGrupos
+													listaMapasGrupos =  adicionarNaoRedundantes(listaMapasGrupo, listaMapasGrupos);
 													
-												});	//FIM EVENTO -- fimPesquisaMapasGrupo
+													if(posicao == listaGrupos.length - 1){//ultimo mapa ou listaGrupos vazia
+														gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDosGrupos', listaMapasGrupos);
+													}
+													
+												});
 												
-											} //FIM FOR -- pesquisar para cada grupo do user os mapas aos quais o grupo tem acesso
+												h++;
+												
+											} while( h < listaGrupos.length );
+											
+											
+											//quando os mapas de todos os grupos tiverem sido obtidos, finda-se a pesquisaMapas
+											gerenciadorBanco.eventEmitter.once('fimPesquisaMapasDosGrupos', function(listaMapasGrupos){
+												
+												listaMapas = adicionarNaoRedundantes(listaMapasGrupos, listaMapas);
+												gerenciadorBanco.eventEmitter.emit('fimPesquisaMapas', listaMapas);
+														
+											});
+											
+											gerenciadorBanco.pesquisarMapasVariosGrupos(listaGrupos);
 											
 										} //FIM ELSE -- sucesso na pesquisa dos grupos do user
 										
@@ -915,17 +929,23 @@ function GerenciadorBanco(){
 			}
 			else{ 
 				idMapaNovo = result[2].insertId; // result[2] pois o resultado da insercao do mapa esta na 3 posicao do vetor
-				transacao = montarTransacaoAdicaoPermissoes(idMapaNovo, permissoesGrupos, permissoesUsuarios);
-				connection.query(transacao, function(err, result) {	
-					if(err) {
-						connection.query(" ROLLBACK");
-						gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, descricao: "Erro ao adicionar permissoes"});
-					}
-					else{
-						connection.query(" COMMIT");
-						gerenciadorBanco.eventEmitter.emit('mapaCriado', 1);
-					}
-				});
+				if(permissoesUsuarios.length > 0 || permissoesGrupos.length > 0) {//proibe mapas com permissao apenas ao gerente e coordenador
+					transacao = montarTransacaoAdicaoPermissoes(idMapaNovo, permissoesGrupos, permissoesUsuarios);
+					connection.query(transacao, function(err, result) {	
+						if(err) {
+							connection.query(" ROLLBACK");
+							gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, descricao: "Erro ao adicionar permissoes"});
+						}
+						else{
+							connection.query(" COMMIT");
+							gerenciadorBanco.eventEmitter.emit('mapaCriado', idMapaNovo);
+						}
+					});
+				}
+				else{ //mapas com permissao apenas ao gerente e ao coordenador
+					connection.query(" COMMIT");
+					gerenciadorBanco.eventEmitter.emit('mapaCriado', idMapaNovo);
+				}
 			}
 		});
 	};
@@ -954,14 +974,44 @@ function GerenciadorBanco(){
 	};
 	
 	this.verificarTipoPermissao = function(idUsuario, idMapa){
-		connection.query('SELECT tipoPermissao FROM permissoes WHERE idUsuario=? AND idMapa=?', [idUsuario, idMapa], function(err, result) {
+		
+		//verificar primeiro se eh coord ou gerente do mapa
+		connection.query('SELECT idProprietario, idCoordenador FROM mapas WHERE id=?', [idMapa], function(err, result) {
 			
 			if(err) {
 				//mensagem de erro ou usuario sem permissao
 			}
-			else { 
-				gerenciadorBanco.eventEmitter.emit('tipoPermissao', result[0].tipoPermissao);
+			else{ 
+				if(result[0].idProprietario == idUsuario || result[0].idCoordenador == idUsuario){ //eh coord ou gerente
+					if(result[0].idProprietario == idUsuario){
+						gerenciadorBanco.eventEmitter.emit('tipoPermissao', 1); //o tipoPermissao de gerente eh 1
+					}
+					else{
+						gerenciadorBanco.eventEmitter.emit('tipoPermissao', 0); //o tipoPermissao de coord eh 0
+					}
+				}
+				else{ //nao eh coord nem gerente
+					
+					//verificar se o user tem permissao individual sobre o mapa
+					connection.query('SELECT tipoPermissao FROM permissoes_edicao_usuarios WHERE idUsuario=? AND idMapa=?', [idUsuario, idMapa], function(err, result) {
+						if(err) {
+							//mensagem de erro ou usuario sem permissao
+						}
+						else{
+							if(result.length > 0){ //user tem permissao individual
+								gerenciadorBanco.eventEmitter.emit('tipoPermissao', result[0].tipoPermissao); 
+							}
+							else{//user nao tem permissao individual
+								
+								//necessario verificar os grupos aos quais o user pertence ou coordena
+								
+							}
+						}
+					});
+					
+				}
 			}
+			
 		});	
 	};
 	
