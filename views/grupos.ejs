@@ -8,7 +8,7 @@
     <meta name="author" content="">
     <link rel="shortcut icon" href="../../assets/ico/favicon.ico">
 
-    <title>Mapas Disponíveis</title>
+    <title>Mapas DisponÃ­veis</title>
 
     <!-- Bootstrap core CSS -->
     <link href="../stylesheets/bootstrap.min.css" rel="stylesheet">
@@ -64,13 +64,27 @@
 					<div class="input-group">
 						
 						<!-- show any messages that come back with authentication -->
-						<% for (var i=0; i < mensagem.length; i++) { %>
-							<% var item = mensagem[i].idGrupo +  " - " + mensagem[i].nomeGrupo%>
+						<% for (var i=0; i < listaGruposCoordenados.length; i++) { %>
+							<% var item = listaGruposCoordenados[i].idGrupo +  " - " + listaGruposCoordenados[i].nomeGrupo%>
 							
 							
 							<div class="radio">
 								<label>
-									<input type="radio" name="idGrupo" id="idsGrupos" value="<%= mensagem[i].idGrupo %>" required autofocus>
+									<input type="radio" name="idGrupo" id="idsGrupos" value="<%= listaGruposCoordenados[i].idGrupo %>" required autofocus>
+									<%= item %>
+								</label>
+								<span class="label label-info"> Coordenado</span>
+							</div>
+							
+						<% } %>
+						
+						<% for (var i=0; i < listaGrupos.length; i++) { %>
+							<% var item = listaGrupos[i].idGrupo +  " - " + listaGrupos[i].nomeGrupo%>
+							
+							
+							<div class="radio">
+								<label>
+									<input type="radio" name="idGrupo" id="idsGrupos" value="<%= listaGrupos[i].idGrupo %>" required autofocus>
 									<%= item %>
 								</label>
 							</div>
