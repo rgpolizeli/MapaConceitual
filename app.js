@@ -18,14 +18,6 @@ function Servidor(Ip,Porta){
 	var favicon = require('static-favicon');
 	var cookieParser = require('cookie-parser');
 	var bodyParser = require('body-parser');
-	
-	var mysql = require('mysql');
-	var connection = mysql.createConnection({
-	  host     : 'localhost',
-	  user: 'root',
-	  password: 'ricardo',
-	  database: 'teste'
-	});
 
 	var Passport = require('./Passport.js');
 	var passport;
@@ -60,12 +52,10 @@ function Servidor(Ip,Porta){
 		app.use(bodyParser.json());
 		app.use(bodyParser.urlencoded());
 		app.use(session({ secret: 'h4s9omm', saveUninitialized: true, resave: true}));
-
-		connection.connect();
-		
-		passport = new Passport(connection);
 		
 		gerenciadorBanco = new GerenciadorBanco();
+		
+		passport = new Passport(gerenciadorBanco.getConexaoBD());
 		
 		gerenciadorArquivos = new GerenciadorArquivos();
 		
@@ -193,7 +183,7 @@ function Servidor(Ip,Porta){
 									gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 										
 										msg = {
-												alerta: "Nao e possivel excluir o grupo, pois algum usuario do grupo esta editando um mapa ao qual o grupo tem acesso.",
+												alerta: "Não é possível excluir o grupo, pois algum usuário do grupo está editando um mapa ao qual o grupo tem acesso.",
 												listaGrupos: listaGrupos,
 												listaGruposCoordenados: listaGruposCoordenados
 										}; 
@@ -212,7 +202,7 @@ function Servidor(Ip,Porta){
 						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 							
 							msg = {
-									alerta: "Voce nao e o coordenador do grupo para poder exclui-lo.",
+									alerta: "Voce não é o coordenador do grupo para poder excluí-lo.",
 									listaGrupos: listaGrupos,
 									listaGruposCoordenados: listaGruposCoordenados
 							}; 
@@ -235,42 +225,20 @@ function Servidor(Ip,Porta){
 		
 		app.get('/grupos', passport.verificarAutenticacao, function(req,res){ //deve estar autenticado
 			
-			gerenciadorBanco.verificarTipoUsuario(req.user.id);
-			gerenciadorBanco.eventEmitter.once('fimVerificarTipoUsuario', function(tipoUsuario){ 
-				var msg;
-				
-				if( !(tipoUsuario.erro) ){ //sucesso na verificacao do tipo do usuario
-					
-					if(tipoUsuario == 0){// se for coordenador
-						gerenciadorBanco.obterGrupos(req.user.id);
-						
-						//a variavel receptora do evento deve ser a mesma que emitiu.
-						//once ao inves de on, pois o evento emitido num outro login continua valendo para relogin, executando routes.pagina duas vezes.
-						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
-							routes.pagina(req,res,'grupos', {listaGrupos: listaGrupos, listaGruposCoordenados: listaGruposCoordenados} );
-						});
-					}
-					else{ //nao eh coordenador
-						gerenciadorBanco.pesquisarMapas(req.user.id);
-						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
-							msg = {
-									alerta: "Voce nao e coordenador para gerenciar grupos!",
-									mensagem: mapas
-							}; 
-							return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
-						}); 
-					}
-					
-				}
-				else{  //erro na verificacao do tipo do usuario
+			gerenciadorBanco.obterGrupos(req.user.id);
+			gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+				if(listaGrupos.erro){
 					gerenciadorBanco.pesquisarMapas(req.user.id);
 					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 						msg = {
-								alerta: "Ocorreu o seguinte erro ao se tentar verificar se voce e o coordenador: " + tipoUsuario.erro,
+								alerta: "Ocorreu o seguinte erro ao se tentar pesquisar os grupos que você participa: " + listaGrupos.erro,
 								mensagem: mapas
 						}; 
 						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 					}); 
+				}
+				else{
+					routes.pagina(req,res,'grupos', {listaGrupos: listaGrupos, listaGruposCoordenados: listaGruposCoordenados} );
 				}
 				
 			});
@@ -310,24 +278,26 @@ function Servidor(Ip,Porta){
 					}
 					
 					else{ //nao eh coordenador
-						gerenciadorBanco.pesquisarMapas(req.user.id);
-						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+						gerenciadorBanco.obterGrupos(req.user.id);;
+						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 							msg = {
-									alerta: "Voce nao e coordenador para gerenciar grupos!",
-									mensagem: mapas
+									alerta: "Voce não é coordenador para gerenciar grupos!",
+									listaGrupos: listaGrupos, 
+									listaGruposCoordenados: listaGruposCoordenados
 							}; 
-							return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+							return routes.pagina(req,res,'grupos', msg); //necessario return para interromper a funcao 
 						}); 
 					}
 				}
 				else{  //erro na verificacao tipo usuario
-					gerenciadorBanco.pesquisarMapas(req.user.id);
-					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+					gerenciadorBanco.obterGrupos(req.user.id);;
+					gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 						msg = {
-								alerta: "Ocorreu o seguinte erro ao se tentar verificar se voce e o coordenador: " + tipoUsuario.erro,
-								mensagem: mapas
+								alerta: "Ocorreu o seguinte erro ao se tentar verificar se você é o coordenador: "  + tipoUsuario.erro,
+								listaGrupos: listaGrupos, 
+								listaGruposCoordenados: listaGruposCoordenados
 						}; 
-						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+						return routes.pagina(req,res,'grupos', msg); //necessario return para interromper a funcao 
 					}); 
 				}
 			});
@@ -379,7 +349,7 @@ function Servidor(Ip,Porta){
 						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 							
 							msg = {
-									alerta: "Ocorreu o seguinte erro ao tentar configurar o grupo: "+ resultado.erro,
+									alerta: "Ocorreu o seguinte erro ao se tentar configurar o grupo: "+ resultado.erro,
 									listaGrupos: listaGrupos,
 									listaGruposCoordenados: listaGruposCoordenados
 							}; 
@@ -404,7 +374,7 @@ function Servidor(Ip,Porta){
 						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 							
 							msg = {
-									alerta: "Ocorreu o seguinte erro ao tentar configurar o grupo: "+ resultado.erro,
+									alerta: "Ocorreu o seguinte erro ao se tentar configurar o grupo: "+ resultado.erro,
 									listaGrupos: listaGrupos,
 									listaGruposCoordenados: listaGruposCoordenados
 							}; 
@@ -437,7 +407,7 @@ function Servidor(Ip,Porta){
 									gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 										
 										msg = {
-												alerta: "Ocorreu o seguinte erro ao tentar configurar o grupo: "+ resultado.erro,
+												alerta: "Ocorreu o seguinte erro ao se tentar configurar o grupo: "+ resultado.erro,
 												listaGrupos: listaGrupos,
 												listaGruposCoordenados: listaGruposCoordenados
 										}; 
@@ -465,7 +435,7 @@ function Servidor(Ip,Porta){
 							gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 								
 								msg = {
-										alerta: "Voce nao e o coordenador deste grupo para poder configura-lo!",
+										alerta: "Você não é o coordenador deste grupo para poder configurá-lo!",
 										listaGrupos: listaGrupos,
 										listaGruposCoordenados: listaGruposCoordenados
 								}; 
@@ -532,7 +502,7 @@ function Servidor(Ip,Porta){
 							gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 								
 								msg = {
-										alerta: resultado + " Porem, aconteceu um erro que permitira aos membros deletados, a edicao de mapas do grupo ate realizarem logout.",
+										alerta: resultado + " Porém, aconteceu um erro que permitirá aos membros deletados, a edição dos mapas do grupo até realizarem logout.",
 										listaGrupos: listaGrupos,
 										listaGruposCoordenados: listaGruposCoordenados
 								}; 
@@ -604,10 +574,10 @@ function Servidor(Ip,Porta){
 			
 			if(req.query.desconectado){
 				if(req.query.desconectado == 1){
-					routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois o gerente ou o coordenador esta alterando as permissoes deste mapa.", mensagem: mapas} ); 
+					routes.pagina(req,res,'mapas', {alerta: "Você foi desconectado do mapa, pois o gerente ou o coordenador está alterando as permissões deste mapa.", mensagem: mapas} ); 
 				}
 				else
-					routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois o coordenador esta alterando as permissoes de seu grupo.", mensagem: mapas} );
+					routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois o coordenador está alterando as permissões de seu grupo.", mensagem: mapas} );
 			}
 			else{
 				gerenciadorBanco.pesquisarMapas(req.user.id);
@@ -616,7 +586,7 @@ function Servidor(Ip,Porta){
 						gerenciadorBanco.pesquisarMapas(req.user.id);
 						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 							var msg = {
-									alerta: "Ocorreu o seguinte erro ao pesquisar os mapas que voce tem acesso: " + listaMapas.erro,
+									alerta: "Ocorreu o seguinte erro ao se pesquisar os mapas que você tem acesso: " + listaMapas.erro,
 									mensagem: mapas
 							}; 
 							return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
@@ -634,7 +604,7 @@ function Servidor(Ip,Porta){
 			gerenciadorBanco.cadastrarUsuario(req.body.usuario, req.body.password, req.body.nome, req.body.email, 1); //1 de usuario comum
 			gerenciadorBanco.eventEmitter.once('fimCadastroUsuario', function(resultado){ 
 				if(resultado == 1)
-					routes.pagina(req,res,'index', {alerta: "Cadastro de usuario comum realizado com sucesso."} ); 
+					routes.pagina(req,res,'index', {alerta: "Cadastro de usuário comum realizado com sucesso!"} ); 
 				else
 					routes.pagina(req,res,'cadastrarUsuarioComum', {alerta: "Ocorreu o seguinte erro na tentativa de cadastro: " + resultado + " . Tente novamente."} );
 			});
@@ -647,7 +617,7 @@ function Servidor(Ip,Porta){
 				gerenciadorBanco.cadastrarUsuario(req.body.usuario, req.body.password, req.body.nome, req.body.email, 0); //0 de coordenador
 				gerenciadorBanco.eventEmitter.once('fimCadastroUsuario', function(resultado){ 
 					if(resultado == 1)
-						routes.pagina(req,res,'index', {alerta: "Cadastro de coordenador realizado com sucesso."} ); 
+						routes.pagina(req,res,'index', {alerta: "Cadastro de coordenador realizado com sucesso!"} ); 
 					else
 						routes.pagina(req,res,'cadastrarCoordenador', {alerta: "Ocorreu o seguinte erro na tentativa de cadastro: " + resultado + " . Tente novamente."} );
 				});
@@ -693,7 +663,7 @@ function Servidor(Ip,Porta){
 						gerenciadorBanco.pesquisarMapas(idUsuario);
 						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 							msg = {
-									alerta: "Mapa nao criado! Ocorreu um erro ao se tentar encontrar os usuarios do sistema. Tente novamente.",
+									alerta: "Mapa não criado! Ocorreu um erro ao se tentar encontrar os usuários do sistema. Tente novamente.",
 									mensagem: mapas
 							}; 
 							return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
@@ -708,7 +678,7 @@ function Servidor(Ip,Porta){
 								gerenciadorBanco.pesquisarMapas(idUsuario);
 								gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 									msg = {
-											alerta: "Mapa nao criado! Ocorreu um erro ao se tentar encontrar os grupos do sistema. Tente novamente.",
+											alerta: "Mapa não criado! Ocorreu um erro ao se tentar encontrar os grupos do sistema. Tente novamente.",
 											mensagem: mapas
 									}; 
 									return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
@@ -758,7 +728,7 @@ function Servidor(Ip,Porta){
 					gerenciadorBanco.pesquisarMapas(idUsuario);
 					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 						msg = {
-								alerta: "Mapa nao criado! Ocorreu um erro ao se tentar encontrar o coordenador do mapa. Tente novamente.",
+								alerta: "Mapa não criado! Ocorreu um erro ao se tentar encontrar o coordenador do mapa. Tente novamente.",
 								mensagem: mapas
 						}; 
 						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
@@ -796,7 +766,7 @@ function Servidor(Ip,Porta){
 							gerenciadorBanco.pesquisarMapas(idProprietario);
 							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 								msg = {
-										alerta: "Mapa nao criado! Ocorreu o seguinte erro ao se tentar criar o mapa: " + idMapa.erro,
+										alerta: "Mapa não criado! Ocorreu o seguinte erro ao se tentar criar o mapa: " + idMapa.erro,
 										mensagem: mapas
 								}; 
 								return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
@@ -833,7 +803,7 @@ function Servidor(Ip,Porta){
 						gerenciadorBanco.pesquisarMapas(idUsuario);
 						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 							msg = {
-									alerta: "Ocorreu o seguinte erro ao tentar configurar o mapa: "+ resultado.erro,
+									alerta: "Ocorreu o seguinte erro ao se tentar configurar o mapa: "+ resultado.erro,
 									mensagem: mapas
 							}; 
 							return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
@@ -855,7 +825,7 @@ function Servidor(Ip,Porta){
 						gerenciadorBanco.pesquisarMapas(idUsuario);
 						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 							msg = {
-									alerta: "Ocorreu o seguinte erro ao tentar configurar o mapa: "+ resultado.erro,
+									alerta: "Ocorreu o seguinte erro ao se tentar configurar o mapa: "+ resultado.erro,
 									mensagem: mapas
 							}; 
 							return routes.pagina(req,res,'mapas', msg);
@@ -881,7 +851,7 @@ function Servidor(Ip,Porta){
 									gerenciadorBanco.pesquisarMapas(idUsuario);
 									gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 										msg = {
-												alerta: "Ocorreu o seguinte erro ao tentar configurar o mapa: "+ resultado.erro,
+												alerta: "Ocorreu o seguinte erro ao se tentar configurar o mapa: "+ resultado.erro,
 												mensagem: mapas
 										}; 
 										return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
@@ -898,7 +868,7 @@ function Servidor(Ip,Porta){
 											gerenciadorBanco.pesquisarMapas(idUsuario);
 											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 												msg = {
-														alerta: "Ocorreu o seguinte erro ao tentar configurar o mapa: "+ resultado.erro,
+														alerta: "Ocorreu o seguinte erro ao se tentar configurar o mapa: "+ resultado.erro,
 														mensagem: mapas
 												}; 
 												return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
@@ -926,7 +896,7 @@ function Servidor(Ip,Porta){
 							gerenciadorBanco.pesquisarMapas(idUsuario);
 							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 								msg = {
-										alerta: "Voce nao tem permissao para configurar este mapa!",
+										alerta: "Você não tem permissão para configurar este mapa!",
 										mensagem: mapas
 								}; 
 								return routes.pagina(req,res,'mapas', msg);
@@ -957,7 +927,7 @@ function Servidor(Ip,Porta){
 					gerenciadorBanco.pesquisarMapas(idUsuario);
 					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 						msg = {
-								alerta: "Mapa nao reconfigurado! Ocorreu um erro relativo ao coordenador do mapa. Tente novamente.",
+								alerta: "Mapa não reconfigurado! Ocorreu um erro relativo ao coordenador do mapa. Tente novamente.",
 								mensagem: mapas
 						}; 
 						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
@@ -1071,7 +1041,7 @@ function Servidor(Ip,Porta){
 											gerenciadorBanco.pesquisarMapas(req.user.id);
 											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 												msg = {
-														alerta: "Mapa excluido com sucesso!",
+														alerta: "Mapa excluído com sucesso!",
 														mensagem: mapas
 												}; 
 												routes.pagina(req,res,'mapas', msg);
@@ -1083,7 +1053,7 @@ function Servidor(Ip,Porta){
 											gerenciadorBanco.pesquisarMapas(req.user.id);
 											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 												msg = {
-														alerta: "Ocorreu o seguinte erro ao excluir: " + r, // r armazena o tipo de erro
+														alerta: "Mapa não excluído! Ocorreu o seguinte erro ao se tentar excluir: " + r, // r armazena o tipo de erro
 														mensagem: mapas
 												}; 
 												routes.pagina(req,res,'mapas', msg);
@@ -1097,7 +1067,7 @@ function Servidor(Ip,Porta){
 										gerenciadorBanco.pesquisarMapas(req.user.id);
 										gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 											msg = {
-													alerta: "Ocorreu o seguinte erro ao excluir: " + r, // r armazena o tipo de erro
+													alerta: "Mapa não excluído! Ocorreu o seguinte erro ao se tentar excluir: " + r, // r armazena o tipo de erro
 													mensagem: mapas
 											}; 
 											routes.pagina(req,res,'mapas', msg);
@@ -1114,7 +1084,7 @@ function Servidor(Ip,Porta){
 								gerenciadorBanco.pesquisarMapas(req.user.id);
 								gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 									msg = {
-											alerta: "O mapa nao pode ser excluido, pois alguns usuarios estao editando este mapa!",
+											alerta: "Mapa não excluído! Certifique-se de que nenhum usuário esteja editando este mapa antes de tentar excluí-lo.",
 											mensagem: mapas
 									}; 
 									routes.pagina(req,res,'mapas', msg);
@@ -1127,7 +1097,7 @@ function Servidor(Ip,Porta){
 							gerenciadorBanco.pesquisarMapas(req.user.id);
 							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 								msg = {
-										alerta: "Voce nao tem permissao para isso!",
+										alerta: "Voce não tem permissao para isso!",
 										mensagem: mapas
 								}; 
 								routes.pagina(req,res,'mapas', msg);

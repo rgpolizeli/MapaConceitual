@@ -17,10 +17,7 @@ function Usuario(idUsuario, socket, tipoPermissao){
 
 
 function GerenciadorUsuariosAtivos(){
-	/*
-	 * Unifica listaUsuarios e ListaSincronizadores e acrescenta permissao
-	 * 
-	 */
+	
 	var gerenciadorUsuariosAtivos = this;
 	var listaUsuariosAtivos = new Array();
 	

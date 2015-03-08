@@ -17,6 +17,10 @@ function GerenciadorBanco(){
 	//this.eventEmitter.setMaxListeners(0);
 	
 	
+	this.getConexaoBD = function getConexaoBD(){
+		return connection;
+	};
+	
 	this.buscarTodosGrupos = function buscarTodosGrupos(){
 		connection.query('SELECT id,nome FROM grupos', function(err, result) {
 			var listaGrupos;
@@ -165,7 +169,7 @@ function GerenciadorBanco(){
 			if(err)
 				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', {erro: err.code});
 			else
-				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', "Alteracoes realizadas com sucesso!");
+				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', "Alterações realizadas com sucesso!");
 		});	
 		
 	}
@@ -199,7 +203,7 @@ function GerenciadorBanco(){
 						gerenciadorBanco.eventEmitter.once('fimAlterarConfiguracoesGrupo', function(resultado){ 
 							if(resultado.erro){
 								connection.query(" ROLLBACK");
-								gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', {erro: "Alteracoes nao aplicadas, devido ao seguinte erro: " + resultado.erro}); 
+								gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', {erro: "Alterações não aplicadas, devido ao seguinte erro: " + resultado.erro}); 
 							}
 							else{
 								connection.query(" COMMIT");
@@ -209,7 +213,7 @@ function GerenciadorBanco(){
 						
 					}
 					else{ //ou nao esta na lista ou nao tem permissao de Adm ou gerente
-						gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', {erro: "Voce nao e o coordenador para configurar este grupo!"}); 
+						gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', {erro: "Você não é o coordenador para configurar este grupo!"}); 
 					}
 				}
 			});
@@ -839,7 +843,7 @@ function GerenciadorBanco(){
 					connection.query(transacao, function(err, result) {	
 						if(err) {
 							connection.query(" ROLLBACK");
-							gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, descricao: "Erro ao adicionar permissoes"});
+							gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, descricao: "Erro ao adicionar permissões"});
 						}
 						else{
 							connection.query(" COMMIT");
@@ -1238,7 +1242,7 @@ function GerenciadorBanco(){
 			if(err)
 				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesMapa', {erro: err.code});
 			else
-				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesMapa', "Alteracoes realizadas com sucesso!");
+				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesMapa', "Alterações realizadas com sucesso!");
 		});	
 		
 	}
@@ -1268,7 +1272,7 @@ function GerenciadorBanco(){
 						gerenciadorBanco.eventEmitter.once('fimAlterarConfiguracoesMapa', function(resultado){ 
 							if(resultado.erro){
 								connection.query(" ROLLBACK");
-								gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Alteracoes nao aplicadas, devido ao seguinte erro: " + resultado.erro}); 
+								gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Alterações não aplicadas, devido ao seguinte erro: " + resultado.erro}); 
 							}
 							else{
 								connection.query(" COMMIT");
@@ -1278,7 +1282,7 @@ function GerenciadorBanco(){
 						
 					}
 					else{ //ou nao esta na lista ou nao tem permissao de coord ou gerente
-						gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Voce nao tem permissao para configurar este mapa!"}); 
+						gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Você não tem permissão para configurar este mapa!"}); 
 					}
 				}
 			});

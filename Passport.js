@@ -32,7 +32,6 @@ function Passport(connection){
 	
 	// serialize user to session
 	this.ppt.serializeUser(function(user, done) {
-		console.log('serializer');
 		return done(null, user.id);
 	});
 	
@@ -43,7 +42,6 @@ function Passport(connection){
 			user.id = id;
 			user.usuario = result[0].usuario;
 			user.password = result[0].password;
-			console.log('asdads');
 			return done(err, user);
 		});
 		
