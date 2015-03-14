@@ -586,11 +586,32 @@ function Servidor(Ip,Porta){
 		app.get('/mapas', passport.verificarAutenticacao, function(req,res){
 			
 			if(req.query.desconectado){
-				if(req.query.desconectado == 1){
-					routes.pagina(req,res,'mapas', {alerta: "Você foi desconectado do mapa, pois o gerente ou o coordenador está alterando as permissões deste mapa.", mensagem: mapas} ); 
-				}
-				else
-					routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois o coordenador está alterando as permissões de seu grupo.", mensagem: mapas} );
+				
+				gerenciadorBanco.pesquisarMapas(req.user.id);
+				gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(listaMapas){ 
+					if(listaMapas.erro){ //erro na pesquisa pelos mapas que o usuario tem acesso
+						var msg = {
+								alerta: "Ocorreu o seguinte erro ao se pesquisar os mapas que você tem acesso: " + listaMapas.erro,
+								mensagem: new Array()
+						}; 
+						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao  
+					}
+					else{ //sucesso na pesquisa pelos mapas que o usuario tem acesso
+						
+						switch( parseInt(req.query.desconectado) ){
+							case 1: 
+								routes.pagina(req,res,'mapas', {alerta: "Você foi desconectado do mapa, pois o gerente ou o coordenador está alterando as permissões deste mapa.", mensagem: listaMapas} );
+							break;
+							case 2:
+								routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois o coordenador está alterando as permissões de seu grupo.", mensagem: listaMapas} );
+							break;
+							case 3: 
+								routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois não foi possível obter o seu tipo de permissao para a edição do mapa.", mensagem: listaMapas} );
+							break;
+						}
+					}
+				});
+					
 			}
 			else{
 				gerenciadorBanco.pesquisarMapas(req.user.id);
@@ -945,6 +966,7 @@ function Servidor(Ip,Porta){
 			
 			gerenciadorBanco.verificarTipoUsuario( parseInt(req.body.idCoordenador) );
 			gerenciadorBanco.eventEmitter.once('fimVerificarTipoUsuario', function(tipoUsuario){ 
+				
 				if(tipoUsuario != 0 ){ //deu erro ou nao eh coordenador
 					var msg;
 					gerenciadorBanco.pesquisarMapas(idUsuario);
@@ -980,7 +1002,7 @@ function Servidor(Ip,Porta){
 						}
 						
 					}
-					
+
 					gerenciadorBanco.configurarMapa(req.body.idMapa, req.body.nomeMapa, parseInt(req.body.idCoordenador), idProprietario, permissoesUsuarios, permissoesGrupos);
 					gerenciadorBanco.eventEmitter.once('fimConfigurarMapa', function(resultado){ 
 						if(resultado.erro){ //erro ao pesquisar todos os usuarios
@@ -1033,6 +1055,7 @@ function Servidor(Ip,Porta){
 				
 				gerenciadorBanco.verificarTipoPermissao(idUsuario, idMapa); //Obtendo a permissao do usuario
 				gerenciadorBanco.eventEmitter.once('tipoPermissao', function(tipoPermissao){ 
+	
 					if(tipoPermissao.erro){
 						var msg;
 						
@@ -1046,6 +1069,7 @@ function Servidor(Ip,Porta){
 						});
 					}
 					else{
+						
 						if(tipoPermissao == 0 || tipoPermissao == 1){ // se for o gerente ou administrador
 							var numUsersAtivos;
 							numUsersAtivos = gerenciadorUsuariosAtivos.getQuantidadeUsuariosAtivos(idMapa);
@@ -1055,14 +1079,15 @@ function Servidor(Ip,Porta){
 								
 								gerenciadorBanco.excluirMapa(idMapa);
 								gerenciadorBanco.eventEmitter.once('fimExclusaoMapa', function(resultado){ 
-									
 									if(resultado == 1){ //excluido com sucesso do banco
 										
 										r = gerenciadorArquivos.excluirMapa(idMapa);
 										if(r == 1){ //mapa excluido com sucesso
 											var msg;
 											gerenciadorBanco.pesquisarMapas(req.user.id);
-											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+			
+											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){
+												
 												msg = {
 														alerta: "Mapa excluído com sucesso!",
 														mensagem: mapas
@@ -1120,7 +1145,7 @@ function Servidor(Ip,Porta){
 							gerenciadorBanco.pesquisarMapas(req.user.id);
 							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
 								msg = {
-										alerta: "Voce não tem permissao para isso!",
+										alerta: "Você não tem permissão para isso!",
 										mensagem: mapas
 								}; 
 								routes.pagina(req,res,'mapas', msg);
@@ -1186,13 +1211,27 @@ function Servidor(Ip,Porta){
 				gerenciadorBanco.eventEmitter.once('tipoPermissao', function(tipoPermissao){ 
 					
 					//adiciona o usuario e o mapa se este ja nao estiver adicionado
+					//mesmo com erro no tipoPermissao eh para por na lista, pois senao havera problema na hora da desconexao, ja que esta remove o usuario da lista
 					gerenciadorUsuariosAtivos.adicionarUsuarioAtivo(idMapa, idUsuario, socket, tipoPermissao);
 					
-					//lista estruturada em html para o usuario carregar o mapa
-					var msg = montarListaHtml(gerenciadorArquivos.getMapa(idMapa));
-					socket.send(msg);
+					if(tipoPermissao.erro || tipoPermissao == -1){ // deu erro ou user nao tem permissao
+						var msg;
+						//desconectar o usuario para o qual nao se obteve as permissoes no mapa, ou por erro, ou por realmente nao ter permissao para aquele mapa
+						msg = {
+								tipoMensagem: 10,
+								tipoDesconexao: 3
+						};
+						socket.send(msg);
+					}
+					else{
+						
+						//lista estruturada em html para o usuario carregar o mapa
+						var msg = montarListaHtml(gerenciadorArquivos.getMapa(idMapa));
+						socket.send(msg);
+						
+						console.log("Usuario #" + idUsuario + " conectou-se.");
+					}
 					
-					console.log("Usuario #" + idUsuario + " conectou-se.");
 				});
 			});
 			
@@ -1619,7 +1658,7 @@ function Servidor(Ip,Porta){
 	
 }
 
-	var servidor = new Servidor('localhost',50004);
+	var servidor = new Servidor('186.222.84.245',50004);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);

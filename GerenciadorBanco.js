@@ -1,5 +1,83 @@
 function GerenciadorBanco(){
 	
+	function OperadorSql(conexao){
+		var filaSql;
+		var idsTransacao;
+		var connection;
+		
+		filaSql = new Array();
+		idsTransacao = new Array();
+		connection = conexao;
+		
+		function Transacao(idTransacao, sql, callback){
+			this.idTransacao = idTransacao;
+			this.sql = sql;
+			this.callback = callback;
+		}
+		
+		function Instrucao(sql, callback){
+			this.sql = sql;
+			this.callback = callback;
+		}
+		
+		function obterIdTransacao(){
+			var id;
+			
+			id = Math.random();
+			
+			if(idsTransacao.length == 0){ //se nao definido ou vazio
+				idsTransacao.push(id);
+				return id;
+			}
+			else{
+				while(idsTransacao.indexOf(id) != -1)
+					id = Math.random();
+				idsTransacao.push(id);
+				return id;
+			}
+		}
+		
+		this.addSql = function addSql(sql, callback){
+			var pos; //posicao na fila
+			
+			if(sql.toUpperCase().indexOf("ROLLBACK") != -1 || sql.toUpperCase().indexOf("COMMIT") != -1){
+				connection.query( filaSql[0].sql, filaSql[0].callback(err, result) );
+				filaSql.splice(0,1); //remove 1 elemento a partir da pos 0
+				executarSql(); //libera a execucao de instrucoes sql
+			}
+			else{
+				if(sql.toUpperCase().indexOf("TRANSACTION") != -1 ){ //eh transacao
+					var idTransacao = obterIdTransacao();
+					var transacao = new Transacao(idTransacao, sql, callback);
+					pos = filaSql.push(transacao) - 1; // push retorna o novo tamanho do vetor
+				}
+				else{ //nao eh transacao
+					var instrucao = new Instrucao(sql, callback);
+					pos = filaSql.push(instrucao) - 1;
+				}
+				
+				if(pos == 0){ // soh ha um elemento na fila
+					executarSql();
+				}
+			}
+		};
+		
+		function executarSql(){
+			if(filaSql[0].sql.toUpperCase().indexOf("TRANSACTION") != -1){ //o primeiro eh transcao
+				var idTransacao;
+				
+				idTransacao = filaSql[0].idTransacao;
+				connection.query( filaSql[0].sql, filaSql[0].callback(err, result, idTransacao) );
+			}
+			else{ //o primeiro nao eh transacao
+				connection.query( filaSql[0].sql, filaSql[0].callback(err, result) );
+				executarSql();
+			}
+		}
+		
+	}
+	
+	
 	var events = require('events');
 	var mysql = require('mysql');
 	var connection = mysql.createConnection({
@@ -9,6 +87,8 @@ function GerenciadorBanco(){
 	  database: 'aaa',
 	  multipleStatements: true
 	});
+	
+	var operadorSql = new OperadorSql(connection);
 	
 	var gerenciadorBanco = this;
 	this.eventEmitter = new events.EventEmitter();
@@ -108,7 +188,6 @@ function GerenciadorBanco(){
 		var estaNaLista;
 		
 		transacao = 
-			"SET autocommit = 0;" +
 			" START TRANSACTION;" +
 			" UPDATE grupos SET nome='" + nomeGrupo + "' WHERE id=" + idGrupo + ";"
 		;
@@ -817,7 +896,6 @@ function GerenciadorBanco(){
 		var transacao;
 		
 		transacao = 
-			"SET autocommit = 0;" +
 			" START TRANSACTION;" +
 			" INSERT INTO mapas SET nome='" + nomeMapa + "', idProprietario=" + idProprietario + ", idCoordenador=" + idCoordenador + ";"
 		;
@@ -923,16 +1001,17 @@ function GerenciadorBanco(){
 										else{
 											connection.query('SELECT idGrupo, tipoPermissao FROM permissoes_edicao_grupos WHERE idMapa=?', [idMapa], function(err, result) { //os grupos que possuem acesso ao mapa e suas permissoes
 												if(err) {
-													//mensagem de erro ou usuario sem permissao
+													gerenciadorBanco.eventEmitter.emit('tipoPermissao', {erro: err.code});
 												}
 												else{
 													 var achou = false;
-													 var tipoPermissao;
+													 var tipoPermissao = -1;
 													 
-													 for(var i=0; i < result.length && !achou; i++){
-														for(var j=0; j < listaGrupos.length && !achou; j++){
+													 for(var i=0; i < result.length && tipoPermissao != 2; i++){ // editor eh o tipo maior de permissao para um grupo
+														for(var j=0; j < listaGrupos.length && tipoPermissao != 2; j++){
 															if(result[i].idGrupo == listaGrupos[j].idGrupo){
-																tipoPermissao = result[i].tipoPermissao;
+																if(tipoPermissao == -1 || tipoPermissao > 2) //se nao user ainda nao tinha permissao ou a permissao de um de seus grupos era menos abrangente do que a de editor
+																	tipoPermissao = result[i].tipoPermissao;
 																achou = true;
 															}
 														}
@@ -1129,7 +1208,6 @@ function GerenciadorBanco(){
 		var estaNaLista;
 		
 		transacao = 
-			"SET autocommit = 0;" +
 			" START TRANSACTION;" +
 			" UPDATE mapas SET nome='" + nomeMapa + "', idCoordenador="+ idCoordenador +" WHERE id=" + idMapa + ";"
 		;
@@ -1238,6 +1316,21 @@ function GerenciadorBanco(){
 		
 	}
 	
+	function verificarExistenciaMapa(idMapa){
+		
+		connection.query("SELECT id FROM mapas WHERE id=?", [idMapa], function(err, result) {
+			if(err)
+				gerenciadorBanco.eventEmitter.emit('fimVerificarExistenciaMapa', {erro: "Erro ao se tentar encontrar o mapa!"});
+			else{
+				if(result.length == 0) // nao ha mapa com este id
+					gerenciadorBanco.eventEmitter.emit('fimVerificarExistenciaMapa', {erro: "Mapa já foi excluído"});
+				else
+					gerenciadorBanco.eventEmitter.emit('fimVerificarExistenciaMapa', 1);
+			}
+				
+		});	
+	}
+	
 	
 	this.configurarMapa = function configurarMapa(idMapa, nomeMapa, idCoordenador, idUsuario, permissoesUsuarios, permissoesGrupos){
 		//permissoes e uma lista de objetos com duas propriedades: idUsuario em int e tipoPermissao em string
@@ -1245,38 +1338,51 @@ function GerenciadorBanco(){
 		if(idMapa){ //se o usuario nao apagou o id do mapa na pagina configurarMapa.ejs
 			idMapa = parseInt(idMapa);
 			
-			gerenciadorBanco.pesquisarTodosComPermissao(idMapa);
-			gerenciadorBanco.eventEmitter.once('fimPesquisaTodosComPermissao', function(listaUsuariosPermitidos, listaGruposPermitidos){ 
-				
-				if(listaUsuariosPermitidos.erro){ //erro na busca dos usuarios e grupos com permissao
-					gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: listaUsuariosPermitidos.erro});
+			verificarExistenciaMapa(idMapa) //necessario verificar se o mapa nao foi excluido enquanto se alterava suas configuracoes
+			gerenciadorBanco.eventEmitter.once('fimVerificarExistenciaMapa', function(resultado){ 
+			
+				if(resultado.erro){ //erro na verificacao da existencia do mapa ou mapa foi excluido
+					gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: resultado.erro} );
 				}
-				else{ //sucesso na busca dos usuarios e grupos com permissao
+				else{ //mapa existe
 					
-					//necessario saber a permissao do usuario, pois so coordenador e gerente podem mudar permissoes
-					var i=0;
-					while( i < listaUsuariosPermitidos.length && listaUsuariosPermitidos[i].id != idUsuario)
-						i++;
-					
-					if( i<listaUsuariosPermitidos.length && (listaUsuariosPermitidos[i].tipoPermissao == "Gerente" || listaUsuariosPermitidos[i].tipoPermissao == "Coordenador") ){
-						alterarConfiguracoesMapa(idMapa, nomeMapa, idCoordenador, listaUsuariosPermitidos, listaGruposPermitidos, permissoesUsuarios, permissoesGrupos);
-						gerenciadorBanco.eventEmitter.once('fimAlterarConfiguracoesMapa', function(resultado){ 
-							if(resultado.erro){
-								connection.query(" ROLLBACK");
-								gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Alterações não aplicadas, devido ao seguinte erro: " + resultado.erro}); 
-							}
-							else{
-								connection.query(" COMMIT");
-								gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', resultado);
-							}
-						});
+					gerenciadorBanco.pesquisarTodosComPermissao(idMapa);
+					gerenciadorBanco.eventEmitter.once('fimPesquisaTodosComPermissao', function(listaUsuariosPermitidos, listaGruposPermitidos){ 
 						
-					}
-					else{ //ou nao esta na lista ou nao tem permissao de coord ou gerente
-						gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Você não tem permissão para configurar este mapa!"}); 
-					}
+						if(listaUsuariosPermitidos.erro){ //erro na busca dos usuarios e grupos com permissao
+							gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: listaUsuariosPermitidos.erro});
+						}
+						else{ //sucesso na busca dos usuarios e grupos com permissao
+							
+							//necessario saber a permissao do usuario, pois so coordenador e gerente podem mudar permissoes
+							var i=0;
+							while( i < listaUsuariosPermitidos.length && listaUsuariosPermitidos[i].id != idUsuario)
+								i++;
+							
+							if( i<listaUsuariosPermitidos.length && (listaUsuariosPermitidos[i].tipoPermissao == "Gerente" || listaUsuariosPermitidos[i].tipoPermissao == "Coordenador") ){
+								alterarConfiguracoesMapa(idMapa, nomeMapa, idCoordenador, listaUsuariosPermitidos, listaGruposPermitidos, permissoesUsuarios, permissoesGrupos);
+								gerenciadorBanco.eventEmitter.once('fimAlterarConfiguracoesMapa', function(resultado){ 
+									if(resultado.erro){
+										connection.query(" ROLLBACK");
+										gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Alterações não aplicadas, devido ao seguinte erro: " + resultado.erro}); 
+									}
+									else{
+										connection.query(" COMMIT");
+										gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', resultado);
+									}
+								});
+								
+							}
+							else{ //ou nao esta na lista ou nao tem permissao de coord ou gerente
+								gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Você não tem permissão para configurar este mapa!"}); 
+							}
+						}
+					});
+					
 				}
+				
 			});
+			
 		}
 		else{ //usuario apagou id do mapa
 			gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "O id do mapa foi apagado!"}); 
