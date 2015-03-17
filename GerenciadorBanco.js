@@ -265,7 +265,7 @@ function GerenciadorBanco(){
 							if(resultado.erro)
 								gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', {erro: "Alterações não aplicadas, devido ao seguinte erro: " + resultado.erro}); 
 							else
-								gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', resultado);
+								gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', listaMembrosAtuais);
 						});
 						
 					}
@@ -1002,7 +1002,7 @@ function GerenciadorBanco(){
 		;
 		callback = function(err, result) {		
 			if(err)
-				gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, descricao: "Erro ao criar mapa"});
+				gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, tipoErro: 1});
 			else{ 
 				
 				idMapaNovo = result.insertId;
@@ -1012,7 +1012,7 @@ function GerenciadorBanco(){
 						if(err){
 							transacao = "ROLLBACK";
 							callback = function(err, result){
-								gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, descricao: "Erro ao adicionar permissões"});
+								gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, tipoErro: 2});
 							};
 							operadorSql.addSql(transacao, callback);
 						}

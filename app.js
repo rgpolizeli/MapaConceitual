@@ -120,76 +120,64 @@ function Servidor(Ip,Porta){
 							}
 							
 							else{ //sucesso ao obter os mapas aos quais o grupo tem acesso
-								
-								//verificar se algum usuario membro do grupo estah logado em algum mapa ao qual o grupo tem acesso
-								
-								//Para cada mapa ao qual o grupo tem acesso, obter lista dos usuarios ativos
-								//Para cada usuario ativo, verificar se o seu id � igual a algum dos membros do grupo
-								//Se for, entao nao excluir
-								//Sen�o, excluir
-								
-								var membroLogado = false; // se houver apenas um membro logado, jah nao pode haver exclusao
-								
-								for(var i=0; i < idMapas.length && !membroLogado; i++){
-									var idsUsuariosAtivos = gerenciadorUsuariosAtivos.getIdsUsuariosAtivos(idMapas[i]);
-									for(var j=0; j < idsUsuariosAtivos.length && !membroLogado; j++){
-										var ehMembro = false;
-										for(var k=0; k < membros.length && !ehMembro; k++){
-											if(idsUsuariosAtivos[j] == membros[k].id){
-												ehMembro = true;
-												membroLogado = true;
-											}
-										}
+									
+								gerenciadorBanco.excluirGrupo(idGrupo);
+								gerenciadorBanco.eventEmitter.once('fimExclusaoGrupo', function(resultado){ 
+									
+									if(resultado.erro){ //erro ao tentar excluir
+										gerenciadorBanco.obterGrupos(req.user.id);
+										gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+											
+											msg = {
+													alerta: "O seguinte erro ocorreu ao se tentar excluir o grupo: " + resultado.erro,
+													listaGrupos: listaGrupos,
+													listaGruposCoordenados: listaGruposCoordenados
+											}; 
+											return routes.pagina(req,res,'grupos', msg);
+										});
 									}
-									
-								}
-								
-								if(!membroLogado){ // ou seja, nao ha nenhum membro do grupo conectado a qualquer mapa do gurpo
-									
-									gerenciadorBanco.excluirGrupo(idGrupo);
-									gerenciadorBanco.eventEmitter.once('fimExclusaoGrupo', function(resultado){ 
+									else{ //sucesso ao excluir grupo
 										
-										if(resultado.erro){ //erro ao tentar excluir
-											gerenciadorBanco.obterGrupos(req.user.id);
-											gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
-												
-												msg = {
-														alerta: "O seguinte erro ocorreu ao se tentar excluir o grupo: " + resultado.erro,
-														listaGrupos: listaGrupos,
-														listaGruposCoordenados: listaGruposCoordenados
-												}; 
-												return routes.pagina(req,res,'grupos', msg);
-											});
-										}
-										else{ //sucesso ao excluir grupo
-											gerenciadorBanco.obterGrupos(req.user.id);
-											gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
-												
-												msg = {
-														alerta: "Sucesso ao excluir o grupo!",
-														listaGrupos: listaGrupos,
-														listaGruposCoordenados: listaGruposCoordenados
-												}; 
-												return routes.pagina(req,res,'grupos', msg);
-											});
-										}
+										var msg;
 										
-									});
-									
-									
-								}
-								else{ //ha algum membro do grupo conectado a um mapa do grupo, portanto, nao ha exclusao
-									gerenciadorBanco.obterGrupos(req.user.id);
-									gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
-										
+										//desconectar os usuarios membros do grupo que estao logados em mapas aos quais o grupo tem acesso
 										msg = {
-												alerta: "Não é possível excluir o grupo, pois algum usuário do grupo está editando um mapa ao qual o grupo tem acesso.",
-												listaGrupos: listaGrupos,
-												listaGruposCoordenados: listaGruposCoordenados
-										}; 
-										return routes.pagina(req,res,'grupos', msg);
-									});
-								}
+												tipoMensagem: 10,
+												tipoDesconexao: 4
+										};
+										
+										//Para cada mapa, obter lista dos usuarios ativos
+										//Para cada usuario ativo, verificar se o seu id eh igual a algum dos membros do grupo
+										//Se for, entao enviar mensagem
+										//Senao, nao enviar
+										
+										for(var i=0; i < idMapas.length; i++){
+											var idsUsuariosAtivos = gerenciadorUsuariosAtivos.getIdsUsuariosAtivos(idMapas[i]);
+											for(var j=0; j < idsUsuariosAtivos.length; j++){
+												var ehMembro = false;
+												for(var k=0; k < membros.length && !ehMembro; k++){
+													if(idsUsuariosAtivos[j] == membros[k].id){
+														ehMembro = true;
+														enviarUnicastParaUsuarioAtivo(idMapas[i],idsUsuariosAtivos[j],msg);
+													}
+												}
+											}
+											
+										}
+										
+										gerenciadorBanco.obterGrupos(req.user.id);
+										gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+											
+											msg = {
+													alerta: "Sucesso ao excluir o grupo!",
+													listaGrupos: listaGrupos,
+													listaGruposCoordenados: listaGruposCoordenados
+											}; 
+											return routes.pagina(req,res,'grupos', msg);
+										});
+									}
+										
+								});
 								
 							} //fim else sucesso obter mapas
 							
@@ -466,31 +454,15 @@ function Servidor(Ip,Porta){
 		
 		
 		app.post('/configurarGrupo', passport.verificarAutenticacao, function(req,res){
-			var membros = new Array();
-			
-			//as propriedades sao duas: nomeGrupo e usuario+idUsuario. O ultimo tipo eh o de mais elementos e contem o tipo de permissao do usuario que nomeia o tipo.
-			var propriedades = Object.getOwnPropertyNames(req.body);
-			
-			for(var i=0; i < propriedades.length; i++){
-				if(propriedades[i] != "nomeGrupo" && propriedades[i] != "idGrupo"){
-					var membro = new Object();
-					membro.idUsuario = parseInt(propriedades[i].replace("usuario", ""));
-					membro.tipoMembro = req.body[propriedades[i]];
-					membros.push(membro);
-				}
-			}
-			
-			gerenciadorBanco.configurarGrupo(req.body.idGrupo, req.body.nomeGrupo, req.user.id, membros);
-			gerenciadorBanco.eventEmitter.once('fimConfigurarGrupo', function(resultado){ 
-				if(resultado.erro){ //erro ao configurar grupo
-					
-					var msg;
+			gerenciadorBanco.pesquisarMapasGrupo(req.body.idGrupo);
+			gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo' + req.body.idGrupo, function(idMapas){ 
+				if(idMapas.erro){ //erro ao obter os mapas aos quais o grupo tem acesso
 					
 					gerenciadorBanco.obterGrupos(req.user.id);
 					gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 						
 						msg = {
-								alerta: resultado.erro,
+								alerta: "Alterações não aplicadas! Ocorreu um erro relacionado a obtenção dos mapas aos quais o grupo tem acesso",
 								listaGrupos: listaGrupos,
 								listaGruposCoordenados: listaGruposCoordenados
 						}; 
@@ -498,24 +470,32 @@ function Servidor(Ip,Porta){
 					});
 					
 				}
-				else{ //sucesso ao configurar grupo
+				else{
+					var membros = new Array();
 					
-					//necessario desconectar usuarios para alteracoes serem aplicadas localmente, Para isso:
-					//obter lista com os mapas aos quais o grupo tem acesso.
-					//para cada mapa, enviar mensagem desconectando o usuario.
+					//as propriedades sao duas: nomeGrupo e usuario+idUsuario. O ultimo tipo eh o de mais elementos e contem o tipo de permissao do usuario que nomeia o tipo.
+					var propriedades = Object.getOwnPropertyNames(req.body);
 					
-					var msg;
+					for(var i=0; i < propriedades.length; i++){
+						if(propriedades[i] != "nomeGrupo" && propriedades[i] != "idGrupo"){
+							var membro = new Object();
+							membro.idUsuario = parseInt(propriedades[i].replace("usuario", ""));
+							membro.tipoMembro = req.body[propriedades[i]];
+							membros.push(membro);
+						}
+					}
 					
-					gerenciadorBanco.pesquisarMapasGrupo(req.body.idGrupo);
-					gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo' + req.body.idGrupo, function(idMapas){ 
-						
-						if(idMapas.erro){ //erro ao obter os mapas aos quais o grupo tem acesso
+					gerenciadorBanco.configurarGrupo(req.body.idGrupo, req.body.nomeGrupo, req.user.id, membros);
+					gerenciadorBanco.eventEmitter.once('fimConfigurarGrupo', function(resultado){ //se sucesso, resultado eh uma lista dos membros anteriores a modificacao
+						if(resultado.erro){ //erro ao configurar grupo
+							
+							var msg;
 							
 							gerenciadorBanco.obterGrupos(req.user.id);
 							gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 								
 								msg = {
-										alerta: resultado + " Porém, aconteceu um erro que permitirá aos membros deletados, a edição dos mapas do grupo até realizarem logout.",
+										alerta: resultado.erro,
 										listaGrupos: listaGrupos,
 										listaGruposCoordenados: listaGruposCoordenados
 								}; 
@@ -523,9 +503,16 @@ function Servidor(Ip,Porta){
 							});
 							
 						}
-						
-						else{ //sucesso ao obter os mapas aos quais o grupo tem acesso
+						else{ //sucesso ao configurar grupo
 							
+							membros = resultado; // desconectarei apenas os usuarios antigos, que sao os unicos que podem estar conectados aos mapas
+							
+							//necessario desconectar usuarios para alteracoes serem aplicadas localmente, Para isso:
+							//obter lista com os mapas aos quais o grupo tem acesso.
+							//para cada mapa, enviar mensagem desconectando o usuario.
+							
+							var msg;
+									
 							//desconectar os usuarios membros do grupo que estao logados em mapas aos quais o grupo tem acesso
 							msg = {
 									tipoMensagem: 10,
@@ -533,16 +520,16 @@ function Servidor(Ip,Porta){
 							};
 							
 							//Para cada mapa, obter lista dos usuarios ativos
-							//Para cada usuario ativo, verificar se o seu id � igual a algum dos membros do grupo
-							//Se for, ent�o enviar mensagem
-							//Sen�o, n�o enviar
+							//Para cada usuario ativo, verificar se o seu id eh igual a algum dos membros antigos do grupo
+							//Se for, entao enviar mensagem
+							//Senao, nao enviar
 							
 							for(var i=0; i < idMapas.length; i++){
 								var idsUsuariosAtivos = gerenciadorUsuariosAtivos.getIdsUsuariosAtivos(idMapas[i]);
 								for(var j=0; j < idsUsuariosAtivos.length; j++){
 									var ehMembro = false;
 									for(var k=0; k < membros.length && !ehMembro; k++){
-										if(idsUsuariosAtivos[j] == membros[k].idUsuario){
+										if(idsUsuariosAtivos[j] == membros[k].id){
 											ehMembro = true;
 											enviarUnicastParaUsuarioAtivo(idMapas[i],idsUsuariosAtivos[j],msg);
 										}
@@ -561,14 +548,15 @@ function Servidor(Ip,Porta){
 								}; 
 								return routes.pagina(req,res,'grupos', msg);
 							});
-							
-						}
+									
+
+						} // fim sucesso ao configurar grupo
 						
-					});
+					}); //fim configurarGrupo
 					
-				} // fim sucesso ao configurar grupo
-				
-			}); //fim configurarGrupo
+				}
+			
+			}); //fim pesquisaMapas grupo
 			
 		}); //fecha app.post
 		
@@ -603,10 +591,13 @@ function Servidor(Ip,Porta){
 								routes.pagina(req,res,'mapas', {alerta: "Você foi desconectado do mapa, pois o gerente ou o coordenador está alterando as permissões deste mapa.", mensagem: listaMapas} );
 							break;
 							case 2:
-								routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois o coordenador está alterando as permissões de seu grupo.", mensagem: listaMapas} );
+								routes.pagina(req,res,'mapas', {alerta: "Você foi desconectado do mapa, pois o coordenador está alterando as permissões de seu grupo.", mensagem: listaMapas} );
 							break;
 							case 3: 
-								routes.pagina(req,res,'mapas', {alerta: "Voce foi desconectado do mapa, pois não foi possível obter o seu tipo de permissao para a edição do mapa.", mensagem: listaMapas} );
+								routes.pagina(req,res,'mapas', {alerta: "Você foi desconectado do mapa, pois não foi possível obter o seu tipo de permissão para a edição do mapa.", mensagem: listaMapas} );
+							break;
+							case 4: 
+								routes.pagina(req,res,'mapas', {alerta: "Você foi desconectado do mapa, pois o coordenador de um de seus grupos, que lhe dava acesso a este mapa, deletou o grupo.", mensagem: listaMapas} );
 							break;
 						}
 					}
@@ -803,13 +794,23 @@ function Servidor(Ip,Porta){
 						gerenciadorBanco.inserirNovoMapa(req.body.nomeMapa, parseInt(req.body.idCoordenador), idProprietario, permissoesGrupos, permissoesUsuarios);
 						gerenciadorBanco.eventEmitter.once('mapaCriado', function(idMapa){ 
 							if(idMapa.erro){
+								
 								var msg;
 								gerenciadorBanco.pesquisarMapas(idProprietario);
 								gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
-									msg = {
-											alerta: "Mapa não criado! Ocorreu o seguinte erro ao se tentar criar o mapa: " + idMapa.erro,
-											mensagem: mapas
-									}; 
+									if(idMapa.tipoErro == 1){
+										msg = {
+												alerta: "Mapa não criado! Ocorreu o seguinte erro ao se tentar criar o mapa: " + idMapa.erro,
+												mensagem: mapas
+										}; 
+									}
+									else{
+										msg = {
+												alerta: "Mapa Criado, porém suas permissões não foram adicionadas devido ao erro: " + idMapa.erro,
+												mensagem: mapas
+										}; 
+									}
+									
 									return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 								});
 							}
