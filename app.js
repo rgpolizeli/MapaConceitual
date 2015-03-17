@@ -55,7 +55,7 @@ function Servidor(Ip,Porta){
 		
 		gerenciadorBanco = new GerenciadorBanco();
 		
-		passport = new Passport(gerenciadorBanco.getConexaoBD());
+		passport = new Passport( gerenciadorBanco.getConexaoBD(), gerenciadorBanco.getOperadorSql() );
 		
 		gerenciadorArquivos = new GerenciadorArquivos();
 		
@@ -1658,7 +1658,7 @@ function Servidor(Ip,Porta){
 	
 }
 
-	var servidor = new Servidor('186.222.84.245',50004);
+	var servidor = new Servidor('192.168.137.1',2015);
 	console.log(servidor.iniciar());
 
 	console.log(servidor);

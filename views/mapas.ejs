@@ -63,7 +63,7 @@
 			<!-- Sera encaminhado para pagina abrir.ejs ou excluirMapa.ejs -->
 			<form id="mapasFormulario" action="" method="post">
 				
-				<div class="col-lg-6">
+				<div class="col-lg-12">
 					<div class="input-group">
 						
 						<!-- show any messages that come back with authentication -->
@@ -81,12 +81,13 @@
 						<% } %>
 						
 					</div><!-- /input-group  -->
-				</div><!-- /.col-lg-6 -->
-				
-				<button id="abrirMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="abrirMapa();">Abrir</button>
-				<button id="criarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="criarMapa();">Criar novo mapa</button>
-				<button id="configurarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="configurarMapa();">Configurar mapa</button>
-				<button id="excluirMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="excluirMapa();">Excluir mapa</button>
+				</div><!-- /.col-lg-12 -->
+				<div class="col-lg-12">
+					<button id="abrirMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="abrirMapa();">Abrir</button>
+					<button id="criarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="criarMapa();">Criar novo mapa</button>
+					<button id="configurarMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="configurarMapa();">Configurar mapa</button>
+					<button id="excluirMapaButton" type="button" class="btn btn-lg btn-primary btn-block" onclick="excluirMapa();">Excluir mapa</button>
+				</div>
 			</form>
 			
 		</div>

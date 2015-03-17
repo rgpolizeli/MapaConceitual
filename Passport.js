@@ -1,26 +1,32 @@
-function Passport(connection){
+function Passport(connection, operadorSql){
 	
 	this.ppt = require('passport');
 	var localStrategy = require('passport-local').Strategy;
 	
 	function bb(usuario,password, connection,done){
-			connection.query('SELECT id,usuario,password FROM usuarios WHERE usuario = ? AND password = ?',[usuario,password], function(err, result) {		
-				if(err){
-					return done(err, false);
+		var query;
+		var callback;
+		
+		query = "SELECT id,usuario,password FROM usuarios WHERE usuario = " + connection.escape(usuario) +" AND password = " + connection.escape(password);
+		callback = function(err, result) {		
+			
+			if(err){
+				return done(err, false);
+			}
+			else { 
+				if(result.length>0){
+					var user = new Object();
+					user.id = result[0].id;
+					user.usuario = result[0].usuario;
+					user.password = result[0].password;
+					
+					return done(null, user);
 				}
-				else { 
-					if(result.length>0){
-						var user = new Object();
-						user.id = result[0].id;
-						user.usuario = result[0].usuario;
-						user.password = result[0].password;
-						
-						return done(null, user);
-					}
-					else
-						return done(null, false);
-				}
-			});	
+				else
+					return done(null, false);
+			}
+		}
+		operadorSql.addSql(query, callback);
 	}
 	
 	

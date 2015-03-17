@@ -5,17 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
     <meta name="author" content="">
-    <link rel="shortcut icon" href="../../assets/ico/favicon.ico">
-
     <title>Configurar mapa</title>
-
-    <!-- Bootstrap core CSS -->
     <link href="./stylesheets/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Custom styles for this template -->
     <link href="./stylesheets/signin.css" rel="stylesheet">
-	
-	
 	<script src="./javascripts/jquery-2.1.1.min.js"></script>
 	<script src="./javascripts/bootstrap.min.js"></script>
 
@@ -252,10 +244,10 @@
 				        
 				        <% for(var k=0; k < listaTodosUsuarios.length; k++) { %>
 				       		<% if(listaTodosUsuarios[k].id == listaUsuariosPermitidos[pos].id) {%>
-				        		<option value=<%= listaUsuariosPermitidos[pos].id %> selected><%= listaUsuariosPermitidos[pos].id + " - " + listaUsuariosPermitidos[pos].nome %></option>
+				        		<option value='<%= listaUsuariosPermitidos[pos].id %>' selected><%= listaUsuariosPermitidos[pos].id + " - " + listaUsuariosPermitidos[pos].nome %></option>
 				        	<% } else{ %>
 				        		<% if(listaTodosUsuarios[k].tipo == 0){ %>
-				        			<option value=<%= listaTodosUsuarios[k].id %> ><%= listaTodosUsuarios[k].id + " - " + listaTodosUsuarios[k].nome %></option>
+				        			<option value='<%= listaTodosUsuarios[k].id %>' ><%= listaTodosUsuarios[k].id + " - " + listaTodosUsuarios[k].nome %></option>
 				        		<% } %>
 				        	<% } %>
 				       	<% } %>
@@ -280,12 +272,12 @@
 			  				<% for(var i = 0; i < listaUsuariosPermitidos.length; i++){ %>
 			  					<% if(listaUsuariosPermitidos[i].tipoPermissao != 'Coordenador'){ %>
 					  				<tr>
-					  					<input name=<%= "usuario" + listaUsuariosPermitidos[i].id %> id=<%= "usuario" + listaUsuariosPermitidos[i].id %> type="hidden" value=<%= listaUsuariosPermitidos[i].tipoPermissao %>>
+					  					<input name='<%= "usuario" + listaUsuariosPermitidos[i].id %>' id='<%= "usuario" + listaUsuariosPermitidos[i].id %>' type="hidden" value='<%= listaUsuariosPermitidos[i].tipoPermissao %>'>
 									    <td><input type="checkbox"></td>
 									     <td class="idUsuario"><%= listaUsuariosPermitidos[i].id %></td>
 									    <td class="nomeUsuario"><%= listaUsuariosPermitidos[i].nome %></td>
 									    <td class="tipoPermissao">
-									    	<select id=<%= "permissoesUsuario" + listaUsuariosPermitidos[i].id %> onchange="alterarInputPermissao(this.value, this.id);">
+									    	<select id='<%= "permissoesUsuario" + listaUsuariosPermitidos[i].id %>' onchange="alterarInputPermissao(this.value, this.id);">
 									    		<% if(listaUsuariosPermitidos[i].tipoPermissao == 'Gerente'){ %>
 														<option value='<%= listaUsuariosPermitidos[i].tipoPermissao %>'><%= listaUsuariosPermitidos[i].tipoPermissao %></option>
 											    <% } else{ %>
@@ -306,12 +298,12 @@
 							
 							<% for(var i = 0; i < listaGruposPermitidos.length; i++){ %>
 				  				<tr class="success">
-				  					<input name=<%= "grupo" + listaGruposPermitidos[i].id %> id=<%= "grupo" + listaGruposPermitidos[i].id %> type="hidden" value=<%= listaGruposPermitidos[i].tipoPermissao %>>
+				  					<input name='<%= "grupo" + listaGruposPermitidos[i].id %>' id='<%= "grupo" + listaGruposPermitidos[i].id %>' type="hidden" value='<%= listaGruposPermitidos[i].tipoPermissao %>'>
 								    <td><input type="checkbox"></td>
 								     <td class="idGrupo"><%= listaGruposPermitidos[i].id %></td>
 								    <td class="nomeGrupo"><%= listaGruposPermitidos[i].nome %></td>
 								    <td class="tipoPermissao">
-								    	<select id=<%= "permissoesGrupo" + listaGruposPermitidos[i].id %> onchange="alterarInputPermissao(this.value, this.id);">
+								    	<select id='<%= "permissoesGrupo" + listaGruposPermitidos[i].id %>' onchange="alterarInputPermissao(this.value, this.id);">
 											    <% if (listaGruposPermitidos[i].tipoPermissao == 'Editor'){ %>
 													<option value="Editor">Editor</option>
 													<option value="Visualizador">Visualizador</option>

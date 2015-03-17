@@ -2,60 +2,29 @@ function GerenciadorBanco(){
 	
 	function OperadorSql(conexao){
 		var filaSql;
-		var idsTransacao;
 		var connection;
 		
 		filaSql = new Array();
-		idsTransacao = new Array();
 		connection = conexao;
-		
-		function Transacao(idTransacao, sql, callback){
-			this.idTransacao = idTransacao;
-			this.sql = sql;
-			this.callback = callback;
-		}
 		
 		function Instrucao(sql, callback){
 			this.sql = sql;
 			this.callback = callback;
 		}
 		
-		function obterIdTransacao(){
-			var id;
-			
-			id = Math.random();
-			
-			if(idsTransacao.length == 0){ //se nao definido ou vazio
-				idsTransacao.push(id);
-				return id;
-			}
-			else{
-				while(idsTransacao.indexOf(id) != -1)
-					id = Math.random();
-				idsTransacao.push(id);
-				return id;
-			}
-		}
-		
 		this.addSql = function addSql(sql, callback){
 			var pos; //posicao na fila
 			
 			if(sql.toUpperCase().indexOf("ROLLBACK") != -1 || sql.toUpperCase().indexOf("COMMIT") != -1){
-				connection.query( filaSql[0].sql, filaSql[0].callback(err, result) );
+				connection.query( sql, callback );
 				filaSql.splice(0,1); //remove 1 elemento a partir da pos 0
-				executarSql(); //libera a execucao de instrucoes sql
+				if(filaSql.length>0)
+					executarSql(); //libera a execucao de instrucoes sql
 			}
 			else{
-				if(sql.toUpperCase().indexOf("TRANSACTION") != -1 ){ //eh transacao
-					var idTransacao = obterIdTransacao();
-					var transacao = new Transacao(idTransacao, sql, callback);
-					pos = filaSql.push(transacao) - 1; // push retorna o novo tamanho do vetor
-				}
-				else{ //nao eh transacao
-					var instrucao = new Instrucao(sql, callback);
-					pos = filaSql.push(instrucao) - 1;
-				}
-				
+				var instrucao = new Instrucao(sql, callback);
+				pos = filaSql.push(instrucao) - 1;
+				console.log(filaSql.length);
 				if(pos == 0){ // soh ha um elemento na fila
 					executarSql();
 				}
@@ -63,15 +32,14 @@ function GerenciadorBanco(){
 		};
 		
 		function executarSql(){
-			if(filaSql[0].sql.toUpperCase().indexOf("TRANSACTION") != -1){ //o primeiro eh transcao
-				var idTransacao;
-				
-				idTransacao = filaSql[0].idTransacao;
-				connection.query( filaSql[0].sql, filaSql[0].callback(err, result, idTransacao) );
-			}
+			if(filaSql[0].sql.toUpperCase().indexOf("TRANSACTION") != -1) //o primeiro eh transcao
+				connection.query( filaSql[0].sql, filaSql[0].callback );
+			
 			else{ //o primeiro nao eh transacao
-				connection.query( filaSql[0].sql, filaSql[0].callback(err, result) );
-				executarSql();
+				connection.query( filaSql[0].sql, filaSql[0].callback );
+				filaSql.splice(0,1); //remove 1 elemento a partir da pos 0
+				if(filaSql.length>0)
+					executarSql();
 			}
 		}
 		
@@ -97,12 +65,20 @@ function GerenciadorBanco(){
 	//this.eventEmitter.setMaxListeners(0);
 	
 	
+	this.getOperadorSql = function getOperadorSql(){
+		return operadorSql;
+	};
+	
 	this.getConexaoBD = function getConexaoBD(){
 		return connection;
 	};
 	
 	this.buscarTodosGrupos = function buscarTodosGrupos(){
-		connection.query('SELECT id,nome FROM grupos', function(err, result) {
+		var query;
+		var callback;
+		
+		query = "SELECT id,nome FROM grupos";
+		callback = function (err, result){
 			var listaGrupos;
 			listaGrupos = new Array();
 			
@@ -119,30 +95,37 @@ function GerenciadorBanco(){
 				
 				gerenciadorBanco.eventEmitter.emit('fimBuscaTodosGrupos', listaGrupos);
 			}
-		});	
+		}
+		operadorSql.addSql(query, callback);
 	};
 	
 	
 	
 	this.excluirGrupo = function excluirMapa (idGrupo){
+		var query;
+		var callback;
 		
-		connection.query('DELETE FROM grupos WHERE id = ?',[idGrupo], function(err, result) {		
+		query = "DELETE FROM grupos WHERE id = " + connection.escape(idGrupo);
+		callback = function(err, result) {		
 			if(err) {
 				gerenciadorBanco.eventEmitter.emit('fimExclusaoGrupo', {erro: err.code} );
 			}
 			else{
 				gerenciadorBanco.eventEmitter.emit('fimExclusaoGrupo', 1);
 			}
-		});
-		
+		}
+		operadorSql.addSql(query, callback);
 	};
 	
 	
 	this.pesquisarMapasGrupo = function pesquisarMapasGrupo(idGrupo){
-
-		var listaMapas = new Array();
+		var listaMapas;
+		var query;
+		var callback;
 		
-		connection.query('SELECT idMapa FROM permissoes_edicao_grupos WHERE idGrupo = ?',[idGrupo], function(err, result) {		
+		listaMapas = new Array();
+		query = "SELECT idMapa FROM permissoes_edicao_grupos WHERE idGrupo = " + connection.escape(idGrupo);
+		callback = function(err, result) {		
 			if(err){
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo' + idGrupo, {erro: err.code}, idGrupo);
 			}
@@ -166,7 +149,10 @@ function GerenciadorBanco(){
 				if(result.length == 0) //se nao houver mapas
 					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasGrupo'+idGrupo, listaMapas, idGrupo);
 			}
-		});	
+		};
+		
+		operadorSql.addSql(query, callback);
+		
 	};
 	
 	
@@ -186,10 +172,11 @@ function GerenciadorBanco(){
 		
 		var transacao;
 		var estaNaLista;
+		var callback;
 		
 		transacao = 
 			" START TRANSACTION;" +
-			" UPDATE grupos SET nome='" + nomeGrupo + "' WHERE id=" + idGrupo + ";"
+			" UPDATE grupos SET nome= " + connection.escape(nomeGrupo) + " WHERE id=" + connection.escape(idGrupo) + ";"
 		;
 		
 		// Para cada membro da lista novosMembros, ou seja, dos usuarios alterados pelo coordenador, verificar:
@@ -208,9 +195,9 @@ function GerenciadorBanco(){
 			
 			if(!estaNaLista){ //usuario completamente novo
 				transacao += 
-					" INSERT INTO membros SET idUsuario =" + novosMembros[i].idUsuario +
-					", idGrupo =" + idGrupo +
-					", tipoMembro =" + TipoMembroGrupoParaNumero(novosMembros[i].tipoMembro) +
+					" INSERT INTO membros SET idUsuario =" + connection.escape(novosMembros[i].idUsuario) +
+					", idGrupo =" + connection.escape(idGrupo) +
+					", tipoMembro =" + connection.escape( TipoMembroGrupoParaNumero(novosMembros[i].tipoMembro) ) +
 					";"
 				;
 			}
@@ -219,20 +206,32 @@ function GerenciadorBanco(){
 		if(listaMembrosAtuais.length > 0){ //membros a serem excluidos
 			for(var j=0; j < listaMembrosAtuais.length; j++){
 				transacao += 
-					" DELETE FROM membros WHERE idUsuario=" + listaMembrosAtuais[j].id +
-					" AND idGrupo=" + idGrupo + ";"
+					" DELETE FROM membros WHERE idUsuario=" + connection.escape(listaMembrosAtuais[j].id) +
+					" AND idGrupo=" + connection.escape(idGrupo) + ";"
 				;
 			}
 		}
 		
+		callback = function(err, result) {
+			if(err){
+				transacao = "ROLLBACK";
+				callback = function(err, result) {
+					gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', {erro: err.code});
+				};
+				operadorSql.addSql(transacao, callback);
+			}
+			else{
+				transacao = "COMMIT";
+				callback = function(err, result) {
+					gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', "Alterações realizadas com sucesso!");
+				};
+				operadorSql.addSql(transacao, callback);
+			}
+				
+		};
 		
 		//Aplicando a transacao
-		connection.query(transacao, function(err, result) {
-			if(err)
-				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', {erro: err.code});
-			else
-				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', "Alterações realizadas com sucesso!");
-		});	
+		operadorSql.addSql(transacao, callback);
 		
 	}
 	
@@ -263,14 +262,10 @@ function GerenciadorBanco(){
 					if( i<listaMembrosAtuais.length && listaMembrosAtuais[i].tipoMembro == "Coordenador" ){
 						alterarConfiguracoesGrupo(idGrupo, nomeGrupo, listaMembrosAtuais, novosMembros);
 						gerenciadorBanco.eventEmitter.once('fimAlterarConfiguracoesGrupo', function(resultado){ 
-							if(resultado.erro){
-								connection.query(" ROLLBACK");
+							if(resultado.erro)
 								gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', {erro: "Alterações não aplicadas, devido ao seguinte erro: " + resultado.erro}); 
-							}
-							else{
-								connection.query(" COMMIT");
+							else
 								gerenciadorBanco.eventEmitter.emit('fimConfigurarGrupo', resultado);
-							}
 						});
 						
 					}
@@ -289,28 +284,42 @@ function GerenciadorBanco(){
 	
 	
 	this.verificarTipoUsuario = function verificarTipoUsuario(idUsuario){
-		connection.query('SELECT tipo FROM usuarios WHERE id = ?',[idUsuario], function(err, result) {		
+		var query;
+		var callback;
+		
+		query = "SELECT tipo FROM usuarios WHERE id = " + connection.escape(idUsuario);
+		callback = function(err, result) {		
 			if(err){
 				gerenciadorBanco.eventEmitter.emit('fimVerificarTipoUsuario', {erro: err.code});
 			}
 			else
 				gerenciadorBanco.eventEmitter.emit('fimVerificarTipoUsuario', result[0].tipo);
-		});	
+		};
+		
+		operadorSql.addSql(query, callback);
+		
 	};
 	
 	
 	
 	function adicionarMembros(idGrupo, membros){
+		var query;
+		var callback;
+		var membrosRestantes;
 		
-		var membrosRestantes = new Array();
+		membrosRestantes = new Array();
 		
 		for(var i=0; i < membros.length; i++){
 			membrosRestantes.push(i);
 		}
 		
-		
 		for(var k=0; k < membros.length; k++){
-			connection.query('INSERT INTO membros SET idUsuario = ?, idGrupo = ?, tipoMembro = ?',[membros[k].idUsuario, idGrupo, TipoMembroGrupoParaNumero(membros[k].tipoMembro)], function(err, result) {		
+			query = 
+				"INSERT INTO membros SET idUsuario = " + connection.escape(membros[k].idUsuario) + 
+				", idGrupo = " + connection.escape(idGrupo) + 
+				", tipoMembro = " + connection.escape( TipoMembroGrupoParaNumero(membros[k].tipoMembro) )
+			;
+			callback = function(err, result) {		
 				if(err) {
 					//fazer algum tratamento
 					membrosRestantes.pop();
@@ -324,15 +333,20 @@ function GerenciadorBanco(){
 						gerenciadorBanco.eventEmitter.emit('membrosAdicionados');
 					}
 				}
-			});
+			};
+			
+			operadorSql.addSql(query, callback);
 		}	
 		
 	}
 	
 	this.inserirNovoGrupo = function (nomeGrupo, membros){
 		var idGrupoNovo;
+		var query;
+		var callback;
 		
-		connection.query('INSERT INTO grupos SET nome = ?',[nomeGrupo], function(err, result) {		
+		query = "INSERT INTO grupos SET nome = " + connection.escape(nomeGrupo);
+		callback = function(err, result) {		
 			if(err) {
 				gerenciadorBanco.eventEmitter.emit('grupoCriado', {erro: err.code});
 			}
@@ -343,19 +357,27 @@ function GerenciadorBanco(){
 					gerenciadorBanco.eventEmitter.emit('grupoCriado', result.insertId);
 				});
 			}
-		});
+		};
+		
+		operadorSql.addSql(query, callback);
 	};
 	
 	function pesquisarNomeGrupo(idGrupo, indice){
+		var query;
+		var callback;
 		
-		connection.query('SELECT nome FROM grupos WHERE id = ?',[idGrupo], function(err, result) {		
+		query = "SELECT nome FROM grupos WHERE id = " + connection.escape(idGrupo);
+		callback = function(err, result){		
 			if(err){
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeGrupo' + indice, {erro: err.code}, indice);
 			}
 			else{
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeGrupo' + indice, result[0].nome, indice);
 			}
-		});	
+		};
+		
+		operadorSql.addSql(query, callback);
+		
 	}
 	
 	this.buscarNomeGrupo = function buscarNomeGrupo(idGrupo){
@@ -375,91 +397,92 @@ function GerenciadorBanco(){
 	
 	
 	this.pesquisarMembrosGrupo = function pesquisarMembrosGrupo(idGrupo){
+		var query;
+		var callback;
 		
-		connection.query(
-				'SELECT m.idUsuario, u.nome, m.tipoMembro' +
-				' FROM membros m, usuarios u' +
-				' WHERE m.idGrupo = ? AND m.idUsuario = u.id', [idGrupo], function(err, result) {
+		query = 
+			"SELECT m.idUsuario, u.nome, m.tipoMembro" +
+			" FROM membros m, usuarios u" +
+			" WHERE m.idGrupo = " + connection.escape(idGrupo) +
+			" AND m.idUsuario = u.id"
+		;
+		callback = function(err, result){
+			
+			if(err)
+				gerenciadorBanco.eventEmitter.emit('fimPesquisaMembrosGrupo', {erro: err.code});
+			else{
 				
-				if(err) {
-					return {erro: err.code};
+				var listaMembros;
+				listaMembros = new Array();
+				
+				//converter os tipos de membro de numeros para palavras
+				for(var i=0; i < result.length; i++){
+					listaMembros[i] = {
+							id: result[i].idUsuario,
+							nome: result[i].nome,
+							tipoMembro: converterTipoMembro(result[i].tipoMembro)
+					};
 				}
-				else{ 
-					
-					var listaMembros;
-					listaMembros = new Array();
-					
-					//converter os tipos de membro de numeros para palavras
-					for(var i=0; i < result.length; i++){
-						listaMembros[i] = {
-								id: result[i].idUsuario,
-								nome: result[i].nome,
-								tipoMembro: converterTipoMembro(result[i].tipoMembro)
-						};
-					}
-					
-					gerenciadorBanco.eventEmitter.emit('fimPesquisaMembrosGrupo', listaMembros);
-				}
-			});	
+				
+				gerenciadorBanco.eventEmitter.emit('fimPesquisaMembrosGrupo', listaMembros);
+			}
+		};
+		
+		operadorSql.addSql(query, callback);
 		
 	};
 	
 	
 	this.obterGrupos = function obterGrupos(idUsuario){
-		var listaGrupos = new Array();
-		var listaGruposCoordenados = new Array();
+		var listaGrupos;
+		var listaGruposCoordenados;
+		var query;
+		var callback;
 		
-		connection.query('SELECT idGrupo,tipoMembro FROM membros WHERE idUsuario = ?',[idUsuario], function(err, result) {		
+		listaGrupos = new Array();
+		listaGruposCoordenados = new Array();
+		query = "SELECT idGrupo,tipoMembro FROM membros WHERE idUsuario = " + connection.escape(idUsuario);
+		callback = function(err, result) {		
 			if(err) {
 				if(err.code == 'ER_NO_SUCH_TABLE'){
-					connection.query(
-							'CREATE TABLE grupos('+
-								'id INT NOT NULL AUTO_INCREMENT,'+ 
-								'nome VARCHAR(30) NOT NULL,'+
-								'PRIMARY KEY (id)'+
-							') ENGINE=InnoDB'
-								, function (err, result){
-									if(err){
-										gerenciadorBanco.eventEmitter.emit('fimObterGrupos', {erro: err.code}, null);
-									}
-									else{
-										connection.query(
-												'CREATE TABLE membros(' +
-													'idUsuario INT NOT NULL,'+
-													'idGrupo INT NOT NULL,'+ 
-													'tipoMembro INT NOT NULL,'+
-													'FOREIGN KEY (idUsuario) REFERENCES usuarios (id)'+
-													' ON DELETE CASCADE,'+
-													' FOREIGN KEY (idGrupo) REFERENCES grupos (id)'+
-													' ON DELETE CASCADE,'+
-													'PRIMARY KEY (idUsuario,idGrupo)'+
-												') ENGINE=InnoDB'
-													,function (err, result){
-														if(err){
-															gerenciadorBanco.eventEmitter.emit('fimObterGrupos', {erro: err.code}, null);
-														}
-														else{
-															connection.query(
-																	'CREATE TABLE permissoes_edicao_grupos(' +
-																		'idGrupo INT NOT NULL,'+
-																		'idMapa INT NOT NULL,'+ 
-																		'tipoPermissao INT NOT NULL,'+
-																		'FOREIGN KEY (idGrupo) REFERENCES grupos (id)'+
-																		' ON DELETE CASCADE,'+
-																		' FOREIGN KEY (idMapa) REFERENCES mapas (id)'+
-																		' ON DELETE CASCADE,'+
-																		'PRIMARY KEY (idGrupo,idMapa)'+
-																	') ENGINE=InnoDB'
-																		,function (err,result){
-																			if(err)
-																				gerenciadorBanco.eventEmitter.emit('fimObterGrupos', {erro: err.code}, null);
-																			else
-																				gerenciadorBanco.eventEmitter.emit('fimObterGrupos', listaGrupos, listaGruposCoordenados);
-															});
-														}
-										});
-									}
-					});
+					query = 
+						'CREATE TABLE grupos('+
+							'id INT NOT NULL AUTO_INCREMENT,'+ 
+							'nome VARCHAR(30) NOT NULL,'+
+							'PRIMARY KEY (id)'+
+						') ENGINE=InnoDB '
+						+
+						'CREATE TABLE membros(' +
+							'idUsuario INT NOT NULL,'+
+							'idGrupo INT NOT NULL,'+ 
+							'tipoMembro INT NOT NULL,'+
+							'FOREIGN KEY (idUsuario) REFERENCES usuarios (id)'+
+							' ON DELETE CASCADE,'+
+							' FOREIGN KEY (idGrupo) REFERENCES grupos (id)'+
+							' ON DELETE CASCADE,'+
+							'PRIMARY KEY (idUsuario,idGrupo)'+
+						') ENGINE=InnoDB '
+						+
+						'CREATE TABLE permissoes_edicao_grupos(' +
+							'idGrupo INT NOT NULL,'+
+							'idMapa INT NOT NULL,'+ 
+							'tipoPermissao INT NOT NULL,'+
+							'FOREIGN KEY (idGrupo) REFERENCES grupos (id)'+
+							' ON DELETE CASCADE,'+
+							' FOREIGN KEY (idMapa) REFERENCES mapas (id)'+
+							' ON DELETE CASCADE,'+
+							'PRIMARY KEY (idGrupo,idMapa)'+
+						') ENGINE=InnoDB'
+					;
+					callback = function (err,result){
+						if(err)
+							gerenciadorBanco.eventEmitter.emit('fimObterGrupos', {erro: err.code}, null);
+						else
+							gerenciadorBanco.eventEmitter.emit('fimObterGrupos', listaGrupos, listaGruposCoordenados);
+					};
+					
+					operadorSql.addSql(query, callback);
+					
 				}
 				else{
 					gerenciadorBanco.eventEmitter.emit('fimObterGrupos', {erro: err.code}, null);
@@ -512,7 +535,10 @@ function GerenciadorBanco(){
 				}
 				
 			}
-		});	
+		};
+		
+		operadorSql.addSql(query, callback);
+		
 	};
 	
 	
@@ -521,33 +547,79 @@ function GerenciadorBanco(){
 	 */
 	
 	this.cadastrarUsuario = function cadastrarUsuario(usuario, password, nome, email, tipo){ 
-
-		connection.query('INSERT INTO usuarios SET usuario = ?, password = ?, nome = ?, email = ?, tipo = ?',[usuario, password, nome, email, tipo], function(err, result) {
+		var query;
+		var callback;
+		
+		query = 
+			"INSERT INTO usuarios SET usuario = "+ connection.escape(usuario) +
+			", password = "+ connection.escape(password) +
+			", nome = "+ connection.escape(nome) +
+			", email = "+ connection.escape(email) +
+			", tipo = " + connection.escape(tipo)
+		;
+		callback = function(err, result) {
 			if(err){
 				if(err.code == 'ER_NO_SUCH_TABLE'){
-					connection.query('CREATE TABLE usuarios(id INT NOT NULL AUTO_INCREMENT, usuario VARCHAR(30), password VARCHAR(7), nome VARCHAR(100), email VARCHAR(100), tipo INT NOT NULL, PRIMARY KEY (id) )');
-					connection.query('INSERT INTO usuarios SET usuario = ?, password = ?, nome = ?, email = ?, tipo = ?',[usuario, password, nome, email, tipo], function(err, result) {
-						if(err) gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', err.code);
-						else gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', 1);
-					});
+					query = 
+						"CREATE TABLE usuarios(" + 
+							" id INT NOT NULL AUTO_INCREMENT," +
+							" usuario VARCHAR(30),"+
+							" password VARCHAR(7),"+
+							" nome VARCHAR(100),"+
+							" email VARCHAR(100),"+
+							" tipo INT NOT NULL,"+
+							" PRIMARY KEY (id)"+
+						") ENGINE=InnoDB"
+					;
+					callback = function(err, result){
+						if(err)
+							gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', err.code);
+						else{
+							query = 
+								"INSERT INTO usuarios SET usuario = "+ connection.escape(usuario) +
+								", password = "+ connection.escape(password) +
+								", nome = "+ connection.escape(nome) +
+								", email = "+ connection.escape(email) +
+								", tipo = " + connection.escape(tipo)
+							;
+							callback = function(err, result) {
+								if(err)
+									gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', err.code);
+								else
+									gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', 1);
+							};
+							
+							operadorSql.addSql(query, callback);
+						}
+							
+					};
+					
+					operadorSql.addSql(query, callback);
+					
 				}
 				else
 					gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', err.code);
 			}
 			else gerenciadorBanco.eventEmitter.emit('fimCadastroUsuario', 1);
-		});
+		};
+		
+		operadorSql.addSql(query, callback);
+		
 	};
 	
 	
 	this.pesquisarMapasDoCoordenador = function pesquisarMapasDoCoordenador(idUsuario){
+		var query;
+		var callback;
 		var mapas;
-		mapas = new Array();
 		
-		connection.query('SELECT id,nome FROM mapas WHERE idCoordenador=?',[idUsuario], function(err, result) {		
+		mapas = new Array();
+		query = "SELECT id,nome FROM mapas WHERE idCoordenador = " + connection.escape(idUsuario);
+		callback = function(err, result) {		
 			if(err){
 				if(err.code == 'ER_NO_SUCH_TABLE'){
-					connection.query(
-							'CREATE TABLE mapas('+
+					query = 
+						'CREATE TABLE mapas('+
 							'id INT NOT NULL AUTO_INCREMENT,'+ 
 							'nome VARCHAR(30) NOT NULL,'+ 
 							'idProprietario INT NOT NULL,'+ 
@@ -558,12 +630,16 @@ function GerenciadorBanco(){
 							' FOREIGN KEY (idCoordenador) REFERENCES usuarios (id)'+
 							' ON DELETE CASCADE'+
 						') ENGINE=InnoDB'
-						, function(err, result) {
-								if(err)
-									gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoCoordenador', {erro: err.code});
-								else
-									gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoCoordenador', mapas);
-					});
+					;
+					callback = function(err, result) {
+						if(err)
+							gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoCoordenador', {erro: err.code});
+						else
+							gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoCoordenador', mapas);
+					};
+					
+					operadorSql.addSql(query, callback);
+					
 				}
 				else
 					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoCoordenador', {erro: err.code});
@@ -577,21 +653,25 @@ function GerenciadorBanco(){
 				}
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoCoordenador', mapas);
 			}
-		});
+		};
+		
+		operadorSql.addSql(query, callback);
 		
 	};
 	
 	
 	this.pesquisarMapasDoGerente = function pesquisarMapasDoGerente(idUsuario){
+		var query;
+		var callback;
 		var mapas;
-		mapas = new Array();
 		
-		connection.query('SELECT id,nome FROM mapas WHERE idProprietario = ?',[idUsuario], function(err, result) {		
-			if(err){
+		mapas = new Array();
+		query = "SELECT id,nome FROM mapas WHERE idProprietario = " + connection.escape(idUsuario);
+		callback = function(err, result) {		
+			if(err)
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoGerente', {erro: err.code});
-			}
 			
-			else { 
+			else{ 
 				for(var i=0; i < result.length; i++){
 					mapas[i] = new Object();
 					mapas[i].idMapa = result[i].id;
@@ -599,18 +679,23 @@ function GerenciadorBanco(){
 				}
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoGerente', mapas);
 			}
-		});
+		};
+		
+		operadorSql.addSql(query, callback);
 		
 	};
 	
 	this.perquisarMapasDoEditorOuVisualizador = function perquisarMapasDoEditorOuVisualizador(idUsuario){
+		var query;
+		var callback;
+		var mapas;
 		
-		var mapas = new Array();
-		
-		connection.query('SELECT idMapa FROM permissoes_edicao_usuarios WHERE idUsuario = ?',[idUsuario], function(err, result) {		
+		mapas = new Array();
+		query = "SELECT idMapa FROM permissoes_edicao_usuarios WHERE idUsuario = " + connection.escape(idUsuario);
+		callback =  function(err, result) {		
 			if(err) {
 				if(err.code == 'ER_NO_SUCH_TABLE'){
-					connection.query(
+					query = 
 						'CREATE TABLE permissoes_edicao_usuarios(' +
 							'idUsuario INT NOT NULL,'+
 							'idMapa INT NOT NULL,'+ 
@@ -621,13 +706,16 @@ function GerenciadorBanco(){
 							' ON DELETE CASCADE,'+
 							'PRIMARY KEY (idUsuario,idMapa)'+
 						') ENGINE=InnoDB'
-							,function (err, result){
-								if(err)
-									gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoEditorOuVisualizador', {erro:err.code});
-								else
-									gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoEditorOuVisualizador', mapas);
-					});
-					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoEditorOuVisualizador', mapas);
+					;
+					callback = function (err, result){
+						if(err)
+							gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoEditorOuVisualizador', {erro:err.code});
+						else
+							gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoEditorOuVisualizador', mapas);
+					};
+					
+					operadorSql.addSql(query, callback);
+					
 				}
 				else{
 					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoEditorOuVisualizador', {erro:err.code});
@@ -655,20 +743,27 @@ function GerenciadorBanco(){
 				if(result.length == 0) //se nao houver mapas
 					gerenciadorBanco.eventEmitter.emit('fimPesquisaMapasDoEditorOuVisualizador', mapas);
 			}
-		});	
+		};
+		
+		operadorSql.addSql(query, callback);
+		
 	};
 	
 	
 	function pesquisarNomeMapa(idMapa){
+		var query;
+		var callback;
 		
-		connection.query('SELECT nome FROM mapas WHERE id = ?',[idMapa], function(err, result) {		
-			if(err){
+		query = "SELECT nome FROM mapas WHERE id = " + connection.escape(idMapa);
+		callback = function(err, result) {		
+			if(err)
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeMapa' + idMapa, {erro: err.code}, idMapa);
-			}
-			else{
+			else
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeMapa' + idMapa, result[0].nome, idMapa);
-			}
-		});	
+		};
+
+		operadorSql.addSql(query, callback);
+		
 	}
 	
 	this.buscarNomeMapa = function buscarNomeMapa(idMapa){
@@ -681,15 +776,19 @@ function GerenciadorBanco(){
 	
 	
 	this.excluirMapa = function excluirMapa (idMapa){
+		var query;
+		var callback;
 		
-		connection.query('DELETE FROM mapas WHERE id = ?',[idMapa], function(err, result) {		
+		query = "DELETE FROM mapas WHERE id = " + connection.escape(idMapa);
+		callback = function(err, result) {		
 			if(err) {
 				gerenciadorBanco.eventEmitter.emit('fimExclusaoMapa', err.code);
 			}
 			else{
 				gerenciadorBanco.eventEmitter.emit('fimExclusaoMapa', 1);
 			}
-		});
+		};
+		operadorSql.addSql(query, callback);
 		
 	};
 	
@@ -867,23 +966,23 @@ function GerenciadorBanco(){
 			"Editor": 2,
 			"Visualizador": 3
 		};
-		var transacao = "";
+		var transacao = "START TRANSACTION;";
 		
 		for(var i=0; i < permissoesUsuarios.length; i++){
 			transacao += 
 				"INSERT INTO permissoes_edicao_usuarios " +
-				"SET idUsuario=" + permissoesUsuarios[i].idUsuario + 
-				", idMapa=" + idMapa + 
-				", tipoPermissao=" + tiposPermissao[permissoesUsuarios[i].tipoPermissao] + ";"
+				"SET idUsuario=" + connection.escape(permissoesUsuarios[i].idUsuario) + 
+				", idMapa=" + connection.escape(idMapa) + 
+				", tipoPermissao=" + connection.escape(tiposPermissao[permissoesUsuarios[i].tipoPermissao]) + ";"
 			;
 		}
 		
 		for(var i=0; i < permissoesGrupos.length; i++){
 			transacao += 
 				"INSERT INTO permissoes_edicao_grupos " +
-				"SET idGrupo=" + permissoesGrupos[i].idGrupo + 
-				", idMapa=" + idMapa + 
-				", tipoPermissao=" + tiposPermissao[permissoesGrupos[i].tipoPermissao] + ";"
+				"SET idGrupo=" + connection.escape(permissoesGrupos[i].idGrupo) + 
+				", idMapa=" + connection.escape(idMapa) + 
+				", tipoPermissao=" + connection.escape(tiposPermissao[permissoesGrupos[i].tipoPermissao]) + ";"
 			;
 		}
 		
@@ -894,50 +993,61 @@ function GerenciadorBanco(){
 	this.inserirNovoMapa = function (nomeMapa, idCoordenador, idProprietario, permissoesGrupos, permissoesUsuarios){
 		var idMapaNovo;
 		var transacao;
+		var callback;
 		
 		transacao = 
-			" START TRANSACTION;" +
-			" INSERT INTO mapas SET nome='" + nomeMapa + "', idProprietario=" + idProprietario + ", idCoordenador=" + idCoordenador + ";"
+			"INSERT INTO mapas SET nome = " + connection.escape(nomeMapa)+ 
+			", idProprietario = " + connection.escape(idProprietario) + 
+			", idCoordenador = " + connection.escape(idCoordenador)
 		;
-		
-		connection.query(transacao, function(err, result) {		
-			if(err) {
-				connection.query(" ROLLBACK");
+		callback = function(err, result) {		
+			if(err)
 				gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, descricao: "Erro ao criar mapa"});
-			}
 			else{ 
-				idMapaNovo = result[2].insertId; // result[2] pois o resultado da insercao do mapa esta na 3 posicao do vetor
+				
+				idMapaNovo = result.insertId;
 				if(permissoesUsuarios.length > 0 || permissoesGrupos.length > 0) {//proibe mapas com permissao apenas ao gerente e coordenador
 					transacao = montarTransacaoAdicaoPermissoes(idMapaNovo, permissoesGrupos, permissoesUsuarios);
-					connection.query(transacao, function(err, result) {	
-						if(err) {
-							connection.query(" ROLLBACK");
-							gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, descricao: "Erro ao adicionar permissões"});
+					callback = function(err, result) {	
+						if(err){
+							transacao = "ROLLBACK";
+							callback = function(err, result){
+								gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, descricao: "Erro ao adicionar permissões"});
+							};
+							operadorSql.addSql(transacao, callback);
 						}
 						else{
-							connection.query(" COMMIT");
-							gerenciadorBanco.eventEmitter.emit('mapaCriado', idMapaNovo);
+							transacao = "COMMIT";
+							callback = function(err, result){
+								gerenciadorBanco.eventEmitter.emit('mapaCriado', idMapaNovo);
+							};
+							operadorSql.addSql(transacao, callback);
 						}
-					});
+					};
+					operadorSql.addSql(transacao, callback);
 				}
-				else{ //mapas com permissao apenas ao gerente e ao coordenador
-					connection.query(" COMMIT");
+				else//mapas com permissao apenas ao gerente e ao coordenador
 					gerenciadorBanco.eventEmitter.emit('mapaCriado', idMapaNovo);
-				}
 			}
-		});
+		};
+		
+		operadorSql.addSql(transacao, callback);
+		
 	};
 	
 	
 	this.buscarTodosUsuarios = function(){
-		connection.query('SELECT id,nome,tipo FROM usuarios', function(err, result) {
+		var query;
+		var callback;
+		
+		query = "SELECT id,nome,tipo FROM usuarios";
+		callback = function(err, result) {
 			var listaUsuarios;
 			listaUsuarios = new Array();
 			
-			if(err) {
+			if(err)
 				gerenciadorBanco.eventEmitter.emit('fimBuscaTodosUsuarios', {erro: err.code});
-			}
-			else { 
+			else{
 				for(var i=0; i < result.length; i++){
 					listaUsuarios[i] = {
 							id: result[i].id,
@@ -948,100 +1058,122 @@ function GerenciadorBanco(){
 				
 				gerenciadorBanco.eventEmitter.emit('fimBuscaTodosUsuarios', listaUsuarios);
 			}
-		});	
+		};
+		operadorSql.addSql(query, callback);
 	};
 	
 	this.verificarTipoPermissao = function(idUsuario, idMapa){
+		var query;
+		var callback;
 		
 		//verificar primeiro se eh coord ou gerente do mapa
-		connection.query('SELECT idProprietario, idCoordenador FROM mapas WHERE id=?', [idMapa], function(err, result) {
+		query = "SELECT idProprietario, idCoordenador FROM mapas WHERE id = " + connection.escape(idMapa);
+		callback = function(err, result) {
 			
-			if(err) {
+			if(err)
 				gerenciadorBanco.eventEmitter.emit('tipoPermissao', {erro: err.code});
-			}
 			else{ 
-				if(result[0].idProprietario == idUsuario || result[0].idCoordenador == idUsuario){ //eh coord ou gerente
-					if(result[0].idProprietario == idUsuario){
-						
-						if(result[0].idCoordenador == idUsuario)//caso do coord proprietario, necessario retornar que eh coord
-							gerenciadorBanco.eventEmitter.emit('tipoPermissao', 0); //o tipoPermissao de coord eh 0
-						else
-							gerenciadorBanco.eventEmitter.emit('tipoPermissao', 1); //o tipoPermissao de gerente eh 1
-						
-					}
-					else{
-						gerenciadorBanco.eventEmitter.emit('tipoPermissao', 0); //o tipoPermissao de coord eh 0
-					}
+				if(result.length == 0){
+					gerenciadorBanco.eventEmitter.emit('tipoPermissao', -1); //nao tem permissao
 				}
-				else{ //nao eh coord nem gerente
-					
-					//verificar se o user tem permissao individual sobre o mapa
-					connection.query('SELECT tipoPermissao FROM permissoes_edicao_usuarios WHERE idUsuario=? AND idMapa=?', [idUsuario, idMapa], function(err, result) {
-						if(err) {
-							gerenciadorBanco.eventEmitter.emit('tipoPermissao', {erro: err.code});
+				else{
+					if(result[0].idProprietario == idUsuario || result[0].idCoordenador == idUsuario){ //eh coord ou gerente
+						if(result[0].idProprietario == idUsuario){
+							
+							if(result[0].idCoordenador == idUsuario)//caso do coord proprietario, necessario retornar que eh coord
+								gerenciadorBanco.eventEmitter.emit('tipoPermissao', 0); //o tipoPermissao de coord eh 0
+							else
+								gerenciadorBanco.eventEmitter.emit('tipoPermissao', 1); //o tipoPermissao de gerente eh 1
+							
 						}
 						else{
-							if(result.length > 0){ //user tem permissao individual
-								gerenciadorBanco.eventEmitter.emit('tipoPermissao', result[0].tipoPermissao); 
-							}
-							else{//user nao tem permissao individual
-								
-								//necessario verificar os grupos aos quais o user pertence ou coordena
-								gerenciadorBanco.obterGrupos(idUsuario);
-								gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){
-									if(listaGrupos.erro){
-										gerenciadorBanco.eventEmitter.emit('tipoPermissao', {erro: listaGrupos.erro});
-									}
-									else{ // sucesso na pesquisa dos grupos do user
-										listaGrupos = listaGrupos.concat(listaGruposCoordenados);
-										
-										if(listaGrupos.length == 0){ //user nao eh membro de nenhum grupo nem coordena
-											gerenciadorBanco.eventEmitter.emit('tipoPermissao', -1); //nao tem permissao
-										}
-										else{
-											connection.query('SELECT idGrupo, tipoPermissao FROM permissoes_edicao_grupos WHERE idMapa=?', [idMapa], function(err, result) { //os grupos que possuem acesso ao mapa e suas permissoes
-												if(err) {
-													gerenciadorBanco.eventEmitter.emit('tipoPermissao', {erro: err.code});
-												}
-												else{
-													 var achou = false;
-													 var tipoPermissao = -1;
-													 
-													 for(var i=0; i < result.length && tipoPermissao != 2; i++){ // editor eh o tipo maior de permissao para um grupo
-														for(var j=0; j < listaGrupos.length && tipoPermissao != 2; j++){
-															if(result[i].idGrupo == listaGrupos[j].idGrupo){
-																if(tipoPermissao == -1 || tipoPermissao > 2) //se nao user ainda nao tinha permissao ou a permissao de um de seus grupos era menos abrangente do que a de editor
-																	tipoPermissao = result[i].tipoPermissao;
-																achou = true;
-															}
-														}
-													 }
-													 
-													 if(achou){
-														 gerenciadorBanco.eventEmitter.emit('tipoPermissao', tipoPermissao);
-													 }
-													 else{
-														 gerenciadorBanco.eventEmitter.emit('tipoPermissao', -1); //nao tem permissao
-													 }
-													
-												}
-											});
-										}
-										
-										
-										
-										
-									}
-								});
-								
-							}
+							gerenciadorBanco.eventEmitter.emit('tipoPermissao', 0); //o tipoPermissao de coord eh 0
 						}
-					});
-					
+					}
+					else{ //nao eh coord nem gerente
+						
+						//verificar se o user tem permissao individual sobre o mapa
+						
+						query = "SELECT tipoPermissao FROM permissoes_edicao_usuarios WHERE idUsuario = " + connection.escape(idUsuario) + " AND idMapa = " + connection.escape(idMapa);
+						callback = function(err, result) {
+							if(err)
+								gerenciadorBanco.eventEmitter.emit('tipoPermissao', {erro: err.code});
+							else{
+								
+								//user tem permissao individual
+								if(result.length > 0) 
+									gerenciadorBanco.eventEmitter.emit('tipoPermissao', result[0].tipoPermissao); 
+								
+								//user nao tem permissao individual
+								else{ 
+									
+									//necessario verificar os grupos aos quais o user pertence ou coordena
+									gerenciadorBanco.obterGrupos(idUsuario);
+									gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){
+										
+										//erro na pesquisa dos grupos
+										if(listaGrupos.erro)
+											gerenciadorBanco.eventEmitter.emit('tipoPermissao', {erro: listaGrupos.erro});
+										
+										// sucesso na pesquisa dos grupos do user
+										else{ 
+											
+											listaGrupos = listaGrupos.concat(listaGruposCoordenados);
+											
+											//user nao eh membro de nenhum grupo nem coordena
+											if(listaGrupos.length == 0) 
+												gerenciadorBanco.eventEmitter.emit('tipoPermissao', -1); //nao tem permissao
+											
+											//user eh membro de algum grupo ou coordena algum
+											else{
+												
+												//buscar os grupos que possuem acesso ao mapa e suas permissoes
+												query = "SELECT idGrupo, tipoPermissao FROM permissoes_edicao_grupos WHERE idMapa = " + connection.escape(idMapa);
+												callback = function(err, result){ 
+													if(err)
+														gerenciadorBanco.eventEmitter.emit('tipoPermissao', {erro: err.code});
+													
+													else{
+														
+														 var achou = false;
+														 var tipoPermissao = -1;
+														 
+														 for(var i=0; i < result.length && tipoPermissao != 2; i++){ // editor eh o tipo maior de permissao para um grupo
+															for(var j=0; j < listaGrupos.length && tipoPermissao != 2; j++){
+																if(result[i].idGrupo == listaGrupos[j].idGrupo){
+																	if(tipoPermissao == -1 || tipoPermissao > 2) //se user ainda nao tinha permissao ou a permissao de um de seus grupos era menos abrangente do que a de editor
+																		tipoPermissao = result[i].tipoPermissao;
+																	achou = true;
+																}
+															}
+														 }
+														 
+														 if(achou) gerenciadorBanco.eventEmitter.emit('tipoPermissao', tipoPermissao);
+														 else gerenciadorBanco.eventEmitter.emit('tipoPermissao', -1); //nao tem permissao
+													}
+												};
+												
+												operadorSql.addSql(query, callback);
+											}
+
+										}
+									});
+									
+								}
+							}
+						};
+						
+						operadorSql.addSql(query, callback);
+						
+					}
 				}
+				
 			}
 			
-		});	
+		};
+		
+		operadorSql.addSql(query, callback);
+		
 	};
 	
 	
@@ -1068,21 +1200,32 @@ function GerenciadorBanco(){
 	}
 	
 	function pesquisarNomeUsuario(idUsuario){
-		connection.query('SELECT nome FROM usuarios WHERE id = ?', [idUsuario], function(err, result) {
-			if(err) {
+		var query;
+		var callback;
+		
+		query = "SELECT nome FROM usuarios WHERE id = " + connection.escape(idUsuario);
+		callback = function(err, result) {
+			if(err)
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeUsuario' + idUsuario, {erro: err.code});
-			}
-			else{ 
+			else
 				gerenciadorBanco.eventEmitter.emit('fimPesquisaNomeUsuario' + idUsuario, result[0].nome);
-			}
-		});
+		};
+		operadorSql.addSql(query, callback);
 	}
 	
 	function pesquisarCoordenadorEGerenteDoMapa(idMapa){
-		connection.query('SELECT idProprietario, idCoordenador FROM mapas WHERE id = ?', [idMapa], function(err, result) {
-			if(err) {
-				gerenciadorBanco.eventEmitter.emit('fimPesquisaCoordenadorEGerenteDoMapa', {erro: err.code});
+		var query;
+		var callback;
+		
+		query = "SELECT idProprietario, idCoordenador FROM mapas WHERE id = " + connection.escape(idMapa);
+		callback = function(err, result) {
+			if(err || result.length == 0){
+				if(err)
+					gerenciadorBanco.eventEmitter.emit('fimPesquisaCoordenadorEGerenteDoMapa', {erro: err.code});
+				else
+					gerenciadorBanco.eventEmitter.emit('fimPesquisaCoordenadorEGerenteDoMapa', {erro: "Gerente ou coordenador não encontrados"});
 			}
+				
 			else{ 
 				
 				var gerente, coordenador;
@@ -1109,63 +1252,79 @@ function GerenciadorBanco(){
 				});
 				
 			}
-		});	
+		};
+		
+		operadorSql.addSql(query, callback);
 	}
 	
 	function pesquisarIndividuosComPermissao(idMapa){
-		connection.query(
-				'SELECT p.idUsuario, u.nome, p.tipoPermissao' +
-				' FROM permissoes_edicao_usuarios p, usuarios u' +
-				' WHERE p.idMapa = ? AND p.idUsuario = u.id', [idMapa], function(err, result) {
+		var query;
+		var callback;
+		
+		query = 
+			"SELECT p.idUsuario, u.nome, p.tipoPermissao" +
+			" FROM permissoes_edicao_usuarios p, usuarios u" +
+			" WHERE p.idMapa = " + connection.escape(idMapa) +
+			" AND p.idUsuario = u.id"
+		;
+		callback = function(err, result) {
+			
+			if(err)
+				gerenciadorBanco.eventEmitter.emit('fimPesquisaIndividuosComPermissao', {erro: err.code});
+			else { 
 				
-				if(err) {
-					gerenciadorBanco.eventEmitter.emit('fimPesquisaIndividuosComPermissao', {erro: err.code});
+				var listaUsuarios;
+				listaUsuarios = new Array();
+				
+				//converter os tipos de permisssao de numeros para palavras
+				for(var i=0; i < result.length; i++){
+					listaUsuarios[i] = {
+							id: result[i].idUsuario,
+							nome: result[i].nome,
+							tipoPermissao: converterPermissao(result[i].tipoPermissao)
+					};
 				}
-				else { 
-					
-					var listaUsuarios;
-					listaUsuarios = new Array();
-					
-					//converter os tipos de permisssao de numeros para palavras
-					for(var i=0; i < result.length; i++){
-						listaUsuarios[i] = {
-								id: result[i].idUsuario,
-								nome: result[i].nome,
-								tipoPermissao: converterPermissao(result[i].tipoPermissao)
-						};
-					}
-					
-					gerenciadorBanco.eventEmitter.emit('fimPesquisaIndividuosComPermissao', listaUsuarios);
-				}
-			});	
+				
+				gerenciadorBanco.eventEmitter.emit('fimPesquisaIndividuosComPermissao', listaUsuarios);
+			}
+		};
+		
+		operadorSql.addSql(query, callback);
 	}
 	
 	function pesquisarGruposComPermissao(idMapa){
-		connection.query(
-				'SELECT p.idGrupo, g.nome, p.tipoPermissao' +
-				' FROM permissoes_edicao_grupos p, grupos g' +
-				' WHERE p.idMapa = ? AND p.idGrupo = g.id', [idMapa], function(err, result) {
+		var query;
+		var callback;
+		
+		query =
+			"SELECT p.idGrupo, g.nome, p.tipoPermissao" +
+			" FROM permissoes_edicao_grupos p, grupos g" +
+			" WHERE p.idMapa = " + connection.escape(idMapa) +
+			" AND p.idGrupo = g.id"
+		;
+		callback = function(err, result) {
+			
+			if(err)
+				gerenciadorBanco.eventEmitter.emit('fimPesquisaGruposComPermissao', {erro: err.code});
+			else { 
 				
-				if(err) {
-					gerenciadorBanco.eventEmitter.emit('fimPesquisaGruposComPermissao', {erro: err.code});
+				var listaGrupos;
+				listaGrupos = new Array();
+				
+				//converter os tipos de permisssao de numeros para palavras
+				for(var i=0; i < result.length; i++){
+					listaGrupos[i] = {
+							id: result[i].idGrupo,
+							nome: result[i].nome,
+							tipoPermissao: converterPermissao(result[i].tipoPermissao)
+					};
 				}
-				else { 
-					
-					var listaGrupos;
-					listaGrupos = new Array();
-					
-					//converter os tipos de permisssao de numeros para palavras
-					for(var i=0; i < result.length; i++){
-						listaGrupos[i] = {
-								id: result[i].idGrupo,
-								nome: result[i].nome,
-								tipoPermissao: converterPermissao(result[i].tipoPermissao)
-						};
-					}
-					
-					gerenciadorBanco.eventEmitter.emit('fimPesquisaGruposComPermissao', listaGrupos);
-				}
-			});	
+				
+				gerenciadorBanco.eventEmitter.emit('fimPesquisaGruposComPermissao', listaGrupos);
+			}
+		};
+		
+		operadorSql.addSql(query, callback);	
 	}
 	
 	
@@ -1209,7 +1368,7 @@ function GerenciadorBanco(){
 		
 		transacao = 
 			" START TRANSACTION;" +
-			" UPDATE mapas SET nome='" + nomeMapa + "', idCoordenador="+ idCoordenador +" WHERE id=" + idMapa + ";"
+			" UPDATE mapas SET nome= " + connection.escape(nomeMapa) + ", idCoordenador="+ connection.escape(idCoordenador) +" WHERE id=" + connection.escape(idMapa) + ";"
 		;
 		
 		/////////////////////////////
@@ -1229,10 +1388,9 @@ function GerenciadorBanco(){
 					estaNaLista = true;
 					if(novasPermissoesUsuarios[i].tipoPermissao != listaUsuariosPermitidos[j].tipoPermissao){ //so altera se diferente
 						transacao += 
-							" UPDATE permissoes_edicao_usuarios SET tipoPermissao=" + 
-							converterPermissaoParaNumero(novasPermissoesUsuarios[i].tipoPermissao) +
-							" WHERE idUsuario=" + novasPermissoesUsuarios[i].idUsuario + 
-							" AND idMapa=" + idMapa + ";"
+							" UPDATE permissoes_edicao_usuarios SET tipoPermissao=" + connection.escape( converterPermissaoParaNumero(novasPermissoesUsuarios[i].tipoPermissao) ) +
+							" WHERE idUsuario=" + connection.escape( novasPermissoesUsuarios[i].idUsuario ) + 
+							" AND idMapa=" + connection.escape(idMapa) + ";"
 						;
 					}
 					listaUsuariosPermitidos.splice(j,1);
@@ -1241,9 +1399,9 @@ function GerenciadorBanco(){
 			
 			if(!estaNaLista){ //usuario completamente novo
 				transacao += 
-					" INSERT INTO permissoes_edicao_usuarios SET idUsuario =" + novasPermissoesUsuarios[i].idUsuario +
-					", idMapa =" + idMapa +
-					", tipoPermissao =" + converterPermissaoParaNumero(novasPermissoesUsuarios[i].tipoPermissao) +
+					" INSERT INTO permissoes_edicao_usuarios SET idUsuario =" + connection.escape(novasPermissoesUsuarios[i].idUsuario) +
+					", idMapa =" + connection.escape(idMapa) +
+					", tipoPermissao =" + connection.escape( converterPermissaoParaNumero(novasPermissoesUsuarios[i].tipoPermissao) ) +
 					";"
 				;
 			}
@@ -1252,8 +1410,8 @@ function GerenciadorBanco(){
 		if(listaUsuariosPermitidos.length > 0){ //permissoes a serem deletadas
 			for(var j=0; j < listaUsuariosPermitidos.length; j++){
 				transacao += 
-					" DELETE FROM permissoes_edicao_usuarios WHERE idUsuario=" + listaUsuariosPermitidos[j].id +
-					" AND idMapa=" + idMapa + ";"
+					" DELETE FROM permissoes_edicao_usuarios WHERE idUsuario=" + connection.escape(listaUsuariosPermitidos[j].id) +
+					" AND idMapa=" + connection.escape(idMapa) + ";"
 				;
 			}
 		}
@@ -1275,10 +1433,9 @@ function GerenciadorBanco(){
 					estaNaLista = true;
 					if(novasPermissoesGrupos[i].tipoPermissao != listaGruposPermitidos[j].tipoPermissao){ //so altera se diferente
 						transacao += 
-							" UPDATE permissoes_edicao_grupos SET tipoPermissao=" + 
-							converterPermissaoParaNumero(novasPermissoesGrupos[i].tipoPermissao) +
-							" WHERE idGrupo=" + novasPermissoesGrupos[i].idGrupo + 
-							" AND idMapa=" + idMapa + ";"
+							" UPDATE permissoes_edicao_grupos SET tipoPermissao=" + connection.escape( converterPermissaoParaNumero(novasPermissoesGrupos[i].tipoPermissao) ) +
+							" WHERE idGrupo=" + connection.escape(novasPermissoesGrupos[i].idGrupo) + 
+							" AND idMapa=" + connection.escape(idMapa) + ";"
 						;
 					}
 					listaGruposPermitidos.splice(j,1);
@@ -1287,9 +1444,9 @@ function GerenciadorBanco(){
 			
 			if(!estaNaLista){ //usuario completamente novo
 				transacao += 
-					" INSERT INTO permissoes_edicao_grupos SET idGrupo =" + novasPermissoesGrupos[i].idGrupo +
-					", idMapa =" + idMapa +
-					", tipoPermissao =" + converterPermissaoParaNumero(novasPermissoesGrupos[i].tipoPermissao) +
+					" INSERT INTO permissoes_edicao_grupos SET idGrupo =" + connection.escape(novasPermissoesGrupos[i].idGrupo) +
+					", idMapa =" + connection.escape(idMapa) +
+					", tipoPermissao =" + connection.escape( converterPermissaoParaNumero(novasPermissoesGrupos[i].tipoPermissao) ) +
 					";"
 				;
 			}
@@ -1298,27 +1455,39 @@ function GerenciadorBanco(){
 		if(listaGruposPermitidos.length > 0){ //permissoes a serem deletadas
 			for(var j=0; j < listaGruposPermitidos.length; j++){
 				transacao += 
-					" DELETE FROM permissoes_edicao_grupos WHERE idGrupo=" + listaGruposPermitidos[j].id +
-					" AND idMapa=" + idMapa + ";"
+					" DELETE FROM permissoes_edicao_grupos WHERE idGrupo=" + connection.escape(listaGruposPermitidos[j].id) +
+					" AND idMapa=" + connection.escape(idMapa) + ";"
 				;
 			}
 		}
 		
+		callback = function(err, result) {
+			if(err){
+				transacao = "ROLLBACK";
+				callback = function(err, result) {
+					gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesMapa', {erro: err.code});
+				};
+				operadorSql.addSql(transacao, callback);
+			}
+			else{
+				transacao = "COMMIT";
+				callback = function(err, result) {
+					gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesMapa', "Alterações realizadas com sucesso!");
+				};
+				operadorSql.addSql(transacao, callback);
+			}
+		};
 		
-		
-		//Aplicando a transacao
-		connection.query(transacao, function(err, result) {
-			if(err)
-				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesMapa', {erro: err.code});
-			else
-				gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesMapa', "Alterações realizadas com sucesso!");
-		});	
+		operadorSql.addSql(transacao, callback);
 		
 	}
 	
 	function verificarExistenciaMapa(idMapa){
+		var query;
+		var callback;
 		
-		connection.query("SELECT id FROM mapas WHERE id=?", [idMapa], function(err, result) {
+		query = "SELECT id FROM mapas WHERE id = " + connection.escape(idMapa);
+		callback = function(err, result) {
 			if(err)
 				gerenciadorBanco.eventEmitter.emit('fimVerificarExistenciaMapa', {erro: "Erro ao se tentar encontrar o mapa!"});
 			else{
@@ -1328,7 +1497,8 @@ function GerenciadorBanco(){
 					gerenciadorBanco.eventEmitter.emit('fimVerificarExistenciaMapa', 1);
 			}
 				
-		});	
+		};
+		operadorSql.addSql(query, callback);	
 	}
 	
 	
@@ -1337,50 +1507,34 @@ function GerenciadorBanco(){
 		
 		if(idMapa){ //se o usuario nao apagou o id do mapa na pagina configurarMapa.ejs
 			idMapa = parseInt(idMapa);
-			
-			verificarExistenciaMapa(idMapa) //necessario verificar se o mapa nao foi excluido enquanto se alterava suas configuracoes
-			gerenciadorBanco.eventEmitter.once('fimVerificarExistenciaMapa', function(resultado){ 
-			
-				if(resultado.erro){ //erro na verificacao da existencia do mapa ou mapa foi excluido
-					gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: resultado.erro} );
-				}
-				else{ //mapa existe
-					
-					gerenciadorBanco.pesquisarTodosComPermissao(idMapa);
-					gerenciadorBanco.eventEmitter.once('fimPesquisaTodosComPermissao', function(listaUsuariosPermitidos, listaGruposPermitidos){ 
-						
-						if(listaUsuariosPermitidos.erro){ //erro na busca dos usuarios e grupos com permissao
-							gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: listaUsuariosPermitidos.erro});
-						}
-						else{ //sucesso na busca dos usuarios e grupos com permissao
-							
-							//necessario saber a permissao do usuario, pois so coordenador e gerente podem mudar permissoes
-							var i=0;
-							while( i < listaUsuariosPermitidos.length && listaUsuariosPermitidos[i].id != idUsuario)
-								i++;
-							
-							if( i<listaUsuariosPermitidos.length && (listaUsuariosPermitidos[i].tipoPermissao == "Gerente" || listaUsuariosPermitidos[i].tipoPermissao == "Coordenador") ){
-								alterarConfiguracoesMapa(idMapa, nomeMapa, idCoordenador, listaUsuariosPermitidos, listaGruposPermitidos, permissoesUsuarios, permissoesGrupos);
-								gerenciadorBanco.eventEmitter.once('fimAlterarConfiguracoesMapa', function(resultado){ 
-									if(resultado.erro){
-										connection.query(" ROLLBACK");
-										gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Alterações não aplicadas, devido ao seguinte erro: " + resultado.erro}); 
-									}
-									else{
-										connection.query(" COMMIT");
-										gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', resultado);
-									}
-								});
-								
-							}
-							else{ //ou nao esta na lista ou nao tem permissao de coord ou gerente
-								gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Você não tem permissão para configurar este mapa!"}); 
-							}
-						}
-					});
-					
-				}
+
+			gerenciadorBanco.pesquisarTodosComPermissao(idMapa);
+			gerenciadorBanco.eventEmitter.once('fimPesquisaTodosComPermissao', function(listaUsuariosPermitidos, listaGruposPermitidos){ 
 				
+				if(listaUsuariosPermitidos.erro){ //erro na busca dos usuarios e grupos com permissao
+					gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: listaUsuariosPermitidos.erro});
+				}
+				else{ //sucesso na busca dos usuarios e grupos com permissao
+					
+					//necessario saber a permissao do usuario, pois so coordenador e gerente podem mudar permissoes
+					var i=0;
+					while( i < listaUsuariosPermitidos.length && listaUsuariosPermitidos[i].id != idUsuario)
+						i++;
+					
+					if( i<listaUsuariosPermitidos.length && (listaUsuariosPermitidos[i].tipoPermissao == "Gerente" || listaUsuariosPermitidos[i].tipoPermissao == "Coordenador") ){
+						alterarConfiguracoesMapa(idMapa, nomeMapa, idCoordenador, listaUsuariosPermitidos, listaGruposPermitidos, permissoesUsuarios, permissoesGrupos);
+						gerenciadorBanco.eventEmitter.once('fimAlterarConfiguracoesMapa', function(resultado){ 
+							if(resultado.erro)
+								gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Alterações não aplicadas, devido ao seguinte erro: " + resultado.erro}); 
+							else
+								gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', resultado);
+						});
+						
+					}
+					else{ //ou nao esta na lista ou nao tem permissao de coord ou gerente
+						gerenciadorBanco.eventEmitter.emit('fimConfigurarMapa', {erro: "Você não tem permissão para configurar este mapa!"}); 
+					}
+				}
 			});
 			
 		}
