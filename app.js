@@ -1,13 +1,15 @@
 
 
 function Servidor(Ip,Porta){
-
+	
 	var ip = Ip;
 	var porta = Porta;
-	
-	
+	var server = this;
 	var jsdom = require("jsdom").jsdom;
 	var $  = require('jquery')(jsdom().parentWindow);
+	
+	var events = require('events');
+	this.eventEmitter = new events.EventEmitter();
 	
 	//Arquivo json com as senhas do sistema
 	var configuracoes = require('./configuracoes.json');
@@ -30,6 +32,12 @@ function Servidor(Ip,Porta){
 	
 	var GerenciadorBanco = require('./GerenciadorBanco.js');
 	var gerenciadorBanco;
+	gerenciadorBanco = new GerenciadorBanco();
+	gerenciadorBanco.eventEmitter.once("fimConexaoBD", function(result){
+		if(result.erro) server.eventEmitter.emit("BDconectado", {erro: result.erro});
+		else server.eventEmitter.emit("BDconectado", result);
+	});
+	gerenciadorBanco.conectarBD(configuracoes["host"], configuracoes["user"], configuracoes["password"], configuracoes["database"]);
 	
 	var GerenciadorArquivos = require('./GerenciadorArquivos.js');
 	var gerenciadorArquivos;
@@ -53,7 +61,7 @@ function Servidor(Ip,Porta){
 		app.use(bodyParser.urlencoded());
 		app.use(session({ secret: 'h4s9omm', saveUninitialized: true, resave: true}));
 		
-		gerenciadorBanco = new GerenciadorBanco();
+		
 		
 		passport = new Passport( gerenciadorBanco.getConexaoBD(), gerenciadorBanco.getOperadorSql() );
 		
@@ -542,7 +550,7 @@ function Servidor(Ip,Porta){
 							gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
 								
 								msg = {
-										alerta: resultado,
+										alerta: "Alterações aplicadas com sucesso!",
 										listaGrupos: listaGrupos,
 										listaGruposCoordenados: listaGruposCoordenados
 								}; 
@@ -1168,7 +1176,6 @@ function Servidor(Ip,Porta){
 			function(req, res){
 				passport.ppt.authenticate('local', function handleAuthenticate(err, user){
 					if(err){
-						console.log(err);
 						res.redirect('/');
 					}
 					else{
@@ -1659,7 +1666,22 @@ function Servidor(Ip,Porta){
 	
 }
 
-	var servidor = new Servidor('192.168.137.1',2015);
-	console.log(servidor.iniciar());
+var servidor;
+	
+servidor = new Servidor('192.168.137.1',2015);
+servidor.eventEmitter.once("BDconectado", function(result){
+	if(result.erro) 
+		console.log("Servidor nao iniciado! Ocorreu o erro: " + result.erro);
+	else{
+		
+		console.log(servidor.iniciar());
+	}
+});
 
-	console.log(servidor);
+
+		
+
+		
+
+
+	

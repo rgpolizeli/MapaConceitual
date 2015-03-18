@@ -1,3 +1,7 @@
 {
-  "senhaCadastroCoordenador": "coordenador"
+  "senhaCadastroCoordenador": "coordenador",
+  "host"     : "localhost",
+  "user": "root",
+  "password": "ricardo",
+  "database": "loppowq"
 }

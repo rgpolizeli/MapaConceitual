@@ -48,15 +48,9 @@ function GerenciadorBanco(){
 	
 	var events = require('events');
 	var mysql = require('mysql');
-	var connection = mysql.createConnection({
-	  host     : 'localhost',
-	  user: 'root',
-	  password: 'ricardo',
-	  database: 'aaa',
-	  multipleStatements: true
-	});
+	var connection;
 	
-	var operadorSql = new OperadorSql(connection);
+	var operadorSql;
 	
 	var gerenciadorBanco = this;
 	this.eventEmitter = new events.EventEmitter();
@@ -64,6 +58,46 @@ function GerenciadorBanco(){
 	//define o numero de listeners associados a um EventEmitter. Como cada busca pelo nome de grupos adiciona um listener, deixei ilimitado. 
 	//this.eventEmitter.setMaxListeners(0);
 	
+	this.conectarBD = function conectarBD(host, user, password, database){
+
+		connection = mysql.createConnection({
+			  host: host,
+			  user: user,
+			  password: password,
+			  multipleStatements: true
+		});
+		
+		connection.connect(function(err){
+			if(err)	return gerenciadorBanco.eventEmitter.emit("fimConexaoBD", {erro: err});
+		});
+		
+		connection.query("USE " + database, function(err, result){
+			if(err){
+				if(err.code == "ER_BAD_DB_ERROR"){
+					connection.query("CREATE DATABASE " + database, function(err, result){
+						if(err) return gerenciadorBanco.eventEmitter.emit("fimConexaoBD", {erro: err});
+						else{
+							connection.query("USE " + database, function(err, result){
+								if(err) return gerenciadorBanco.eventEmitter.emit("fimConexaoBD", {erro: err});
+								else{
+									operadorSql = new OperadorSql(connection);
+									return gerenciadorBanco.eventEmitter.emit("fimConexaoBD", 1);
+								}
+							});
+						}
+					});
+				}
+				else{
+					return gerenciadorBanco.eventEmitter.emit("fimConexaoBD", {erro: err});
+				}
+			}
+			else{
+				operadorSql = new OperadorSql(connection);
+				gerenciadorBanco.eventEmitter.emit("fimConexaoBD", 1);
+			}
+		});
+		
+	}
 	
 	this.getOperadorSql = function getOperadorSql(){
 		return operadorSql;
@@ -450,7 +484,7 @@ function GerenciadorBanco(){
 							'id INT NOT NULL AUTO_INCREMENT,'+ 
 							'nome VARCHAR(30) NOT NULL,'+
 							'PRIMARY KEY (id)'+
-						') ENGINE=InnoDB '
+						') ENGINE=InnoDB;'
 						+
 						'CREATE TABLE membros(' +
 							'idUsuario INT NOT NULL,'+
@@ -461,7 +495,7 @@ function GerenciadorBanco(){
 							' FOREIGN KEY (idGrupo) REFERENCES grupos (id)'+
 							' ON DELETE CASCADE,'+
 							'PRIMARY KEY (idUsuario,idGrupo)'+
-						') ENGINE=InnoDB '
+						') ENGINE=InnoDB;'
 						+
 						'CREATE TABLE permissoes_edicao_grupos(' +
 							'idGrupo INT NOT NULL,'+
