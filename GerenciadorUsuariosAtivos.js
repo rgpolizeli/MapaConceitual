@@ -128,7 +128,7 @@ function GerenciadorUsuariosAtivos(){
 		var posicaoUsuarioAtivo = buscarPosicaoUsuarioPeloId(idUsuario, posicaoMapa);
 		var socketUsuarioAtivo;
 		
-		if(posicao != -1){ //mapa aberto
+		if(posicaoMapa != -1){ //mapa aberto
 			socketUsuarioAtivo = listaUsuariosAtivos[posicaoMapa].usuarios[posicaoUsuarioAtivo].socket;
 		}
 

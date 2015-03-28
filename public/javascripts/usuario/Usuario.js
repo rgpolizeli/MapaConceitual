@@ -208,7 +208,7 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 	
 	this.conectarServidor = function(){ //conecta com o servidor atraves de socket e adiciona respostas a eventos
 		
-		socket = io(ipServidor);
+		socket = io(ipServidor, {timeout: 10000});
 		
 		socket.on('connect', function(){
 			socket.emit('conexao', idUsuario, idMapa);
@@ -218,8 +218,38 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 			usuario.receberMensagemDoServidor(msg);
 		});
 		
+		// TESTE
+		
+		socket.on('disconnect', function () {
+			console.log("disconnect");
+			interfaceUsuario.abrirModalQuedaConexao();
+		});
+		
+		socket.on('reconnect', function () {
+			console.log("reconectado");
+			mapaConceitual.limparMapa();
+			setTimeout(function(){ interfaceUsuario.fecharModalQuedaConexao(); }, 25000);
+		});
+		
+		socket.on('reconnecting', function () {
+			console.log("reconectando");
+			
+		});
+		
+		socket.on('reconnect_error', function (e) {
+			console.log(e);
+			voltarParaMapas();
+		});
+		
+		socket.on('reconnect_failed', function (e) {
+			console.log(e);
+		});
 	};
 	
+	function voltarParaMapas(){
+		var href = "http://" + ip + ":" + porta + "/" + "mapas/?desconectado=" + 5;
+    	window.location = href;
+	}
 	
 	     
 	function criarConceito ( texto, fonte, tamanhoFonte, corFonte, corFundo ) {
@@ -579,7 +609,7 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 					mapaConceitual.editar(mensagem);
 				break;
 				
-				case 10: //desconectado devido a mudança de permissao
+				case 10: //desconectado devido a mudanï¿½a de permissao
 					desconectarDoMapa(mensagem.tipoDesconexao);
 				break;
 			}

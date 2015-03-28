@@ -248,9 +248,10 @@ function GerenciadorBanco(){
 		
 		callback = function(err, result) {
 			if(err){
+				var erro = err;
 				transacao = "ROLLBACK";
 				callback = function(err, result) {
-					gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', {erro: err.code});
+					gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesGrupo', {erro: erro.code});
 				};
 				operadorSql.addSql(transacao, callback);
 			}
@@ -1044,9 +1045,10 @@ function GerenciadorBanco(){
 					transacao = montarTransacaoAdicaoPermissoes(idMapaNovo, permissoesGrupos, permissoesUsuarios);
 					callback = function(err, result) {	
 						if(err){
+							var erro = err;
 							transacao = "ROLLBACK";
 							callback = function(err, result){
-								gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: err.code, tipoErro: 2});
+								gerenciadorBanco.eventEmitter.emit('mapaCriado', {erro: erro.code, tipoErro: 2});
 							};
 							operadorSql.addSql(transacao, callback);
 						}
@@ -1497,9 +1499,10 @@ function GerenciadorBanco(){
 		
 		callback = function(err, result) {
 			if(err){
+				var erro = err;
 				transacao = "ROLLBACK";
 				callback = function(err, result) {
-					gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesMapa', {erro: err.code});
+					gerenciadorBanco.eventEmitter.emit('fimAlterarConfiguracoesMapa', {erro: erro.code});
 				};
 				operadorSql.addSql(transacao, callback);
 			}

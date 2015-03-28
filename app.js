@@ -28,6 +28,7 @@ function Servidor(Ip,Porta){
 
 	var app = express();
 	var http = require('http').Server(app);
+	
 	var io = require('socket.io')(http);
 	
 	var GerenciadorBanco = require('./GerenciadorBanco.js');
@@ -160,13 +161,13 @@ function Servidor(Ip,Porta){
 										//Senao, nao enviar
 										
 										for(var i=0; i < idMapas.length; i++){
-											var idsUsuariosAtivos = gerenciadorUsuariosAtivos.getIdsUsuariosAtivos(idMapas[i]);
+											var idsUsuariosAtivos = gerenciadorUsuariosAtivos.getIdsUsuariosAtivos(idMapas[i].idMapa);
 											for(var j=0; j < idsUsuariosAtivos.length; j++){
 												var ehMembro = false;
 												for(var k=0; k < membros.length && !ehMembro; k++){
 													if(idsUsuariosAtivos[j] == membros[k].id){
 														ehMembro = true;
-														enviarUnicastParaUsuarioAtivo(idMapas[i],idsUsuariosAtivos[j],msg);
+														enviarUnicastParaUsuarioAtivo(idMapas[i].idMapa,idsUsuariosAtivos[j],msg);
 													}
 												}
 											}
@@ -533,13 +534,13 @@ function Servidor(Ip,Porta){
 							//Senao, nao enviar
 							
 							for(var i=0; i < idMapas.length; i++){
-								var idsUsuariosAtivos = gerenciadorUsuariosAtivos.getIdsUsuariosAtivos(idMapas[i]);
+								var idsUsuariosAtivos = gerenciadorUsuariosAtivos.getIdsUsuariosAtivos(idMapas[i].idMapa);
 								for(var j=0; j < idsUsuariosAtivos.length; j++){
 									var ehMembro = false;
 									for(var k=0; k < membros.length && !ehMembro; k++){
 										if(idsUsuariosAtivos[j] == membros[k].id){
 											ehMembro = true;
-											enviarUnicastParaUsuarioAtivo(idMapas[i],idsUsuariosAtivos[j],msg);
+											enviarUnicastParaUsuarioAtivo(idMapas[i].idMapa,idsUsuariosAtivos[j],msg);
 										}
 									}
 								}
@@ -607,6 +608,9 @@ function Servidor(Ip,Porta){
 							case 4: 
 								routes.pagina(req,res,'mapas', {alerta: "Você foi desconectado do mapa, pois o coordenador de um de seus grupos, que lhe dava acesso a este mapa, deletou o grupo.", mensagem: listaMapas} );
 							break;
+							case 5: 
+								routes.pagina(req,res,'mapas', {alerta: "Você foi desconectado do mapa, pois sua conexão com o servidor caiu.", mensagem: listaMapas} );
+							break;
 						}
 					}
 				});
@@ -662,13 +666,18 @@ function Servidor(Ip,Porta){
 		app.post('/abrir', function(req,res){
 			
 			if(req.body.idMapa){ //se usuario selecionou algum mapa
-				var msg = {
-						idUsuario: req.user.id, 
-						idMapa: req.body.idMapa, // vem da pagina mapas.ejs
-						ip: ip,
-						porta: porta
-				};
-				routes.pagina(req,res,'editarMapa', msg);
+				if(gerenciadorArquivos.verificarExistenciaArquivoXML(req.body.idMapa)){
+					var msg = {
+							idUsuario: req.user.id, 
+							idMapa: req.body.idMapa, // vem da pagina mapas.ejs
+							ip: ip,
+							porta: porta
+					};
+					routes.pagina(req,res,'editarMapa', msg);
+				}
+				else{
+					res.redirect('/mapas');
+				}
 			}
 			else{
 				res.redirect('/mapas');
@@ -1014,7 +1023,7 @@ function Servidor(Ip,Porta){
 
 					gerenciadorBanco.configurarMapa(req.body.idMapa, req.body.nomeMapa, parseInt(req.body.idCoordenador), idProprietario, permissoesUsuarios, permissoesGrupos);
 					gerenciadorBanco.eventEmitter.once('fimConfigurarMapa', function(resultado){ 
-						if(resultado.erro){ //erro ao pesquisar todos os usuarios
+						if(resultado.erro){ //erro 
 							
 							var msg;
 							gerenciadorBanco.pesquisarMapas(req.user.id);
@@ -1513,7 +1522,33 @@ function Servidor(Ip,Porta){
 				}
 			});
 			
+			//TESTE
+			
+			// user perdeu a conexao e esta tentando reconectar, proibir
+			socket.on('reconnecting', function(){
+				
+				console.log("reconnecting");
+				var msg;
+				msg = {
+						tipoMensagem: 10,
+						tipoDesconexao: 5
+				};
+				socket.send(msg);
+			});
+			
+			socket.on('anything', function(data) {
+				console.log("anything");
+			});
+			
+			socket.on('error', function(data) {
+				console.log(data);
+			});
+			
+			
+			//FIM TESTE
+			
 			socket.on('disconnect', function () { 
+				socket.send("voce foi desconectado");
 				var idsMapas = gerenciadorUsuariosAtivos.getIdsMapasDoUsuario(socket);
 				
 				for(var i=0; i< idsMapas.length; i++){

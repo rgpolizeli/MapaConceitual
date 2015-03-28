@@ -16,7 +16,15 @@ function GerenciadorArquivos(){
 	
 	var listaMapasAbertos = new Array();
 	
-	
+	this.verificarExistenciaArquivoXML = function verificarExistenciaArquivoXML(idMapa){
+		var path = './public/mapas/' + idMapa + '.xml';
+		try{
+			var xmlStr = fs.readFileSync(path, "utf8");
+			return true;
+		}catch(erro){
+			return false;
+		}
+	};
 	
 	this.excluirMapa = function excluirMapa(idMapa){
 		var path;

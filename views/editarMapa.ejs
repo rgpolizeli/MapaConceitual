@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width; initial-scale=1; user-scalable=1; target-densitydpi=device-dpi"/>
 <title>Editar Mapa</title>
 
@@ -61,6 +62,25 @@ function logout(){
 		</div>
   	<% } %>
 	
+	<!-------------------------------- 
+	MODAL PARA CRIAR CONCEITO 
+	----------------------------------->
+	
+	<div id="quedaConexao" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<h4 class="modal-title">Queda na sua conexão com o servidor</h4>
+		  </div>
+		  <div class="modal-body">
+		  
+				<p>Atenção! Sua conexão com o servidor foi perdida há algum tempo atrás. As suas mais recentes modificações no mapa conceitual foram perdidas.</p>
+				<p>Tentando reconectar, aguarde... (Cerca de 1 minuto)</p>
+					  
+		  </div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
 	
 	<!-------------------------------- 
 	MODAL PARA CRIAR CONCEITO 
@@ -250,7 +270,7 @@ function logout(){
 		<div class="modal-content">
 		  <div class="modal-header">
 			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">X</button>
-			<h4 class="modal-title">Editar conceito</h4>
+			<h4 class="modal-title">Editar</h4>
 		  </div>
 		  <div class="modal-body">
 		  
@@ -345,7 +365,7 @@ function logout(){
 		<button type="button" id="handButton">Hand Tool</button>
 		<button type="button" id="editarButton">Editar Mapa</button>
 		<button  type="button" id="criarConceitoButton">Novo Conceito</button>
-		<button  type="button" id="novaLigacao" style="display:none">Nova Ligação</button>
+		<button  type="button" id="novaLigacao" style="display:none">Nova LigaÃ§Ã£o</button>
 		<button type="button" id="editar" style="display:none">Editar</button>
 		<button  type="button" id="excluir" style="display:none">Excluir</button>
 		<button  type="button" id="logout" onclick="logout()">Sair</button>

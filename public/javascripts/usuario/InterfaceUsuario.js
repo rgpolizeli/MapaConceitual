@@ -4,6 +4,15 @@ function InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativar
 	this.idConceitoFilho;
 	var interfaceUsuario = this;
 
+	this.abrirModalQuedaConexao = function(){
+		$('#quedaConexao').modal('show');
+	};
+	
+	this.fecharModalQuedaConexao = function(){
+		$('#quedaConexao').modal('hide');
+	};
+	
+	
 	this.desabilitarBotaoNovaLigacao = function(){
 		$("#novaLigacao").hide();
 	};

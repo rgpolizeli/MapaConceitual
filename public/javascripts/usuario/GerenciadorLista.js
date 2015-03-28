@@ -2,6 +2,10 @@ function GerenciadorLista(listaElementos){
 	this.lista = listaElementos;
 	
 	
+	this.limparLista = function limparLista(){
+		$("#lista").empty();
+	};
+	
 	/*
 	 * getCorFundo e necessaria pois nao ha como recuperar a cor de fundo do graphic
 	 */

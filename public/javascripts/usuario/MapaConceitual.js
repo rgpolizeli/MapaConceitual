@@ -19,6 +19,13 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     var gerenciadorSemiLigacao = new GerenciadorSemiLigacao();
     var handTool = new HandTool(stageCanvas, renderizar);
     
+    
+    this.limparMapa = function limparMapa(){
+    	gerenciadorLista.limparLista();
+    	stageCanvas.removeAllChildren();
+    	renderizar();
+    };
+    
     this.getAlturaObjeto = function getAlturaObjeto( idObjeto ){
     	var containerObjeto;
     	
@@ -146,7 +153,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 			gerenciadorLigacao.atualizarLigacoesAoMoverConceito(mensagem.idConceito, conceitoContainer, conceitoNaLista, gerenciadorLista.getLigacao, stageCanvas);
 			
 			//necessario remover o retangulo selecao AT pois o conceito mudou de posicao. O MV nao precisa ser removido
-			retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT"); 
+			retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT" + mensagem.idConceito); 
 			if(retanguloSelecaoAT){ //tem o retanguloSelecaoAT
 				var indexRetanguloSelecao;
 				
@@ -179,7 +186,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 			gerenciadorLigacao.atualizarLigacoesAoMoverLigacao(ligacaoContainer, ligacaoNaLista, stageCanvas);
 			
 			//necessario remover o retangulo selecao AT pois a ligacao mudou de posicao. O MV nao precisa ser removido
-			retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT"); 
+			retanguloSelecaoAT = stageCanvas.getChildByName("retanguloSelecaoAT" + mensagem.idLigacao); 
 			if(retanguloSelecaoAT){ //tem o retanguloSelecaoAT
 				
 				var indexRetanguloSelecao;
@@ -389,7 +396,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 					removerFilho(stageCanvas, idConceito);
 					
 					//necessario remover o retangulo selecao AT ou MV caso o usuario local o esteja alterando ou movendo.
-					retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT"); 
+					retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT" + idConceito); 
 					if(retanguloSelecao){ //tem o retanguloSelecaoAT
 						var indexRetanguloSelecao;
 						
@@ -397,7 +404,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 						removerFilho(stageCanvas, indexRetanguloSelecao);
 					}
 					else{
-						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV"); 
+						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV" + idConceito); 
 						if(retanguloSelecao){ //tem o retanguloSelecaoMV
 							var indexRetanguloSelecao;
 							
@@ -428,7 +435,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 					removerFilho(stageCanvas, idLigacao);
 					
 					//necessario remover o retangulo selecao AT ou MV caso o usuario local o esteja alterando ou movendo.
-					retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT"); 
+					retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoAT" + idLigacao); 
 					if(retanguloSelecao){ //tem o retanguloSelecaoAT
 						var indexRetanguloSelecao;
 						
@@ -436,7 +443,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 						removerFilho(stageCanvas, indexRetanguloSelecao);
 					}
 					else{
-						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV"); 
+						retanguloSelecao = stageCanvas.getChildByName("retanguloSelecaoMV" + idLigacao); 
 						if(retanguloSelecao){ //tem o retanguloSelecaoMV
 							var indexRetanguloSelecao;
 							
