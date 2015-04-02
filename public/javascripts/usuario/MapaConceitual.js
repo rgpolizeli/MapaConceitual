@@ -19,6 +19,10 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     var gerenciadorSemiLigacao = new GerenciadorSemiLigacao();
     var handTool = new HandTool(stageCanvas, renderizar);
     
+    this.alterarPapelConceitoFilho = function alterarPapelConceitoFilho(idLigacao, novoPapel, papelAtual){
+			gerenciadorLista.alterarPapelConceitoFilho(idLigacao, novoPapel, papelAtual);
+	};
+    
     
     this.limparMapa = function limparMapa(){
     	gerenciadorLista.limparLista();
@@ -226,32 +230,34 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     	var conceitoContainerFilho;
     	
     	conceitoContainerPai = gerenciadorConceito.getConceitoContainerViaId(propriedades.idConceitoPai, stageCanvas);
-    	conceitoContainerFilho = gerenciadorConceito.getConceitoContainerViaId(propriedades.idConceitoFilho, stageCanvas);
+    	conceitoContainerFilho = gerenciadorConceito.getConceitoContainerViaId(propriedades.idConceitoFilho1, stageCanvas);
     	
-    	
-    	containers = gerenciadorLigacao.desenharLigacao( propriedades.texto, propriedades.fonte, propriedades.tamanhoFonte, 
+    	if(conceitoContainerPai.name == "conceito" && conceitoContainerFilho.name == "conceito"){ // alguem pode ter deletado um dos conceitos envolvidos antes da ligacao ser criada
+			containers = gerenciadorLigacao.desenharLigacao( propriedades.x, propriedades.y, propriedades.texto, propriedades.fonte, propriedades.tamanhoFonte, 
     			propriedades.corFonte, propriedades.corFundo, conceitoContainerPai, conceitoContainerFilho );
     	
-    	stageCanvas.addChild(containers["ligacaoContainer"]); //adiciona o container no stageCanvas
-    	stageCanvas.addChild(containers["linhaPaiContainer"]);
-    	stageCanvas.addChild(containers["linhaFilhoContainer"]);
+			stageCanvas.addChild(containers["ligacaoContainer"]); //adiciona o container no stageCanvas
+			stageCanvas.addChild(containers["linhaPaiContainer"]);
+			stageCanvas.addChild(containers["linhaFilhoContainer"]);
+			
+			setIdObjeto(containers["ligacaoContainer"], propriedades.idLigacao);
+			setIdObjeto(containers["linhaPaiContainer"], propriedades.idLinhaPai);
+			setIdObjeto(containers["linhaFilhoContainer"], propriedades.idLinhaFilho1);
+			
+			gerenciadorLigacao.adicionarDragDrop(idMapa,containers["ligacaoContainer"], stageCanvas, gerenciadorLista.getLigacao, 
+					gerenciadorLista.getCorFundo, gerenciadorLista.getAlturaMinima, gerenciadorLista.getLarguraMinima, 
+					removerFilho, renderizar, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
+			
+			renderizar();
+			gerenciadorLista.adicionarLigacaoNaLista(propriedades.idLigacao, propriedades.idLinhaPai, propriedades.idLinhaFilho1, 
+					propriedades.idConceitoPai,	propriedades.idConceitoFilho1, propriedades.corFundo, 
+					propriedades.alturaMinima, propriedades.larguraMinima);
+		}
     	
-    	setIdObjeto(containers["ligacaoContainer"], propriedades.idLigacao);
-    	setIdObjeto(containers["linhaPaiContainer"], propriedades.idLinhaPai);
-    	setIdObjeto(containers["linhaFilhoContainer"], propriedades.idLinhaFilho);
-    	
-    	gerenciadorLigacao.adicionarDragDrop(idMapa,containers["ligacaoContainer"], stageCanvas, gerenciadorLista.getLigacao, 
-    			gerenciadorLista.getCorFundo, gerenciadorLista.getAlturaMinima, gerenciadorLista.getLarguraMinima, 
-    			removerFilho, renderizar, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
-    	
-    	renderizar();
-    	gerenciadorLista.adicionarLigacaoNaLista(propriedades.idLigacao, propriedades.idLinhaPai, propriedades.idLinhaFilho, 
-    			propriedades.idConceitoPai,	propriedades.idConceitoFilho, propriedades.corFundo, 
-    			propriedades.alturaMinima, propriedades.larguraMinima);
     };
     
     
-    this.inserirSemiLigacao = function (idConceitoP, idLigacaoP, idLinhaP, novaQtdFilhosLigacaoP, papelConceitoP){
+    this.inserirSemiLigacao = function (mensagem){
     	
     	var idConceito;
     	var idLigacao;
@@ -262,11 +268,11 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     	var ligacaoContainer;
     	var semiLigacaoContainer;
     	
-    	idConceito = idConceitoP;
-    	idLigacao = idLigacaoP;
-    	idLinha = idLinhaP;
-    	novaQtdFilhosLigacao = novaQtdFilhosLigacaoP;
-    	papelConceito = papelConceitoP;
+    	idConceito = mensagem.idConceito;
+    	idLigacao = mensagem.idLigacao;
+    	idLinha = mensagem.idLinha;
+    	novaQtdFilhosLigacao = mensagem.novaQtdFilhos;
+    	papelConceito = mensagem.papelConceito;
     	
     	conceitoContainer = gerenciadorConceito.getConceitoContainerViaId(idConceito, stageCanvas);
     	ligacaoContainer = gerenciadorLigacao.getLigacaoContainerViaId(idLigacao, stageCanvas);
@@ -340,6 +346,12 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 				renderizar();
 				return desselecionarCallBack();
 			}
+			
+			if(mapa.getContainerViaId(objetosSelecionados[0]).name == null){ // caso em que o objeto selecionado 0 foi deletado antes de criar ligacao ou semiligacao
+				
+				objetosSelecionados[0] = undefined;
+				return desselecionarCallBack();
+			}
 		}
     };
     
@@ -392,6 +404,10 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 					
 					var conceitoContainer = stageCanvas.getChildAt( idConceito );
 					conceitoContainer.removeAllEventListeners("pressmove");
+					
+					if(objetosSelecionados[0] == idConceito){
+						mapa.setCriarLigacao(false);
+					}
 					mapa.desselecionar();
 					removerFilho(stageCanvas, idConceito);
 					
@@ -431,6 +447,11 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 					
 					var ligacaoContainer = stageCanvas.getChildAt( idLigacao );
 					ligacaoContainer.removeAllEventListeners("pressmove");
+					
+					if(objetosSelecionados[0] == idLigacao){
+						mapa.setCriarLigacao(false);
+					}
+					
 					mapa.desselecionar();
 					removerFilho(stageCanvas, idLigacao);
 					
@@ -677,7 +698,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 							else{ // eh ligacao
 								//verificar se jah nao estao ligados
 								if( !gerenciadorLista.verificarLigacao( objetosSelecionados[1], objetosSelecionados[0] ) ){ //se nao estiverem
-									var idConceito, idLigacao, qtdFilhosLigacao, papelConceitoDisponivel;
+									var idConceito, idLigacao;
 									
 									idConceito = objetosSelecionados[1];
 									idLigacao = objetosSelecionados[0];
@@ -685,11 +706,8 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 									mapa.setCriarLigacao(false);
 									mapa.desselecionar();
 									
-									qtdFilhosLigacao = gerenciadorLista.getQtdFilhosLigacao(idLigacao);
-									papelConceitoDisponivel = gerenciadorLista.buscarPapelConceitoDisponivel(idLigacao);
-									
 									objetosSelecionados[1] = objetosSelecionados[0] = undefined;
-									return criarSemiLigacaoCallBack(idMapa, idConceito, idLigacao, qtdFilhosLigacao, papelConceitoDisponivel);
+									return criarSemiLigacaoCallBack(idMapa, idConceito, idLigacao);
 								}
 								else{
 									mapa.setCriarLigacao(false);
@@ -714,7 +732,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 						objetosSelecionados[1] = stageCanvas.getChildIndex(objetoSelecionado.parent);
 						//verificar o que eh o conceito selecionado 0
 						if( objeto0.name == "conceito" && !gerenciadorLista.verificarLigacao( objetosSelecionados[0], objetosSelecionados[1] ) ){
-							var idConceito, idLigacao, qtdFilhosLigacao, papelConceitoDisponivel;
+							var idConceito, idLigacao;
 							
 							idConceito = objetosSelecionados[0];
 							idLigacao = objetosSelecionados[1];
@@ -722,11 +740,8 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 							mapa.setCriarLigacao(false);
 							mapa.desselecionar();
 							
-							qtdFilhosLigacao = gerenciadorLista.getQtdFilhosLigacao(idLigacao);
-							papelConceitoDisponivel = gerenciadorLista.buscarPapelConceitoDisponivel(idLigacao);
-							
 							objetosSelecionados[1] = objetosSelecionados[0] = undefined;
-							return criarSemiLigacaoCallBack(idMapa, idConceito, idLigacao, qtdFilhosLigacao, papelConceitoDisponivel);
+							return criarSemiLigacaoCallBack(idMapa, idConceito, idLigacao);
 						}
 						else{
 							mapa.setCriarLigacao(false);

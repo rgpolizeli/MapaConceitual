@@ -29,7 +29,7 @@ function GerenciadorUsuariosAtivos(){
 		}
 		else{
 			var i = 0;
-			while( (listaUsuariosAtivos[i].idMapa != idMapa) && ( i <  listaUsuariosAtivos.length) )
+			while( ( i <  listaUsuariosAtivos.length) && (listaUsuariosAtivos[i].idMapa != idMapa) )
 				i++;
 			
 			if (i == listaUsuariosAtivos.length){
@@ -47,7 +47,7 @@ function GerenciadorUsuariosAtivos(){
 		}
 		else{
 			var i = 0;
-			while( (listaUsuariosAtivos[posicaoMapa].usuarios[i].socket != socketUsuario) && ( i <  listaUsuariosAtivos[posicaoMapa].usuarios.length) )
+			while( ( i <  listaUsuariosAtivos[posicaoMapa].usuarios.length) && (listaUsuariosAtivos[posicaoMapa].usuarios[i].socket != socketUsuario) )
 				i++;
 			
 			if (i == listaUsuariosAtivos[posicaoMapa].usuarios.length){
@@ -65,7 +65,7 @@ function GerenciadorUsuariosAtivos(){
 		}
 		else{
 			var i = 0;
-			while( (listaUsuariosAtivos[posicaoMapa].usuarios[i].idUsuario != idUsuario) && ( i <  listaUsuariosAtivos[posicaoMapa].usuarios.length) )
+			while( ( i <  listaUsuariosAtivos[posicaoMapa].usuarios.length) && (listaUsuariosAtivos[posicaoMapa].usuarios[i].idUsuario != idUsuario) )
 				i++;
 			
 			if (i == listaUsuariosAtivos[posicaoMapa].usuarios.length){

@@ -45,6 +45,33 @@ function Servidor(Ip,Porta){
 	
 	var GerenciadorUsuariosAtivos = require('./GerenciadorUsuariosAtivos.js');
 	var gerenciadorUsuariosAtivos;
+	var idsEvento = new Array();
+	
+	
+	function getIdEvento(){
+		var tamanho = idsEvento.length;
+		if(tamanho == 0){
+			idsEvento.push(0);
+			return 0;
+		}
+		else{
+			var novoTamanho = idsEvento.push( (idsEvento[tamanho - 1] + 1) );
+			return idsEvento[idsEvento.length - 1];
+		}
+	}
+	
+	function excluirIdEvento(id){
+		if(idsEvento.length > 0){
+			var i=0;
+			while(i < idsEvento.length && idsEvento[i] != id)
+				i++;
+			
+			if(i < idsEvento.length){
+				idsEvento.splice(i, 1);
+			}
+		}
+	}
+	
 	
 	this.iniciar = function(){
 		
@@ -86,6 +113,7 @@ function Servidor(Ip,Porta){
 		
 		
 		app.post('/excluirGrupo', passport.verificarAutenticacao, function(req,res){
+			var idOperacaoLocal = 2;
 			var idUsuario; 
 			var idGrupo; // vem da pagina mapas.ejs
 			
@@ -94,8 +122,8 @@ function Servidor(Ip,Porta){
 			
 			if(idGrupo){ //se o usuario selecionou algum grupo
 				
-				gerenciadorBanco.pesquisarMembrosGrupo(idGrupo);
-				gerenciadorBanco.eventEmitter.once('fimPesquisaMembrosGrupo', function(membros){ 
+				gerenciadorBanco.pesquisarMembrosGrupo(idGrupo, idOperacaoLocal);
+				gerenciadorBanco.eventEmitter.once('fimPesquisaMembrosGrupo' + idGrupo + idOperacaoLocal, function(membros){ 
 					
 					var tipoMembro;
 					var indiceCoordenador = 0;
@@ -110,20 +138,20 @@ function Servidor(Ip,Porta){
 					
 					if(tipoMembro == "Coordenador"){ // se for o coordenador
 						
-						gerenciadorBanco.pesquisarMapasGrupo(idGrupo);
-						gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo' + idGrupo, function(idMapas){ 
+						gerenciadorBanco.pesquisarMapasGrupo(idGrupo, idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo' + idGrupo + idOperacaoLocal, function(idMapas){ 
 							
 							if(idMapas.erro){ //erro ao obter os mapas aos quais o grupo tem acesso
 								
-								gerenciadorBanco.obterGrupos(req.user.id);
-								gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+								gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+								gerenciadorBanco.eventEmitter.once('fimObterGrupos' + idUsuario + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 									
 									msg = {
 											alerta: "Erro ao tentar excluir o grupo. Tente novamente.",
 											listaGrupos: listaGrupos,
 											listaGruposCoordenados: listaGruposCoordenados
 									}; 
-									return routes.pagina(req,res,'grupos', msg);
+									routes.pagina(req,res,'grupos', msg);
 								});
 								
 							}
@@ -131,18 +159,18 @@ function Servidor(Ip,Porta){
 							else{ //sucesso ao obter os mapas aos quais o grupo tem acesso
 									
 								gerenciadorBanco.excluirGrupo(idGrupo);
-								gerenciadorBanco.eventEmitter.once('fimExclusaoGrupo', function(resultado){ 
+								gerenciadorBanco.eventEmitter.once('fimExclusaoGrupo' + idGrupo, function(resultado){ 
 									
 									if(resultado.erro){ //erro ao tentar excluir
-										gerenciadorBanco.obterGrupos(req.user.id);
-										gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+										gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+										gerenciadorBanco.eventEmitter.once('fimObterGrupos' + idUsuario + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 											
 											msg = {
 													alerta: "O seguinte erro ocorreu ao se tentar excluir o grupo: " + resultado.erro,
 													listaGrupos: listaGrupos,
 													listaGruposCoordenados: listaGruposCoordenados
 											}; 
-											return routes.pagina(req,res,'grupos', msg);
+											routes.pagina(req,res,'grupos', msg);
 										});
 									}
 									else{ //sucesso ao excluir grupo
@@ -174,15 +202,15 @@ function Servidor(Ip,Porta){
 											
 										}
 										
-										gerenciadorBanco.obterGrupos(req.user.id);
-										gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+										gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+										gerenciadorBanco.eventEmitter.once('fimObterGrupos' + idUsuario + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 											
 											msg = {
 													alerta: "Sucesso ao excluir o grupo!",
 													listaGrupos: listaGrupos,
 													listaGruposCoordenados: listaGruposCoordenados
 											}; 
-											return routes.pagina(req,res,'grupos', msg);
+											routes.pagina(req,res,'grupos', msg);
 										});
 									}
 										
@@ -195,15 +223,15 @@ function Servidor(Ip,Porta){
 					} // fim if tipoMembro==0
 					
 					else{ // nao eh o coordenador do grupo
-						gerenciadorBanco.obterGrupos(req.user.id);
-						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+						gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimObterGrupos' + idUsuario + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 							
 							msg = {
 									alerta: "Voce não é o coordenador do grupo para poder excluí-lo.",
 									listaGrupos: listaGrupos,
 									listaGruposCoordenados: listaGruposCoordenados
 							}; 
-							return routes.pagina(req,res,'grupos', msg);
+							routes.pagina(req,res,'grupos', msg);
 						});
 					}
 					
@@ -221,17 +249,17 @@ function Servidor(Ip,Porta){
 		
 		
 		app.get('/grupos', passport.verificarAutenticacao, function(req,res){ //deve estar autenticado
-			
-			gerenciadorBanco.obterGrupos(req.user.id);
-			gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+			var idOperacaoLocal = 12;
+			gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+			gerenciadorBanco.eventEmitter.once('fimObterGrupos' + req.user.id + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 				if(listaGrupos.erro){
-					gerenciadorBanco.pesquisarMapas(req.user.id);
-					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+					gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
+					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + req.user.id + idOperacaoLocal, function(mapas){ 
 						msg = {
 								alerta: "Ocorreu o seguinte erro ao se tentar pesquisar os grupos que você participa: " + listaGrupos.erro,
 								mensagem: mapas
 						}; 
-						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+						routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 					}); 
 				}
 				else{
@@ -244,17 +272,17 @@ function Servidor(Ip,Porta){
 		
 		
 		app.get('/criarGrupo', passport.verificarAutenticacao, function(req,res){
-				
-			gerenciadorBanco.verificarTipoUsuario(req.user.id);
-			gerenciadorBanco.eventEmitter.once('fimVerificarTipoUsuario', function(tipoUsuario){ 
+			var idOperacaoLocal = 13;	
+			gerenciadorBanco.verificarTipoUsuario(req.user.id, idOperacaoLocal);
+			gerenciadorBanco.eventEmitter.once('fimVerificarTipoUsuario' + req.user.id + idOperacaoLocal, function(tipoUsuario){ 
 				var idUsuario, nomeUsuario, achou, msg;
 				
 				if( !(tipoUsuario.erro) ){ //sucesso verificacao tipo usuario
 					
 					if(tipoUsuario == 0){ // se for coordenador
 						idUsuario = req.user.id;
-						gerenciadorBanco.buscarTodosUsuarios();
-						gerenciadorBanco.eventEmitter.once('fimBuscaTodosUsuarios', function(listaUsuarios){
+						gerenciadorBanco.buscarTodosUsuarios(idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimBuscaTodosUsuarios' + idOperacaoLocal, function(listaUsuarios){
 							
 							achou = false;
 							
@@ -275,26 +303,26 @@ function Servidor(Ip,Porta){
 					}
 					
 					else{ //nao eh coordenador
-						gerenciadorBanco.obterGrupos(req.user.id);;
-						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+						gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimObterGrupos' + req.user.id + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 							msg = {
 									alerta: "Voce não é coordenador para gerenciar grupos!",
 									listaGrupos: listaGrupos, 
 									listaGruposCoordenados: listaGruposCoordenados
 							}; 
-							return routes.pagina(req,res,'grupos', msg); //necessario return para interromper a funcao 
+							routes.pagina(req,res,'grupos', msg); //necessario return para interromper a funcao 
 						}); 
 					}
 				}
 				else{  //erro na verificacao tipo usuario
-					gerenciadorBanco.obterGrupos(req.user.id);
-					gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+					gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+					gerenciadorBanco.eventEmitter.once('fimObterGrupos' + req.user.id + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 						msg = {
 								alerta: "Ocorreu o seguinte erro ao se tentar verificar se você é o coordenador: "  + tipoUsuario.erro,
 								listaGrupos: listaGrupos, 
 								listaGruposCoordenados: listaGruposCoordenados
 						}; 
-						return routes.pagina(req,res,'grupos', msg); //necessario return para interromper a funcao 
+						routes.pagina(req,res,'grupos', msg); //necessario return para interromper a funcao 
 					}); 
 				}
 			});
@@ -302,7 +330,7 @@ function Servidor(Ip,Porta){
 		
 		
 		app.post('/criarGrupo', function(req,res){
-			
+			var idOperacaoLocal = 14;
 			var membros = new Array();
 			//as propriedades sao duas: nomeGrupo e usuario+idUsuario. O ultimo tipo eh o de mais elementos e contem o tipo de permissao do usuario que nomeia o tipo.
 			var propriedades = Object.getOwnPropertyNames(req.body);
@@ -316,21 +344,23 @@ function Servidor(Ip,Porta){
 				}
 			}
 			
-			gerenciadorBanco.inserirNovoGrupo(req.body.nomeGrupo, membros);
-			gerenciadorBanco.eventEmitter.once('grupoCriado', function(idGrupo){ 
+			var idEvento = getIdEvento();
+			gerenciadorBanco.inserirNovoGrupo(req.body.nomeGrupo, membros, idEvento);
+			gerenciadorBanco.eventEmitter.once('grupoCriado' + idEvento, function(idGrupo){ 
+				excluirIdEvento(idEvento);
 				if(idGrupo.erro){//erro na criacao
-					gerenciadorBanco.obterGrupos(req.user.id);
-					gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+					gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+					gerenciadorBanco.eventEmitter.once('fimObterGrupos' + req.user.id + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 						msg = {
 								alerta: "Grupo não criado! Ocorreu o seguinte erro ao se tentar criar o grupo: "  + idGrupo.erro,
 								listaGrupos: listaGrupos, 
 								listaGruposCoordenados: listaGruposCoordenados
 						}; 
-						return routes.pagina(req,res,'grupos', msg); //necessario return para interromper a funcao 
+						routes.pagina(req,res,'grupos', msg); //necessario return para interromper a funcao 
 					}); 
 				}
 				else{ //sucesso na criacao
-					return res.redirect('/grupos');
+					 res.redirect('/grupos');
 				}
 			});
 			
@@ -338,6 +368,7 @@ function Servidor(Ip,Porta){
 		
 		
 		app.post('/obterInfoGrupo', passport.verificarAutenticacao, function(req,res){
+			var idOperacaoLocal = 11;
 			var idUsuario; 
 			var idGrupo; // vem da pagina grupos.ejs
 			
@@ -349,21 +380,21 @@ function Servidor(Ip,Porta){
 				
 				//buscar nome do mapa
 				gerenciadorBanco.buscarNomeGrupo(idGrupo);
-				gerenciadorBanco.eventEmitter.once('fimBuscaNomeGrupo', function(resultado){ 
+				gerenciadorBanco.eventEmitter.once('fimBuscaNomeGrupo' + idGrupo, function(resultado){ 
 					
 					if(resultado.erro){ //erro na busca do nome do grupo
 						
 						var msg;
 						
-						gerenciadorBanco.obterGrupos(req.user.id);
-						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+						gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimObterGrupos' + idUsuario + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 							
 							msg = {
 									alerta: "Ocorreu o seguinte erro ao se tentar configurar o grupo: "+ resultado.erro,
 									listaGrupos: listaGrupos,
 									listaGruposCoordenados: listaGruposCoordenados
 							}; 
-							return routes.pagina(req,res,'grupos', msg);
+							routes.pagina(req,res,'grupos', msg);
 						});
 					}
 					else{ //sucesso na busca do nome do grupo
@@ -373,22 +404,22 @@ function Servidor(Ip,Porta){
 				});
 				
 				//busca usuarios membros deste grupo
-				gerenciadorBanco.pesquisarMembrosGrupo(idGrupo);
-				gerenciadorBanco.eventEmitter.once('fimPesquisaMembrosGrupo', function(resultado){ 
+				gerenciadorBanco.pesquisarMembrosGrupo(idGrupo,idOperacaoLocal);
+				gerenciadorBanco.eventEmitter.once('fimPesquisaMembrosGrupo' + idGrupo + idOperacaoLocal, function(resultado){ 
 					
 					if(resultado.erro){ //erro na busca dos membros
 						
 						var msg;
 						
-						gerenciadorBanco.obterGrupos(req.user.id);
-						gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+						gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimObterGrupos' + idUsuario + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 							
 							msg = {
 									alerta: "Ocorreu o seguinte erro ao se tentar configurar o grupo: "+ resultado.erro,
 									listaGrupos: listaGrupos,
 									listaGruposCoordenados: listaGruposCoordenados
 							}; 
-							return routes.pagina(req,res,'grupos', msg);
+							routes.pagina(req,res,'grupos', msg);
 						});
 						
 					}
@@ -406,22 +437,22 @@ function Servidor(Ip,Porta){
 						if(listaMembros[i].tipoMembro == "Coordenador"){
 							
 							//necessario buscar o nome de todos os usuarios
-							gerenciadorBanco.buscarTodosUsuarios();
-							gerenciadorBanco.eventEmitter.once('fimBuscaTodosUsuarios', function(listaTodosUsuarios){
+							gerenciadorBanco.buscarTodosUsuarios(idOperacaoLocal);
+							gerenciadorBanco.eventEmitter.once('fimBuscaTodosUsuarios'+idOperacaoLocal, function(listaTodosUsuarios){
 								
 								if(listaTodosUsuarios.erro){ //erro ao pesquisar todos os usuarios
 									
 									var msg;
 									
-									gerenciadorBanco.obterGrupos(req.user.id);
-									gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+									gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+									gerenciadorBanco.eventEmitter.once('fimObterGrupos' + idUsuario + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 										
 										msg = {
 												alerta: "Ocorreu o seguinte erro ao se tentar configurar o grupo: "+ resultado.erro,
 												listaGrupos: listaGrupos,
 												listaGruposCoordenados: listaGruposCoordenados
 										}; 
-										return routes.pagina(req,res,'grupos', msg);
+										routes.pagina(req,res,'grupos', msg);
 									});
 								}
 								else{ //sucesso ao pesquisar todos os usuarios
@@ -441,15 +472,15 @@ function Servidor(Ip,Porta){
 							
 							var msg;
 							
-							gerenciadorBanco.obterGrupos(req.user.id);
-							gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+							gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+							gerenciadorBanco.eventEmitter.once('fimObterGrupos' + idUsuario + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 								
 								msg = {
 										alerta: "Você não é o coordenador deste grupo para poder configurá-lo!",
 										listaGrupos: listaGrupos,
 										listaGruposCoordenados: listaGruposCoordenados
 								}; 
-								return routes.pagina(req,res,'grupos', msg);
+								routes.pagina(req,res,'grupos', msg);
 							});
 						}
 					}
@@ -463,19 +494,20 @@ function Servidor(Ip,Porta){
 		
 		
 		app.post('/configurarGrupo', passport.verificarAutenticacao, function(req,res){
-			gerenciadorBanco.pesquisarMapasGrupo(req.body.idGrupo);
-			gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo' + req.body.idGrupo, function(idMapas){ 
+			var idOperacaoLocal = 1;
+			gerenciadorBanco.pesquisarMapasGrupo(req.body.idGrupo, idOperacaoLocal);
+			gerenciadorBanco.eventEmitter.once('fimPesquisaMapasGrupo' + req.body.idGrupo + idOperacaoLocal, function(idMapas){ 
 				if(idMapas.erro){ //erro ao obter os mapas aos quais o grupo tem acesso
 					
-					gerenciadorBanco.obterGrupos(req.user.id);
-					gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+					gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+					gerenciadorBanco.eventEmitter.once('fimObterGrupos' + req.user.id + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 						
 						msg = {
 								alerta: "Alterações não aplicadas! Ocorreu um erro relacionado a obtenção dos mapas aos quais o grupo tem acesso",
 								listaGrupos: listaGrupos,
 								listaGruposCoordenados: listaGruposCoordenados
 						}; 
-						return routes.pagina(req,res,'grupos', msg);
+						routes.pagina(req,res,'grupos', msg);
 					});
 					
 				}
@@ -495,20 +527,20 @@ function Servidor(Ip,Porta){
 					}
 					
 					gerenciadorBanco.configurarGrupo(req.body.idGrupo, req.body.nomeGrupo, req.user.id, membros);
-					gerenciadorBanco.eventEmitter.once('fimConfigurarGrupo', function(resultado){ //se sucesso, resultado eh uma lista dos membros anteriores a modificacao
+					gerenciadorBanco.eventEmitter.once('fimConfigurarGrupo' + req.user.id + req.body.idGrupo, function(resultado){ //se sucesso, resultado eh uma lista dos membros anteriores a modificacao
 						if(resultado.erro){ //erro ao configurar grupo
 							
 							var msg;
 							
-							gerenciadorBanco.obterGrupos(req.user.id);
-							gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+							gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+							gerenciadorBanco.eventEmitter.once('fimObterGrupos' + req.user.id + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 								
 								msg = {
 										alerta: resultado.erro,
 										listaGrupos: listaGrupos,
 										listaGruposCoordenados: listaGruposCoordenados
 								}; 
-								return routes.pagina(req,res,'grupos', msg);
+								routes.pagina(req,res,'grupos', msg);
 							});
 							
 						}
@@ -547,15 +579,15 @@ function Servidor(Ip,Porta){
 								
 							}
 							
-							gerenciadorBanco.obterGrupos(req.user.id);
-							gerenciadorBanco.eventEmitter.once('fimObterGrupos', function(listaGrupos, listaGruposCoordenados){ 
+							gerenciadorBanco.obterGrupos(req.user.id, idOperacaoLocal);
+							gerenciadorBanco.eventEmitter.once('fimObterGrupos' + req.user.id + idOperacaoLocal, function(listaGrupos, listaGruposCoordenados){ 
 								
 								msg = {
 										alerta: "Alterações aplicadas com sucesso!",
 										listaGrupos: listaGrupos,
 										listaGruposCoordenados: listaGruposCoordenados
 								}; 
-								return routes.pagina(req,res,'grupos', msg);
+								routes.pagina(req,res,'grupos', msg);
 							});
 									
 
@@ -581,17 +613,17 @@ function Servidor(Ip,Porta){
 		});
 		
 		app.get('/mapas', passport.verificarAutenticacao, function(req,res){
-			
+			var idOperacaoLocal = 20;
 			if(req.query.desconectado){
 				
-				gerenciadorBanco.pesquisarMapas(req.user.id);
-				gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(listaMapas){ 
+				gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
+				gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + req.user.id + idOperacaoLocal, function(listaMapas){ 
 					if(listaMapas.erro){ //erro na pesquisa pelos mapas que o usuario tem acesso
 						var msg = {
 								alerta: "Ocorreu o seguinte erro ao se pesquisar os mapas que você tem acesso: " + listaMapas.erro,
 								mensagem: new Array()
 						}; 
-						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao  
+						routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao  
 					}
 					else{ //sucesso na pesquisa pelos mapas que o usuario tem acesso
 						
@@ -617,14 +649,14 @@ function Servidor(Ip,Porta){
 					
 			}
 			else{
-				gerenciadorBanco.pesquisarMapas(req.user.id);
-				gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(listaMapas){ 
+				gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
+				gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + req.user.id + idOperacaoLocal, function(listaMapas){ 
 					if(listaMapas.erro){ //erro na pesquisa pelos mapas que o usuario tem acesso
 						var msg = {
 								alerta: "Ocorreu o seguinte erro ao se pesquisar os mapas que você tem acesso: " + listaMapas.erro,
 								mensagem: new Array()
 						}; 
-						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao  
+						routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao  
 					}
 					else{ //sucesso na pesquisa pelos mapas que o usuario tem acesso
 						routes.pagina(req,res,'mapas', {mensagem:listaMapas});
@@ -635,8 +667,10 @@ function Servidor(Ip,Porta){
 		});
 		
 		app.post('/cadastrarUsuarioComum', function(req,res){
-			gerenciadorBanco.cadastrarUsuario(req.body.usuario, req.body.password, req.body.nome, req.body.email, 1); //1 de usuario comum
-			gerenciadorBanco.eventEmitter.once('fimCadastroUsuario', function(resultado){ 
+			var idEvento = getIdEvento();
+			gerenciadorBanco.cadastrarUsuario(req.body.usuario, req.body.password, req.body.nome, req.body.email, 1,idEvento); //1 de usuario comum
+			gerenciadorBanco.eventEmitter.once('fimCadastroUsuario' + idEvento, function(resultado){ 
+				excluirIdEvento(idEvento);
 				if(resultado == 1)
 					routes.pagina(req,res,'index', {alerta: "Cadastro de usuário comum realizado com sucesso!"} ); 
 				else
@@ -647,9 +681,10 @@ function Servidor(Ip,Porta){
 		app.post('/cadastrarCoordenador', function(req,res){
 			
 			if(req.body.passwordCadastroCoordenador == configuracoes["senhaCadastroCoordenador"]){
-				
-				gerenciadorBanco.cadastrarUsuario(req.body.usuario, req.body.password, req.body.nome, req.body.email, 0); //0 de coordenador
-				gerenciadorBanco.eventEmitter.once('fimCadastroUsuario', function(resultado){ 
+				var idEvento = getIdEvento();
+				gerenciadorBanco.cadastrarUsuario(req.body.usuario, req.body.password, req.body.nome, req.body.email, 0, idEvento); //0 de coordenador
+				gerenciadorBanco.eventEmitter.once('fimCadastroUsuario' + idEvento, function(resultado){ 
+					excluirIdEvento(idEvento);
 					if(resultado == 1)
 						routes.pagina(req,res,'index', {alerta: "Cadastro de coordenador realizado com sucesso!"} ); 
 					else
@@ -686,6 +721,7 @@ function Servidor(Ip,Porta){
 		});
 		
 		app.get('/criarMapa', function(req,res){
+			var idOperacaoLocal = 17;
 			if(!req.isAuthenticated()){
 				routes.pagina(req,res,'index',null);
 			}
@@ -694,33 +730,33 @@ function Servidor(Ip,Porta){
 				var idUsuario, nomeUsuario, achou, msg;
 				
 				idUsuario = req.user.id;
-				gerenciadorBanco.buscarTodosUsuarios();
-				gerenciadorBanco.eventEmitter.once('fimBuscaTodosUsuarios', function(listaUsuarios){
+				gerenciadorBanco.buscarTodosUsuarios(idOperacaoLocal);
+				gerenciadorBanco.eventEmitter.once('fimBuscaTodosUsuarios'+idOperacaoLocal, function(listaUsuarios){
 					
 					if(listaUsuarios.erro){ //erro na busca dos usuarios
 						var msg;
-						gerenciadorBanco.pesquisarMapas(idUsuario);
-						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+						gerenciadorBanco.pesquisarMapas(idUsuario, idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
 							msg = {
 									alerta: "Mapa não criado! Ocorreu um erro ao se tentar encontrar os usuários do sistema. Tente novamente.",
 									mensagem: mapas
 							}; 
-							return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+							routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 						});
 					}
 					else{ //sucesso na busca de todos usuarios
 						
-						gerenciadorBanco.buscarTodosGrupos();
-						gerenciadorBanco.eventEmitter.once('fimBuscaTodosGrupos', function(listaGrupos){
+						gerenciadorBanco.buscarTodosGrupos(idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimBuscaTodosGrupos' + idOperacaoLocal, function(listaGrupos){
 							if(listaUsuarios.erro){ //erro na busca dos grupos
 								var msg;
-								gerenciadorBanco.pesquisarMapas(idUsuario);
-								gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+								gerenciadorBanco.pesquisarMapas(idUsuario, idOperacaoLocal);
+								gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
 									msg = {
 											alerta: "Mapa não criado! Ocorreu um erro ao se tentar encontrar os grupos do sistema. Tente novamente.",
 											mensagem: mapas
 									}; 
-									return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+									routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 								});
 							}
 							else{ //sucesso na busca dos grupos
@@ -752,7 +788,7 @@ function Servidor(Ip,Porta){
 		});
 		
 		app.post('/criarMapa', function(req,res){
-			
+			var idOperacaoLocal = 15;
 			var permissoesGrupos = new Array();
 			var permissoesUsuarios = new Array();
 			//as propriedades sao duas: nomeMapa e usuario+idUsuario. O ultimo tipo e o de mais elementos e contem o tipo de permissao do usuario que nomeia o tipo.
@@ -760,27 +796,27 @@ function Servidor(Ip,Porta){
 			var idProprietario = req.user.id;
 			
 			if(!req.body.idCoordenador || !req.body.nomeMapa){
-				gerenciadorBanco.pesquisarMapas(idProprietario);
-				gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+				gerenciadorBanco.pesquisarMapas(idProprietario, idOperacaoLocal);
+				gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + req.user.id + idOperacaoLocal, function(mapas){ 
 					msg = {
 							alerta: "Mapa não criado! Faltaram informações para sua criação.",
 							mensagem: mapas
 					}; 
-					return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+					routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 				});
 			}
 			else{
-				gerenciadorBanco.verificarTipoUsuario( parseInt(req.body.idCoordenador) );
-				gerenciadorBanco.eventEmitter.once('fimVerificarTipoUsuario', function(tipoUsuario){ 
+				gerenciadorBanco.verificarTipoUsuario( parseInt(req.body.idCoordenador), idOperacaoLocal );
+				gerenciadorBanco.eventEmitter.once('fimVerificarTipoUsuario' + parseInt(req.body.idCoordenador) + idOperacaoLocal, function(tipoUsuario){ 
 					if(tipoUsuario != 0 ){ //deu erro ou nao eh coordenador
 						var msg;
-						gerenciadorBanco.pesquisarMapas(idUsuario);
-						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+						gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + req.user.id + idOperacaoLocal, function(mapas){ 
 							msg = {
 									alerta: "Mapa não criado! Ocorreu um erro ao se tentar encontrar o coordenador do mapa. Tente novamente.",
 									mensagem: mapas
 							}; 
-							return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+							routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 						});
 					}
 					else{ //eh coordenador
@@ -807,14 +843,15 @@ function Servidor(Ip,Porta){
 								
 							}
 						}
-						
-						gerenciadorBanco.inserirNovoMapa(req.body.nomeMapa, parseInt(req.body.idCoordenador), idProprietario, permissoesGrupos, permissoesUsuarios);
-						gerenciadorBanco.eventEmitter.once('mapaCriado', function(idMapa){ 
+						var idEvento = getIdEvento();
+						gerenciadorBanco.inserirNovoMapa(req.body.nomeMapa, parseInt(req.body.idCoordenador), idProprietario, permissoesGrupos, permissoesUsuarios,idEvento);
+						gerenciadorBanco.eventEmitter.once('mapaCriado' + idEvento, function(idMapa){ 
+							excluirIdEvento(idEvento);
 							if(idMapa.erro){
 								
 								var msg;
-								gerenciadorBanco.pesquisarMapas(idProprietario);
-								gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+								gerenciadorBanco.pesquisarMapas(idProprietario, idOperacaoLocal);
+								gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idProprietario + idOperacaoLocal, function(mapas){ 
 									if(idMapa.tipoErro == 1){
 										msg = {
 												alerta: "Mapa não criado! Ocorreu o seguinte erro ao se tentar criar o mapa: " + idMapa.erro,
@@ -828,12 +865,12 @@ function Servidor(Ip,Porta){
 										}; 
 									}
 									
-									return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+									routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 								});
 							}
 							else{
 								gerenciadorArquivos.criarMapa(idMapa, req.body.nomeMapa);
-								return res.redirect('mapas');
+								res.redirect('mapas');
 							}
 							
 						});
@@ -846,6 +883,7 @@ function Servidor(Ip,Porta){
 		});
 		
 		app.post('/obterInfoMapa', passport.verificarAutenticacao, function(req,res){
+			var idOperacaoLocal = 18;
 			var idUsuario; 
 			var idMapa; // vem da pagina mapas.ejs
 			
@@ -853,120 +891,122 @@ function Servidor(Ip,Porta){
 			idMapa = req.body.idMapa;
 			
 			if(idMapa){ //se o usuario selecionou algum mapa
-				var nomeMapa;
 				
 				//buscar nome do mapa
 				gerenciadorBanco.buscarNomeMapa(idMapa);
-				gerenciadorBanco.eventEmitter.once('fimBuscaNomeMapa', function(resultado){ 
+				gerenciadorBanco.eventEmitter.once('fimBuscaNomeMapa' + idMapa, function(resultado){ 
 					
 					if(resultado.erro){ //erro na busca do nome do mapa
 						
 						var msg;
-						gerenciadorBanco.pesquisarMapas(idUsuario);
-						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+						gerenciadorBanco.pesquisarMapas(idUsuario, idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
 							msg = {
 									alerta: "Ocorreu o seguinte erro ao se tentar configurar o mapa: "+ resultado.erro,
 									mensagem: mapas
 							}; 
-							return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+							routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 						});
 					}
 					else{ //sucesso na busca do nome do mapa
-						nomeMapa = resultado;
-					}
-					
-				});
-				
-				//busca usuarios com permissao para este mapa
-				gerenciadorBanco.pesquisarTodosComPermissao(idMapa);
-				gerenciadorBanco.eventEmitter.once('fimPesquisaTodosComPermissao', function(listaUsuariosPermitidos, listaGruposPermitidos){ 
-					
-					if(listaUsuariosPermitidos.erro){ //erro na busca dos usuarios com permissao
+						var nomeMapa = resultado;
 						
-						var msg;
-						gerenciadorBanco.pesquisarMapas(idUsuario);
-						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
-							msg = {
-									alerta: "Ocorreu o seguinte erro ao se tentar configurar o mapa: "+ resultado.erro,
-									mensagem: mapas
-							}; 
-							return routes.pagina(req,res,'mapas', msg);
-						});
-						
-					}
-					else{ //sucesso na busca dos usuarios com permissao
-						
-						//necessario saber a permissao do usuario, pois so administrador e gerente podem mudar permissoes
-						var i=0;
-						while( i < listaUsuariosPermitidos.length && listaUsuariosPermitidos[i].id != idUsuario)
-							i++;
-						
-						if(i < listaUsuariosPermitidos.length && ( listaUsuariosPermitidos[i].tipoPermissao == "Gerente" || listaUsuariosPermitidos[i].tipoPermissao == "Coordenador") ){
+						//busca usuarios com permissao para este mapa
+						gerenciadorBanco.pesquisarTodosComPermissao(idMapa,idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimPesquisaTodosComPermissao' + idOperacaoLocal, function(listaUsuariosPermitidos, listaGruposPermitidos){ 
 							
-							//necessario buscar o nome de todos os usuarios
-							gerenciadorBanco.buscarTodosUsuarios();
-							gerenciadorBanco.eventEmitter.once('fimBuscaTodosUsuarios', function(listaTodosUsuarios){
+							if(listaUsuariosPermitidos.erro){ //erro na busca dos usuarios com permissao
 								
-								if(listaTodosUsuarios.erro){ //erro ao pesquisar todos os usuarios
+								var msg;
+								gerenciadorBanco.pesquisarMapas(idUsuario, idOperacaoLocal);
+								gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
+									msg = {
+											alerta: "Ocorreu o seguinte erro ao se tentar configurar o mapa: "+ resultado.erro,
+											mensagem: mapas
+									}; 
+									routes.pagina(req,res,'mapas', msg);
+								});
+								
+							}
+							else{ //sucesso na busca dos usuarios com permissao
+								
+								//necessario saber a permissao do usuario, pois so administrador e gerente podem mudar permissoes
+								var i=0;
+								while( i < listaUsuariosPermitidos.length && listaUsuariosPermitidos[i].id != idUsuario)
+									i++;
+								
+								if(i < listaUsuariosPermitidos.length && ( listaUsuariosPermitidos[i].tipoPermissao == "Gerente" || listaUsuariosPermitidos[i].tipoPermissao == "Coordenador") ){
 									
-									var msg;
-									gerenciadorBanco.pesquisarMapas(idUsuario);
-									gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
-										msg = {
-												alerta: "Ocorreu o seguinte erro ao se tentar configurar o mapa: "+ resultado.erro,
-												mensagem: mapas
-										}; 
-										return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
-									});
-								}
-								else{ //sucesso ao pesquisar todos os usuarios
-									
-									//necessario buscar o nome de todos os grupos
-									gerenciadorBanco.buscarTodosGrupos();
-									gerenciadorBanco.eventEmitter.once('fimBuscaTodosGrupos', function(listaTodosGrupos){
-										if(listaTodosGrupos.erro){ //erro ao pesquisar todos os grupos
+									//necessario buscar o nome de todos os usuarios
+									gerenciadorBanco.buscarTodosUsuarios(idOperacaoLocal);
+									gerenciadorBanco.eventEmitter.once('fimBuscaTodosUsuarios' + idOperacaoLocal, function(listaTodosUsuarios){
+										
+										if(listaTodosUsuarios.erro){ //erro ao pesquisar todos os usuarios
 											
 											var msg;
-											gerenciadorBanco.pesquisarMapas(idUsuario);
-											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+											gerenciadorBanco.pesquisarMapas(idUsuario, idOperacaoLocal);
+											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
 												msg = {
 														alerta: "Ocorreu o seguinte erro ao se tentar configurar o mapa: "+ resultado.erro,
 														mensagem: mapas
 												}; 
-												return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+												routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 											});
 										}
-										else{ //sucesso ao pesquisar todos os grupos
-											var msg;
-											msg = {
-												listaUsuariosPermitidos: listaUsuariosPermitidos,
-												listaGruposPermitidos: listaGruposPermitidos,
-												nomeMapa: nomeMapa,
-												idMapa: idMapa,
-												listaTodosUsuarios: listaTodosUsuarios,
-												listaTodosGrupos: listaTodosGrupos
-											};
-											routes.pagina(req,res,'configurarMapa', msg);
+										else{ //sucesso ao pesquisar todos os usuarios
+											
+											//necessario buscar o nome de todos os grupos
+											gerenciadorBanco.buscarTodosGrupos(idOperacaoLocal);
+											gerenciadorBanco.eventEmitter.once('fimBuscaTodosGrupos' + idOperacaoLocal, function(listaTodosGrupos){
+												if(listaTodosGrupos.erro){ //erro ao pesquisar todos os grupos
+													
+													var msg;
+													gerenciadorBanco.pesquisarMapas(idUsuario, idOperacaoLocal);
+													gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
+														msg = {
+																alerta: "Ocorreu o seguinte erro ao se tentar configurar o mapa: "+ resultado.erro,
+																mensagem: mapas
+														}; 
+														routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+													});
+												}
+												else{ //sucesso ao pesquisar todos os grupos
+													var msg;
+													msg = {
+														listaUsuariosPermitidos: listaUsuariosPermitidos,
+														listaGruposPermitidos: listaGruposPermitidos,
+														nomeMapa: nomeMapa,
+														idMapa: idMapa,
+														listaTodosUsuarios: listaTodosUsuarios,
+														listaTodosGrupos: listaTodosGrupos
+													};
+													routes.pagina(req,res,'configurarMapa', msg);
+												}
+											});
 										}
 									});
 								}
-							});
-						}
+								
+								else{ //nao e administrador nem gerente
+									var msg;
+									gerenciadorBanco.pesquisarMapas(idUsuario, idOperacaoLocal);
+									gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
+										msg = {
+												alerta: "Você não tem permissão para configurar este mapa!",
+												mensagem: mapas
+										}; 
+										routes.pagina(req,res,'mapas', msg);
+									});
+								}
+							}
+							
+						});
 						
-						else{ //nao e administrador nem gerente
-							var msg;
-							gerenciadorBanco.pesquisarMapas(idUsuario);
-							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
-								msg = {
-										alerta: "Você não tem permissão para configurar este mapa!",
-										mensagem: mapas
-								}; 
-								return routes.pagina(req,res,'mapas', msg);
-							});
-						}
-					}
+						
+					} // sucesso busca nome mapa
 					
-				});
+				}); // fim evento busca nome mapa
+				
 			}
 			else{ //usuario nao selecionou um mapa
 				res.redirect('/mapas');
@@ -975,25 +1015,25 @@ function Servidor(Ip,Porta){
 		
 		
 		app.post('/configurarMapa', passport.verificarAutenticacao, function(req,res){
-			
+			var idOperacaoLocal = 16;
 			var permissoesGrupos = new Array();
 			var permissoesUsuarios = new Array();
 			//as propriedades sao: nomeMapa, idMapa, idCoordenador , usuario+idUsuario e grupo+idGrupo. Os ultimos tipos sao os de mais elementos e contem o tipo de permissao do usuario ou do grupo que nomeia o tipo.
 			var propriedades = Object.getOwnPropertyNames(req.body);
 			var idProprietario = req.user.id;
 			
-			gerenciadorBanco.verificarTipoUsuario( parseInt(req.body.idCoordenador) );
-			gerenciadorBanco.eventEmitter.once('fimVerificarTipoUsuario', function(tipoUsuario){ 
+			gerenciadorBanco.verificarTipoUsuario( parseInt(req.body.idCoordenador), idOperacaoLocal );
+			gerenciadorBanco.eventEmitter.once('fimVerificarTipoUsuario' + parseInt(req.body.idCoordenador) + idOperacaoLocal, function(tipoUsuario){ 
 				
 				if(tipoUsuario != 0 ){ //deu erro ou nao eh coordenador
 					var msg;
-					gerenciadorBanco.pesquisarMapas(idUsuario);
-					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+					gerenciadorBanco.pesquisarMapas(idProprietario, idOperacaoLocal);
+					gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idProprietario + idOperacaoLocal, function(mapas){ 
 						msg = {
 								alerta: "Mapa não reconfigurado! Ocorreu um erro relativo ao coordenador do mapa. Tente novamente.",
 								mensagem: mapas
 						}; 
-						return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+						routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 					});
 				}
 				else{ // eh coordenador
@@ -1022,17 +1062,17 @@ function Servidor(Ip,Porta){
 					}
 
 					gerenciadorBanco.configurarMapa(req.body.idMapa, req.body.nomeMapa, parseInt(req.body.idCoordenador), idProprietario, permissoesUsuarios, permissoesGrupos);
-					gerenciadorBanco.eventEmitter.once('fimConfigurarMapa', function(resultado){ 
+					gerenciadorBanco.eventEmitter.once('fimConfigurarMapa' + idProprietario + req.body.idMapa, function(resultado){ 
 						if(resultado.erro){ //erro 
 							
 							var msg;
-							gerenciadorBanco.pesquisarMapas(req.user.id);
-							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+							gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
+							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + req.user.id + idOperacaoLocal, function(mapas){ 
 								msg = {
 										alerta: resultado.erro,
 										mensagem: mapas
 								}; 
-								return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+								routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 							});
 						}
 						else{ //sucesso ao configurar mapa
@@ -1045,13 +1085,13 @@ function Servidor(Ip,Porta){
 							};
 							enviarParaTodosUsuariosAtivos(req.body.idMapa,msg);
 							
-							gerenciadorBanco.pesquisarMapas(req.user.id);
-							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+							gerenciadorBanco.pesquisarMapas(req.user.id,idOperacaoLocal);
+							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + req.user.id + idOperacaoLocal, function(mapas){ 
 								msg = {
 										alerta: resultado,
 										mensagem: mapas
 								}; 
-								return routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
+								routes.pagina(req,res,'mapas', msg); //necessario return para interromper a funcao 
 							});
 						}
 					});
@@ -1063,6 +1103,7 @@ function Servidor(Ip,Porta){
 		
 		
 		app.post('/excluirMapa', passport.verificarAutenticacao, function(req,res){
+			var idOperacaoLocal = 19;
 			var idUsuario; 
 			var idMapa; // vem da pagina mapas.ejs
 			
@@ -1071,14 +1112,14 @@ function Servidor(Ip,Porta){
 			
 			if(idMapa){ //se o usuario selecionou algum mapa
 				
-				gerenciadorBanco.verificarTipoPermissao(idUsuario, idMapa); //Obtendo a permissao do usuario
-				gerenciadorBanco.eventEmitter.once('tipoPermissao', function(tipoPermissao){ 
+				gerenciadorBanco.verificarTipoPermissao(idUsuario, idMapa, idOperacaoLocal); //Obtendo a permissao do usuario
+				gerenciadorBanco.eventEmitter.once('tipoPermissao' + idUsuario + idMapa + idOperacaoLocal, function(tipoPermissao){ 
 	
 					if(tipoPermissao.erro){
 						var msg;
 						
-						gerenciadorBanco.pesquisarMapas(req.user.id);
-						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+						gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
+						gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
 							msg = {
 									alerta: "Ocorreu o seguinte erro ao se tentar excluir o mapa: " + tipoPermissao.erro,
 									mensagem: mapas
@@ -1096,15 +1137,15 @@ function Servidor(Ip,Porta){
 								var r;
 								
 								gerenciadorBanco.excluirMapa(idMapa);
-								gerenciadorBanco.eventEmitter.once('fimExclusaoMapa', function(resultado){ 
+								gerenciadorBanco.eventEmitter.once('fimExclusaoMapa' + idMapa, function(resultado){ 
 									if(resultado == 1){ //excluido com sucesso do banco
 										
 										r = gerenciadorArquivos.excluirMapa(idMapa);
 										if(r == 1){ //mapa excluido com sucesso
 											var msg;
-											gerenciadorBanco.pesquisarMapas(req.user.id);
+											gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
 			
-											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){
+											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){
 												
 												msg = {
 														alerta: "Mapa excluído com sucesso!",
@@ -1116,8 +1157,8 @@ function Servidor(Ip,Porta){
 										else{ //se erro ao excluir o arquivo
 											var msg;
 											
-											gerenciadorBanco.pesquisarMapas(req.user.id);
-											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+											gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
+											gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
 												msg = {
 														alerta: "Mapa não excluído! Ocorreu o seguinte erro ao se tentar excluir: " + r, // r armazena o tipo de erro
 														mensagem: mapas
@@ -1130,8 +1171,8 @@ function Servidor(Ip,Porta){
 									else{ //erro ao excluir do banco
 										var msg;
 										
-										gerenciadorBanco.pesquisarMapas(req.user.id);
-										gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+										gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
+										gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
 											msg = {
 													alerta: "Mapa não excluído! Ocorreu o seguinte erro ao se tentar excluir: " + r, // r armazena o tipo de erro
 													mensagem: mapas
@@ -1147,8 +1188,8 @@ function Servidor(Ip,Porta){
 							else{ // algum usuario ativo no mapa
 								var msg;
 								
-								gerenciadorBanco.pesquisarMapas(req.user.id);
-								gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+								gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
+								gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
 									msg = {
 											alerta: "Mapa não excluído! Certifique-se de que nenhum usuário esteja editando este mapa antes de tentar excluí-lo.",
 											mensagem: mapas
@@ -1160,8 +1201,8 @@ function Servidor(Ip,Porta){
 						else{ // nao tem permissao
 							var msg;
 							
-							gerenciadorBanco.pesquisarMapas(req.user.id);
-							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas', function(mapas){ 
+							gerenciadorBanco.pesquisarMapas(req.user.id, idOperacaoLocal);
+							gerenciadorBanco.eventEmitter.once('fimPesquisaMapas' + idUsuario + idOperacaoLocal, function(mapas){ 
 								msg = {
 										alerta: "Você não tem permissão para isso!",
 										mensagem: mapas
@@ -1213,7 +1254,7 @@ function Servidor(Ip,Porta){
 		io.on('connection', function(socket){
 			
 			socket.on('conexao', function (idUsuarioP, idMapaP){ 
-				
+				var idOperacaoLocal = 21;
 				var idUsuario = parseInt(idUsuarioP);
 				var idMapa = parseInt(idMapaP);
 				
@@ -1224,8 +1265,8 @@ function Servidor(Ip,Porta){
 				
 				//Registrando usuario ativo do mapa
 				
-				gerenciadorBanco.verificarTipoPermissao(idUsuario, idMapa); //Obtendo a permissao do usuario
-				gerenciadorBanco.eventEmitter.once('tipoPermissao', function(tipoPermissao){ 
+				gerenciadorBanco.verificarTipoPermissao(idUsuario, idMapa, idOperacaoLocal); //Obtendo a permissao do usuario
+				gerenciadorBanco.eventEmitter.once('tipoPermissao' + idUsuario + idMapa + idOperacaoLocal, function(tipoPermissao){ 
 					
 					//adiciona o usuario e o mapa se este ja nao estiver adicionado
 					//mesmo com erro no tipoPermissao eh para por na lista, pois senao havera problema na hora da desconexao, ja que esta remove o usuario da lista
@@ -1278,76 +1319,6 @@ function Servidor(Ip,Porta){
 					    		
 					    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
 					    		mensagem = mensagem.replace("<ul>", ("<1ul id='" + conceito.idConceito + "'>") );
-					    		
-					    		//manda para todos os usuarios, inclusive quem criou o conceito
-					    		enviarParaTodosUsuariosAtivos(idMapa, mensagem);
-				    		}
-						break;
-						
-						case "3": //ligacao criada por algum usuario
-							mensagem = mensagem.replace("<3ul","<ul");
-							
-							var idMapa = $(mensagem).children("li[title='idMapa']").text();
-				    		idMapa = parseInt(idMapa);
-				    		
-				    		
-				    		//visualizador nao tem permissao para isso
-				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
-				    			var ligacao = {
-					    				idLigacao : gerenciadorArquivos.buscarIdDisponivel(idMapa),
-					    				idLinhaPai : gerenciadorArquivos.buscarIdDisponivel(idMapa),
-					    				idLinhaFilho1 :  gerenciadorArquivos.buscarIdDisponivel(idMapa),
-					    				idConceitoPai : $(mensagem).children("li[title='idConceitoPai']").val(), 
-					    				idConceitoFilho1 : $(mensagem).children("li[title='idConceitoFilho1']").val(), 
-										texto : $(mensagem).children("li[title='texto']").text(),
-										fonte : $(mensagem).children("li[title='fonte']").text(),
-										tamanhoFonte : $(mensagem).children("li[title='tamanhoFonte']").text(),
-										corFonte : $(mensagem).children("li[title='corFonte']").text(),
-										corFundo : $(mensagem).children("li[title='corFundo']").text()
-					    		};
-					    		
-					    		//inserir no arquivo xml
-					    		gerenciadorArquivos.adicionarLigacao(idMapa, ligacao);
-					    		
-					    		
-					    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
-					    		mensagem = mensagem.replace("<ul>", ("<3ul id='" + ligacao.idLigacao + "' title='ligacao'>") );
-					    		mensagem += "<li title='idLinhaPai' value='" + ligacao.idLinhaPai + "'></li>";
-					    		mensagem += "<li title='idLinhaFilho1' value='" + ligacao.idLinhaFilho1 + "'></li>";
-					    		mensagem += "<li title='qtdFilhos' value='1'></li>";
-					    		
-					    		//manda para todos os usuarios, inclusive quem criou o conceito
-					    		enviarParaTodosUsuariosAtivos(idMapa, mensagem);
-				    		}
-						break;
-						
-						
-						case "5": //nova SemiLigacao
-							mensagem = mensagem.replace("<5ul","<ul");
-							
-							var idMapa = $(mensagem).children("li[title='idMapa']").text();
-				    		idMapa = parseInt(idMapa);
-				    		
-				    		//visualizador nao tem permissao para isso
-				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
-				    			var papelConceito = $(mensagem).children("li[title^='idConceitoFilho']").attr('title');
-					    		papelConceito = parseInt( papelConceito.replace("idConceitoFilho","") );
-					    		
-					    		var semiLigacao = {
-					    				idLigacao : parseInt($(mensagem).attr("id")),
-					    				idConceito : $(mensagem).children("li[title='idConceitoFilho"+ papelConceito +"']").val(),
-					    				idLinha :  gerenciadorArquivos.buscarIdDisponivel(idMapa),
-					    				novaQtdFilhos : $(mensagem).children("li[title='qtdFilhos']").val(),
-					    				papelConceito : papelConceito
-					    		};
-					    		
-					    		//inserir no arquivo xml
-					    		gerenciadorArquivos.adicionarSemiLigacao(idMapa, semiLigacao);
-								
-					    		mensagem += "<li title='idLinhaFilho" + papelConceito +"' value = '" + semiLigacao.idLinha + "'></li>";
-					    		mensagem += "<li title='papelConceito' value = '" + papelConceito + "'></li>";
-					    		mensagem = mensagem.replace("<li title='idMapa'>" + idMapa + "</li>","");
-					    		mensagem = mensagem.replace("<ul","<5ul");
 					    		
 					    		//manda para todos os usuarios, inclusive quem criou o conceito
 					    		enviarParaTodosUsuariosAtivos(idMapa, mensagem);
@@ -1424,6 +1395,47 @@ function Servidor(Ip,Porta){
 						
 						break;
 						
+						case 3:
+							var idMapa;
+				    		idMapa = parseInt(mensagem.idMapa);
+				    		
+				    		//visualizador nao tem permissao para isso
+				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
+				    			var ligacao = {
+					    				idLigacao : gerenciadorArquivos.buscarIdDisponivel(idMapa),
+					    				idLinhaPai : gerenciadorArquivos.buscarIdDisponivel(idMapa),
+					    				idLinhaFilho1 :  gerenciadorArquivos.buscarIdDisponivel(idMapa),
+					    				idConceitoPai : mensagem.idConceitoPai, 
+					    				idConceitoFilho1 : mensagem.idConceitoFilho1, 
+										x:  mensagem.x,
+										y:   mensagem.y,
+										texto : mensagem.texto,
+										fonte :  mensagem.fonte,
+										tamanhoFonte :  mensagem.tamanhoFonte,
+										corFonte :  mensagem.corFonte,
+										corFundo :  mensagem.corFundo
+					    		};
+					    		
+					    		//inserir no arquivo xml
+					    		var resultado = gerenciadorArquivos.adicionarLigacao(idMapa, ligacao);
+					    		
+					    		if(resultado==1){
+									delete mensagem.idMapa;
+									mensagem.idLigacao = ligacao.idLigacao;
+									mensagem.idLinhaPai = ligacao.idLinhaPai;
+									mensagem.idLinhaFilho1 = ligacao.idLinhaFilho1;
+									mensagem.qtdFilhos = 1;
+									mensagem.alturaMinima = 0;
+									mensagem.larguraMinima = 0;
+									
+									//manda para todos os usuarios, inclusive quem criou o conceito
+									enviarParaTodosUsuariosAtivos(idMapa, mensagem);
+								}
+				    		}
+						break;
+						
+						
+						
 						case 4: //palavra de ligacao movida por algum usuario
 							var idMapa;
 							var alterado;
@@ -1451,7 +1463,36 @@ function Servidor(Ip,Porta){
 					    		}
 				    		}
 						break;
-					
+						
+						case 5: // nova semiligacao
+							
+							var idMapa;
+				    		idMapa = parseInt(mensagem.idMapa);
+				    		
+				    		//visualizador nao tem permissao para isso
+				    		if(gerenciadorUsuariosAtivos.verificarPermissao(idMapa, socket) != 3){
+					    		var semiLigacao = {
+					    				idLigacao : mensagem.idLigacao,
+					    				idConceito : mensagem.idConceito,
+					    				idLinha :  gerenciadorArquivos.buscarIdDisponivel(idMapa),
+					    				papelConceito: gerenciadorArquivos.getPapelConceitoDisponivel(idMapa, mensagem.idLigacao),
+					    				novaQtdFilhos: gerenciadorArquivos.getQtdFilhosLigacao(idMapa, mensagem.idLigacao) + 1
+					    		};
+					    		
+					    		//inserir no arquivo xml
+					    		resultado = gerenciadorArquivos.adicionarSemiLigacao(idMapa, semiLigacao);
+								
+								if(resultado == 1){
+									mensagem.idLinha = semiLigacao.idLinha;
+									mensagem.papelConceito = semiLigacao.papelConceito;
+									mensagem.novaQtdFilhos = semiLigacao.novaQtdFilhos;
+									
+									//manda para todos os usuarios, inclusive quem criou o conceito
+									enviarParaTodosUsuariosAtivos(idMapa, mensagem);
+								}
+					    		
+				    		}
+						break;
 					
 						case 7: //tamanho do conceito alterado por algum usuario
 							var alterado;

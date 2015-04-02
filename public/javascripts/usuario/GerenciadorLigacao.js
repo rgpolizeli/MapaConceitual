@@ -328,9 +328,7 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     /**
      * 
      */
-    this.desenharLigacao = function(texto, fonte, tamanhoFonte, corFonte, corFundo, conceitoContainerPai, conceitoContainerFilho) {
-    	var posicaoLigacaoX;
-    	var posicaoLigacaoY;
+    this.desenharLigacao = function(posicaoLigacaoX, posicaoLigacaoY, texto, fonte, tamanhoFonte, corFonte, corFundo, conceitoContainerPai, conceitoContainerFilho) {
     	var altura;
     	var largura;
     	var label;
@@ -358,9 +356,11 @@ function GerenciadorLigacao(origem, textoLigacao, fonteP, tamanhoFonteP, corFont
     	retangulo.setBounds(0,0,largura,altura);
     	
     	ligacaoContainer.addChild(retangulo, label); //adiciona o retangulo e o label no container
-    	// ATENCAO: conceito.x retorna string e nao number como consta na documentacao da easeljs
-    	posicaoLigacaoX = (parseFloat(conceitoContainerPai.x) + parseFloat(conceitoContainerFilho.x))/2;
-    	posicaoLigacaoY = (parseFloat(conceitoContainerPai.y) + parseFloat(conceitoContainerFilho.y))/2;
+    	
+    	if(posicaoLigacaoX == 'default') posicaoLigacaoX = 0;
+    	if(posicaoLigacaoY == 'default') posicaoLigacaoY = 0;
+    	
+    	
     	ligacaoContainer.x = posicaoLigacaoX;
     	ligacaoContainer.y = posicaoLigacaoY;
     	

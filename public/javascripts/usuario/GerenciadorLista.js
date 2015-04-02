@@ -2,6 +2,26 @@ function GerenciadorLista(listaElementos){
 	this.lista = listaElementos;
 	
 	
+	this.alterarPapelConceitoFilho = function alterarPapelConceitoFilho(idLigacao, novoPapel, papelAtual){
+		var idConceito;
+		var idLinha;
+		var conceito;
+		
+		idLinha = $('ul#' + idLigacao).children("li[title='idLinhaFilho"+ papelAtual +"']").val();
+		idConceito = $('ul#' + idLigacao).children("li[title='idConceitoFilho"+ papelAtual +"']").val();
+		
+		$('ul#' + idLigacao).children("li[title='idLinhaFilho"+ papelAtual +"']").remove();
+		$('ul#' + idLigacao).children("li[title='idConceitoFilho"+ papelAtual +"']").remove();
+		
+		conceito = 
+			"<li title='idConceitoFilho"+ novoPapel +"' value='" + idConceito + "'></li>" + 
+			"<li title='idLinhaFilho" + novoPapel +"' value = '" + idLinha + "'></li>"
+		;
+		
+		$("ul#" + idLigacao).append( conceito );
+	};
+	
+	
 	this.limparLista = function limparLista(){
 		$("#lista").empty();
 	};
@@ -32,20 +52,6 @@ function GerenciadorLista(listaElementos){
     	return false;	
     };
 	
-    
-    this.getQtdFilhosLigacao = function(idLigacao){
-    	return $("ul#" + idLigacao).children("li[title='qtdFilhos']").val();
-    };
-    
-    
-    this.buscarPapelConceitoDisponivel = function(idLigacao){
-    	var papelConceito = 1;
-    	while( $("ul#" + idLigacao).children("li[title='idConceitoFilho"+ papelConceito + "']").length != 0 )
-    		papelConceito++;
-    	return papelConceito;
-    };
-    
-    
     this.getLigacao = function (idLigacao){
     	return $('ul#' + idLigacao);
     };
