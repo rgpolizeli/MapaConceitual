@@ -699,16 +699,33 @@ function Servidor(Ip,Porta){
 		});
 		
 		app.post('/abrir', function(req,res){
-			
+			var idOperacaoLocal = 23;
 			if(req.body.idMapa){ //se usuario selecionou algum mapa
 				if(gerenciadorArquivos.verificarExistenciaArquivoXML(req.body.idMapa)){
-					var msg = {
-							idUsuario: req.user.id, 
-							idMapa: req.body.idMapa, // vem da pagina mapas.ejs
-							ip: ip,
-							porta: porta
-					};
-					routes.pagina(req,res,'editarMapa', msg);
+					gerenciadorBanco.verificarTipoPermissao(req.user.id, req.body.idMapa, idOperacaoLocal); //Obtendo a permissao do usuario
+					gerenciadorBanco.eventEmitter.once('tipoPermissao' + req.user.id + req.body.idMapa + idOperacaoLocal, function(tipoPermissao){ 
+						if(tipoPermissao.erro){
+							res.redirect('/mapas');
+						}
+						else{
+							var msg = {
+								idUsuario: req.user.id, 
+								idMapa: req.body.idMapa, // vem da pagina mapas.ejs
+								ip: ip,
+								porta: porta,
+								tipoPermissao: tipoPermissao
+							};
+							
+							if(tipoPermissao == 3){ // eh visualizador
+								routes.pagina(req,res,'editarMapaV', msg);
+							}
+							else{
+								routes.pagina(req,res,'editarMapa', msg);
+							}
+							
+						}
+					});
+					
 				}
 				else{
 					res.redirect('/mapas');
@@ -1257,20 +1274,18 @@ function Servidor(Ip,Porta){
 				var idOperacaoLocal = 21;
 				var idUsuario = parseInt(idUsuarioP);
 				var idMapa = parseInt(idMapaP);
+				var pos;
 				
 				//abrindo arquivo XML
-				if(gerenciadorArquivos.buscarPosicaoMapaNaLista( idMapa ) == -1){
-					gerenciadorArquivos.abrirMapa(idMapa);
+				pos = gerenciadorArquivos.buscarPosicaoMapaNaLista( idMapa );
+				if( pos == -1){
+					pos = gerenciadorArquivos.abrirMapa(idMapa);
 	    		}
 				
 				//Registrando usuario ativo do mapa
 				
 				gerenciadorBanco.verificarTipoPermissao(idUsuario, idMapa, idOperacaoLocal); //Obtendo a permissao do usuario
 				gerenciadorBanco.eventEmitter.once('tipoPermissao' + idUsuario + idMapa + idOperacaoLocal, function(tipoPermissao){ 
-					
-					//adiciona o usuario e o mapa se este ja nao estiver adicionado
-					//mesmo com erro no tipoPermissao eh para por na lista, pois senao havera problema na hora da desconexao, ja que esta remove o usuario da lista
-					gerenciadorUsuariosAtivos.adicionarUsuarioAtivo(idMapa, idUsuario, socket, tipoPermissao);
 					
 					if(tipoPermissao.erro || tipoPermissao == -1){ // deu erro ou user nao tem permissao
 						var msg;
@@ -1282,13 +1297,36 @@ function Servidor(Ip,Porta){
 						socket.send(msg);
 					}
 					else{
-						
-						//lista estruturada em html para o usuario carregar o mapa
-						var msg = montarListaHtml(gerenciadorArquivos.getMapa(idMapa));
-						socket.send(msg);
-						
-						console.log("Usuario #" + idUsuario + " conectou-se.");
+						gerenciadorBanco.getNomeDeUsuario(idUsuario);
+						gerenciadorBanco.eventEmitter.once('nomeDeUsuario' + idUsuario, function(nomeUsuario){ 
+							
+							// deu erro na busca pelo nome
+							if(nomeUsuario.erro) 
+								nomeUsuario = 'indefinido';
+							
+							//adiciona o usuario e o mapa se este ja nao estiver adicionado
+							//mesmo com erro no tipoPermissao eh para por na lista, pois senao havera problema na hora da desconexao, ja que esta remove o usuario da lista
+							gerenciadorUsuariosAtivos.adicionarUsuarioAtivo(idMapa, idUsuario, nomeUsuario, socket, tipoPermissao);
+							
+							var msg = {
+								tipoMensagem: 0,
+								nomeMapa: gerenciadorArquivos.getNomeMapa(pos),
+								listaUsuarios: gerenciadorUsuariosAtivos.getNomeUsuariosAtivos(idMapa),
+								listaMapa: montarListaHtml(gerenciadorArquivos.getMapa(idMapa)) //lista estruturada em html para o usuario carregar o mapa
+							};
+							socket.send(msg);
+							console.log("Usuario #" + idUsuario + " conectou-se.");
+
+							msg = {
+								tipoMensagem: 11,
+								nomeUsuario: nomeUsuario
+							};
+							enviarBroadcastParaUsuariosAtivos(idMapa, msg, socket)
+						});
+					
 					}
+					
+					
 					
 				});
 			});
@@ -1591,17 +1629,32 @@ function Servidor(Ip,Porta){
 			socket.on('disconnect', function () { 
 				socket.send("voce foi desconectado");
 				var idsMapas = gerenciadorUsuariosAtivos.getIdsMapasDoUsuario(socket);
+				var userDesconectado = new Array();
 				
 				for(var i=0; i< idsMapas.length; i++){
-					gerenciadorUsuariosAtivos.removerUsuarioAtivo(socket, idsMapas[i]);
+					var user;
+					user = gerenciadorUsuariosAtivos.removerUsuarioAtivo(socket, idsMapas[i]);
+					if(user) userDesconectado.push( user[0] );
 					
 					if(gerenciadorUsuariosAtivos.getQuantidadeUsuariosAtivos(idsMapas[i]) == 0){
 						gerenciadorUsuariosAtivos.removerMapa(idsMapas[i]);
 						gerenciadorArquivos.fecharMapa(idsMapas[i]);
 					}
+					
+					if(userDesconectado.length > 0){
+						
+						var msg;
+						msg = {
+							tipoMensagem: 12,
+							nomeUsuario: userDesconectado[0].nomeUsuario
+						};
+						enviarParaTodosUsuariosAtivos(idsMapas[i], msg);
+					}
+					
 				}
 				
-				console.log("Usuario desconectou-se.");
+				if(userDesconectado.length > 0)
+					console.log("Usuario #"+ userDesconectado[0].idUsuario +" desconectou-se.");
 			});
 			
 		});
@@ -1611,7 +1664,7 @@ function Servidor(Ip,Porta){
 	
 	function montarListaHtml(arqXml){
 		
-		var lista = "<0div id='lista'>";
+		var lista = "<div id='lista'>";
 		
 		$(arqXml).find('conceito').each( function( index, element ){
 			

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width; initial-scale=1; user-scalable=1; target-densitydpi=device-dpi"/>
+<title>Editar Mapa</title>
+
+<script src="./javascripts/jquery-2.1.1.min.js"></script>
+<script src="../javascripts/bootstrap.min.js"></script>
+<script src="./javascripts/easeljs-0.7.0.min.js"></script>
+<script src="./javascripts/socket.io-1.2.0.js"></script> 
+<script src="./javascripts/usuario/InterfaceUsuario.js"></script>
+<script src="./javascripts/usuario/MapaConceitual.js"></script>
+<script src="./javascripts/usuario/Usuario.js"></script>
+<script src="./javascripts/usuario/GerenciadorConceito.js"></script>
+<script src="./javascripts/usuario/GerenciadorLigacao.js"></script>
+<script src="./javascripts/usuario/GerenciadorSemiLigacao.js"></script>
+<script src="./javascripts/usuario/GerenciadorLista.js"></script>
+<script src="./javascripts/usuario/HandTool.js"></script>
+
+<link rel="stylesheet" href="./stylesheets/usuario/estilos.css">
+<link href="../stylesheets/bootstrap.min.css" rel="stylesheet">
+
+<script>
+var ip = "<%=ip%>";
+var porta = <%=porta%>;
+
+function main(idUsuario,idMapa, tipoPermissao){
+	
+	var usuario;
+	var nomeCanvas;
+	var listaElementos;
+	
+	nomeCanvas = "canvas";
+	listaElementos = $("#lista");
+	
+	usuario = new Usuario(idUsuario, idMapa, tipoPermissao, ip, porta,listaElementos, nomeCanvas);
+	usuario.conectarServidor();
+	
+	
+}
+
+function logout(){
+	var href = "http://" + ip + ":" + porta + "/" + "logout";
+	window.location = href;
+}
+
+</script>
+
+</head>
+<body onload="main(<%=idUsuario%>, <%=idMapa%>, <%=tipoPermissao%>)">
+
+
+	<!-------------------------------- 
+	DIV PARA ALERTA
+	----------------------------------->
+
+	<% if(typeof(alerta) != 'undefined'){ %>
+	  	<div class="alert alert-warning alert-dismissible" role="alert">
+	  		<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	  		<%= alerta %>
+		</div>
+  	<% } %>
+	
+	<!-------------------------------- 
+	MODAL PARA CRIAR CONCEITO 
+	----------------------------------->
+	
+	<div id="quedaConexao" class="modal fade">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<h4 class="modal-title">Queda na sua conexão com o servidor</h4>
+		  </div>
+		  <div class="modal-body">
+		  
+				<p>Atenção! Sua conexão com o servidor foi perdida há algum tempo atrás. As suas mais recentes modificações no mapa conceitual foram perdidas.</p>
+				<p>Tentando reconectar, aguarde... (Cerca de 1 minuto)</p>
+					  
+		  </div>
+		</div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+	
+	
+	<!-------------------------------- 
+	INICIALIZANDO LISTA LOCAL 
+	----------------------------------->
+	
+	<div id="lista" style="display:none"></div>
+	
+	
+	<!-------------------------------- 
+	BARRA DE FERRAMENTAS
+	----------------------------------->
+		<div class="col-md-6">
+			<h3 id="nomeMapa"></h3>
+		</div>
+		<div class="col-md-6 text-right">
+			<button  type="button" id="logout" onclick="logout()">Sair</button>
+			<button type="button" data-toggle="collapse" data-target="#listaUsuarios" aria-expanded="true" aria-controls="listaUsuarios" >Mostrar Usuarios</button>
+		</div>
+		
+	<div class="col-md-12 bottom-space">
+		<div class="btn-group" data-toggle="buttons">
+		  <label class="btn btn-primary active" id="editarButton">
+			<input type="radio" name="options" id="editarButton" autocomplete="off" checked> Editar Mapa
+		  </label>
+		  <label class="btn btn-primary" id="handButton">
+			<input type="radio" name="options" id="handButton" autocomplete="off"> Hand Tool
+		  </label>
+		</div>
+		
+	</div>
+	
+	<!-------------------------------- 
+	INICIALIZANDO O CANVAS
+	----------------------------------->
+	
+	<div class="col-md-10">
+		<canvas id="canvas"  width="600" height="600"  style="display: inline-block;border: 2px solid black"></canvas>
+	</div>
+	
+	
+	<!-------------------------------- 
+	BARRA DE USUARIOS
+	----------------------------------->
+	
+	<div class="col-md-2 collapse well" id="listaUsuarios" aria-expanded="false">
+		<h4>Usuários Online:</h4>
+	</div>
+	
+	
+
+</body>
+</html>

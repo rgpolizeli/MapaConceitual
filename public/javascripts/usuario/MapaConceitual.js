@@ -1,5 +1,5 @@
 
-function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBack, selecionarCallback, desselecionarCallBack, abrirCriarLigacaoCallBack){
+function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBack, selecionarCallback, desselecionarCallBack, abrirCriarLigacaoCallBack, getTipoPermissaoUsuarioCallBack){
 	
     var idMapa = id;
     
@@ -18,6 +18,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     var gerenciadorConceito = new GerenciadorConceito();
     var gerenciadorSemiLigacao = new GerenciadorSemiLigacao();
     var handTool = new HandTool(stageCanvas, renderizar);
+    var handToolAtiva = false;
     
     this.alterarPapelConceitoFilho = function alterarPapelConceitoFilho(idLigacao, novoPapel, papelAtual){
 			gerenciadorLista.alterarPapelConceitoFilho(idLigacao, novoPapel, papelAtual);
@@ -215,7 +216,8 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     	stageCanvas.addChild(conceitoContainer); //adiciona o container no stageCanvas
     	setIdObjeto(conceitoContainer, propriedades.idConceito);
     	
-    	gerenciadorConceito.adicionarDragDrop(idMapa,conceitoContainer, stageCanvas, gerenciadorLista.getConceito,
+    	if(getTipoPermissaoUsuarioCallBack() < 3)
+			gerenciadorConceito.adicionarDragDrop(idMapa,conceitoContainer, stageCanvas, gerenciadorLista.getConceito,
     			gerenciadorLista.getLigacao, gerenciadorLista.getCorFundo, gerenciadorLista.getAlturaMinima, gerenciadorLista.getLarguraMinima, 
     			gerenciadorLigacao.atualizarLigacoesAoMoverConceito, removerFilho, renderizar, 
     			montarMensagemAoMoverConceito, montarMensagemAoAlterarTamanhoConceito, enviarMensagemAoServidor);
@@ -244,7 +246,8 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 			setIdObjeto(containers["linhaPaiContainer"], propriedades.idLinhaPai);
 			setIdObjeto(containers["linhaFilhoContainer"], propriedades.idLinhaFilho1);
 			
-			gerenciadorLigacao.adicionarDragDrop(idMapa,containers["ligacaoContainer"], stageCanvas, gerenciadorLista.getLigacao, 
+			if(getTipoPermissaoUsuarioCallBack() < 3)
+				gerenciadorLigacao.adicionarDragDrop(idMapa,containers["ligacaoContainer"], stageCanvas, gerenciadorLista.getLigacao, 
 					gerenciadorLista.getCorFundo, gerenciadorLista.getAlturaMinima, gerenciadorLista.getLarguraMinima, 
 					removerFilho, renderizar, montarMensagemAoMoverLigacao, montarMensagemAoAlterarTamanhoLigacao, enviarMensagemAoServidor);
 			
@@ -357,28 +360,28 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     
     
     function selecionarConceito(objetoSelecionadoP) { //objetoSelecionado pode ser o retangulo ou label
-    	var objetoSelecionado;
-    	var corFundo;
-    	
-    	objetoSelecionado = objetoSelecionadoP;
-    	objetosSelecionados[0] = gerenciadorConceito.getId(objetoSelecionado.parent, stageCanvas); //id do objeto no stage
-    	corFundo = gerenciadorLista.getCorFundo(objetosSelecionados[0]);
-    	gerenciadorConceito.selecionarConceito(objetoSelecionado, corFundo, stageCanvas, renderizar);
-    	
-    	return selecionarCallback;
+    	if(getTipoPermissaoUsuarioCallBack() < 3){
+			var objetoSelecionado;
+			var corFundo;
+			
+			objetoSelecionado = objetoSelecionadoP;
+			objetosSelecionados[0] = gerenciadorConceito.getId(objetoSelecionado.parent, stageCanvas); //id do objeto no stage
+			corFundo = gerenciadorLista.getCorFundo(objetosSelecionados[0]);
+			gerenciadorConceito.selecionarConceito(objetoSelecionado, corFundo, stageCanvas, renderizar);
+		}
     }
     
 
     function selecionarLigacao (objetoSelecionadoP) { //objetoSelecionado pode ser o retangulo ou label
-    	var objetoSelecionado;
-    	var corFundo;
-    	
-    	objetoSelecionado = objetoSelecionadoP;
-    	objetosSelecionados[0] = gerenciadorLigacao.getId(objetoSelecionado.parent, stageCanvas); //id do objeto no stage
-    	corFundo = gerenciadorLista.getCorFundo(objetosSelecionados[0]);
-    	gerenciadorLigacao.selecionarLigacao(objetoSelecionado,corFundo, stageCanvas, renderizar);
-    	
-    	return selecionarCallback;
+    	if(getTipoPermissaoUsuarioCallBack() < 3){
+			var objetoSelecionado;
+			var corFundo;
+			
+			objetoSelecionado = objetoSelecionadoP;
+			objetosSelecionados[0] = gerenciadorLigacao.getId(objetoSelecionado.parent, stageCanvas); //id do objeto no stage
+			corFundo = gerenciadorLista.getCorFundo(objetosSelecionados[0]);
+			gerenciadorLigacao.selecionarLigacao(objetoSelecionado,corFundo, stageCanvas, renderizar);
+		}
     }
     
     
@@ -593,6 +596,11 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
     	var canvasWidth = parseFloat( stageCanvas.canvas.getAttribute('width') );
     	var canvasHeight = parseFloat( stageCanvas.canvas.getAttribute('height') );
     	handTool.desenharRetangulo(0 - stageCanvas.x, 0 - stageCanvas.y, canvasHeight, canvasWidth);
+    	
+    	mapa.setCriarLigacao(false);
+		mapa.desselecionar();
+    	
+    	handToolAtiva = true;
     };
     
 
@@ -601,9 +609,13 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
      */
     this.desativarHandTool = function(){
     	handTool.destruirRetangulo();
+    	handToolAtiva = false;
     };
     
-   
+	function verificarHandTool(){
+		return handToolAtiva;
+	}
+    
     
     this.getId = function(){
     	return idMapa;
@@ -673,7 +685,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 		
 		if(objetoSelecionado){
 			if(objetoSelecionado.parent.name == "conceito"){
-				if(objetosSelecionados[0] == undefined){
+				if(objetosSelecionados[0] == undefined && !verificarHandTool() ){
 					selecionarConceito(objetoSelecionado);
 					return selecionarCallback();
 				}
@@ -721,7 +733,7 @@ function MapaConceitual(id, nomeCanvasP, listaElementos, criarSemiLigacaoCallBac
 				}
 			}
 			if(objetoSelecionado.parent.name == "ligacao"){
-				if(objetosSelecionados[0] == undefined){
+				if(objetosSelecionados[0] == undefined && !verificarHandTool() ){
 					selecionarLigacao(objetoSelecionado);
 					return selecionarCallback();
 				}

@@ -25,7 +25,7 @@
 var ip = "<%=ip%>";
 var porta = <%=porta%>;
 
-function main(idUsuario,idMapa){
+function main(idUsuario,idMapa, tipoPermissao){
 	
 	var usuario;
 	var nomeCanvas;
@@ -34,7 +34,7 @@ function main(idUsuario,idMapa){
 	nomeCanvas = "canvas";
 	listaElementos = $("#lista");
 	
-	usuario = new Usuario(idUsuario, idMapa, ip, porta,listaElementos, nomeCanvas);
+	usuario = new Usuario(idUsuario, idMapa, tipoPermissao, ip, porta,listaElementos, nomeCanvas);
 	usuario.conectarServidor();
 	
 	
@@ -48,7 +48,7 @@ function logout(){
 </script>
 
 </head>
-<body onload="main(<%=idUsuario%>, <%=idMapa%>)">
+<body onload="main(<%=idUsuario%>, <%=idMapa%>, <%=tipoPermissao%>)">
 
 
 	<!-------------------------------- 
@@ -360,24 +360,48 @@ function logout(){
 	<!-------------------------------- 
 	BARRA DE FERRAMENTAS
 	----------------------------------->
-	
-	<div>
-		<button type="button" id="handButton">Hand Tool</button>
-		<button type="button" id="editarButton">Editar Mapa</button>
-		<button  type="button" id="criarConceitoButton">Novo Conceito</button>
-		<button  type="button" id="novaLigacao" style="display:none">Nova LigaÃ§Ã£o</button>
-		<button type="button" id="editar" style="display:none">Editar</button>
-		<button  type="button" id="excluir" style="display:none">Excluir</button>
-		<button  type="button" id="logout" onclick="logout()">Sair</button>
+		<div class="col-md-6">
+			<h3 id="nomeMapa"></h3>
+		</div>
+		<div class="col-md-6 text-right">
+			<button  type="button" id="logout" onclick="logout()">Sair</button>
+			<button type="button" data-toggle="collapse" data-target="#listaUsuarios" aria-expanded="true" aria-controls="listaUsuarios" >Mostrar Usuarios</button>
+		</div>
+		
+	<div class="col-md-12 bottom-space">
+		<div class="btn-group" data-toggle="buttons">
+		  <label class="btn btn-primary active" id="editarButton">
+			<input type="radio" name="options" id="editarButton" autocomplete="off" checked> Editar Mapa
+		  </label>
+		  <label class="btn btn-primary" id="handButton">
+			<input type="radio" name="options" id="handButton" autocomplete="off"> Hand Tool
+		  </label>
+		</div>
+		<button  type="button" class="btn btn-primary" id="criarConceitoButton">Novo Conceito</button>
+		<button  type="button" class="btn btn-primary" id="novaLigacao" style="display:none">Nova Ligação</button>
+		<button type="button" class="btn btn-primary" id="editar" style="display:none">Editar</button>
+		<button  type="button" class="btn btn-primary" id="excluir" style="display:none">Excluir</button>
+		
 	</div>
 	
 	<!-------------------------------- 
 	INICIALIZANDO O CANVAS
 	----------------------------------->
 	
-	<div>
+	<div class="col-md-10">
 		<canvas id="canvas"  width="600" height="600"  style="display: inline-block;border: 2px solid black"></canvas>
 	</div>
+	
+	
+	<!-------------------------------- 
+	BARRA DE USUARIOS
+	----------------------------------->
+	
+	<div class="col-md-2 collapse well" id="listaUsuarios" aria-expanded="false">
+		<h4>Usuários Online:</h4>
+	</div>
+	
+	
 
 </body>
 </html>

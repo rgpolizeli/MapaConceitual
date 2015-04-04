@@ -4,6 +4,26 @@ function InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativar
 	this.idConceitoFilho;
 	var interfaceUsuario = this;
 
+	this.carregarNomeMapa = function carregarNomeMapa(nomeMapa){
+		$('#nomeMapa').append('Mapa: ' + nomeMapa);
+	};
+
+	this.carregarListaUsuarios = function carregarListaUsuarios(listaUsuarios){
+		for(var i=0; i< listaUsuarios.length; i++){
+			var novoUser = "<p>" + listaUsuarios[i] + "</p>";
+			$('#listaUsuarios').append(novoUser);		
+		}
+	};
+	
+	this.adicionarUsuarioNaListaUsuarios = function adicionarUsuarioNaListaUsuarios(nomeUsuario){
+		var novoUser = "<p>" + nomeUsuario + "</p>";
+		$('#listaUsuarios').append(novoUser);
+	};
+	
+	this.removerUsuarioNaListaUsuarios = function removerUsuarioNaListaUsuarios(nomeUsuario){
+		$('#listaUsuarios p').remove(":contains('" + nomeUsuario +"')");
+	};
+	
 	this.abrirModalQuedaConexao = function(){
 		$('#quedaConexao').modal('show');
 	};

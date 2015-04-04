@@ -9,8 +9,9 @@ function UsuariosAtivos(idMapa){
 	 */
 }
 
-function Usuario(idUsuario, socket, tipoPermissao){
+function Usuario(idUsuario, nomeUsuario, socket, tipoPermissao){
 	this.idUsuario = idUsuario;
+	this.nomeUsuario = nomeUsuario;
 	this.socket = socket;
 	this.tipoPermissao = tipoPermissao;
 }
@@ -21,6 +22,17 @@ function GerenciadorUsuariosAtivos(){
 	var gerenciadorUsuariosAtivos = this;
 	var listaUsuariosAtivos = new Array();
 	
+	
+	this.getNomeUsuariosAtivos = function getNomeUsuariosAtivos(idMapa){
+		var posicaoMapa = buscarPosicaoMapa( idMapa );
+		var listaNomes;
+		
+		listaNomes = new Array();
+		for(var i=0; i < listaUsuariosAtivos[posicaoMapa].usuarios.length; i++){
+			listaNomes.push(listaUsuariosAtivos[posicaoMapa].usuarios[i].nomeUsuario);
+		}
+		return listaNomes;
+	};
 	
 	function buscarPosicaoMapa(idMapa){
 		
@@ -82,17 +94,17 @@ function GerenciadorUsuariosAtivos(){
 		return (posicao - 1);
 	};
 	
-	this.adicionarUsuarioAtivo = function (idMapa, idUsuario, socket, tipoPermissao){
+	this.adicionarUsuarioAtivo = function (idMapa, idUsuario, nomeUsuario, socket, tipoPermissao){
 		var posicao = buscarPosicaoMapa( idMapa );
 		var usuario;
 		
 		if(posicao == -1){ //mapa nao existe
 			posicao = adicionarMapa( idMapa );
-			usuario = new Usuario( idUsuario, socket, tipoPermissao );
+			usuario = new Usuario( idUsuario, nomeUsuario, socket, tipoPermissao );
 			listaUsuariosAtivos[posicao].usuarios.push( usuario );
 		}
 		else{ //mapa ja existe
-			usuario = new Usuario( idUsuario, socket, tipoPermissao );
+			usuario = new Usuario( idUsuario, nomeUsuario, socket, tipoPermissao );
 			listaUsuariosAtivos[posicao].usuarios.push( usuario );
 		}
 	};
@@ -107,7 +119,7 @@ function GerenciadorUsuariosAtivos(){
 		
 		posicaoMapa = buscarPosicaoMapa( idMapa );
 		posicaoUsuario = buscarPosicaoUsuarioPeloSocket(socketUsuario, posicaoMapa);
-		listaUsuariosAtivos[posicaoMapa].usuarios.splice(posicaoUsuario,1);
+		return listaUsuariosAtivos[posicaoMapa].usuarios.splice(posicaoUsuario,1);
 	};
 	
 	

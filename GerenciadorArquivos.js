@@ -16,6 +16,10 @@ function GerenciadorArquivos(){
 	
 	var listaMapasAbertos = new Array();
 	
+	this.getNomeMapa = function getNomeMapa(posMapa){
+		return $( listaMapasAbertos[ posMapa ].arqXml ).find( "nome" ).text();
+	};
+	
 	this.verificarExistenciaArquivoXML = function verificarExistenciaArquivoXML(idMapa){
 		var path = './public/mapas/' + idMapa + '.xml';
 		try{
@@ -44,8 +48,10 @@ function GerenciadorArquivos(){
 		var path = './public/mapas/' + idMapa + '.xml';
 		var xmlStr = fs.readFileSync(path, "utf8");
 		var arqXml = $(xmlStr);
+		var pos;
 		
-		adicionarMapaNaLista( idMapa, arqXml );
+		pos = adicionarMapaNaLista( idMapa, arqXml );
+		return pos;
 	};
 	
 	this.fecharMapa = function ( idMapa ){
@@ -115,6 +121,7 @@ function GerenciadorArquivos(){
 		while(listaMapasAbertos[i]!= undefined)
 			i++;
 		listaMapasAbertos[i] = mapaAberto;
+		return i;
 	}
 	
 	function removerMapaDaLista( idMapa ){

@@ -24,7 +24,6 @@ function GerenciadorBanco(){
 			else{
 				var instrucao = new Instrucao(sql, callback);
 				pos = filaSql.push(instrucao) - 1;
-				console.log(filaSql.length);
 				if(pos == 0){ // soh ha um elemento na fila
 					executarSql();
 				}
@@ -32,6 +31,7 @@ function GerenciadorBanco(){
 		};
 		
 		function executarSql(){
+			console.log("executarSql()");
 			if(filaSql[0].sql.toUpperCase().indexOf("TRANSACTION") != -1) //o primeiro eh transcao
 				connection.query( filaSql[0].sql, filaSql[0].callback );
 			
@@ -57,6 +57,23 @@ function GerenciadorBanco(){
 	
 	//define o numero de listeners associados a um EventEmitter. Como cada busca pelo nome de grupos adiciona um listener, deixei ilimitado. 
 	//this.eventEmitter.setMaxListeners(0);
+	
+	this.getNomeDeUsuario = function getNomeDeUsuario(idUsuario){
+		var query;
+		var callback;
+		
+		query = "SELECT usuario FROM usuarios WHERE id=" + connection.escape(idUsuario);
+		callback = function (err, result){
+			
+			if(err || result.length == 0) {
+				if(result.length == 0) gerenciadorBanco.eventEmitter.emit('nomeDeUsuario' + idUsuario, {erro: 'usuario inexistente'});
+				else gerenciadorBanco.eventEmitter.emit('nomeDeUsuario' + idUsuario, {erro: err.code});
+			}
+			else
+				gerenciadorBanco.eventEmitter.emit('nomeDeUsuario' + idUsuario, result[0].usuario);
+		};
+		operadorSql.addSql(query, callback);
+	};
 	
 	this.conectarBD = function conectarBD(host, user, password, database){
 

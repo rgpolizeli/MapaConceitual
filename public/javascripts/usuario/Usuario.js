@@ -1,5 +1,5 @@
 
-function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanvasP ){
+function Usuario(idUsuarioP, idMapaP, tipoPermissao, ipServer, porta, listaElementos, nomeCanvasP ){
 	//this e publico e var e privado
 	var idUsuario = parseInt(idUsuarioP);
 	var idMapa = parseInt(idMapaP);
@@ -8,7 +8,12 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 	var socket;
 	var usuario = this;
 	var interfaceUsuario = new InterfaceUsuario(criarConceito, criarLigacao, ativarHandTool, desativarHandTool, setCriarLigacao, excluir,iniciarEdicao,editar);
-	var mapaConceitual = new MapaConceitual(idMapa, nomeCanvasP, listaElementos, criarSemiLigacao, selecionar, desselecionar, abrirCriarLigacaoModal );
+	var mapaConceitual = new MapaConceitual(idMapa, nomeCanvasP, listaElementos, criarSemiLigacao, selecionar, desselecionar, abrirCriarLigacaoModal, getTipoPermissaoUsuario);
+	
+	function getTipoPermissaoUsuario(){
+		return tipoPermissao;
+	}
+	
 	
 	function carregarMapa(msg){
 		
@@ -544,10 +549,7 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
     	if(mensagem[0] == "<"){
 			switch(mensagem[1]){
 		    	
-			case "0": 
-				mensagem = mensagem.replace("<0","<");
-				carregarMapa(mensagem);
-				break;
+			
 			case "1": //novo conceito criado por um usuario
 		    		mensagem = mensagem.replace("<1ul","<ul");
 		    		var propriedades = {
@@ -572,7 +574,11 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 		}
 		else{
 			switch(mensagem.tipoMensagem){
-			
+				case 0: 
+					interfaceUsuario.carregarNomeMapa(mensagem.nomeMapa);
+					interfaceUsuario.carregarListaUsuarios(mensagem.listaUsuarios);
+					carregarMapa(mensagem.listaMapa);
+				break;
 				case 2: //conceito movido por algum usuario
 					delete mensagem.tipoMensagem;
 					mapaConceitual.atualizarPosicaoConceito(mensagem);
@@ -611,6 +617,13 @@ function Usuario(idUsuarioP, idMapaP, ipServer, porta, listaElementos, nomeCanva
 				case 10: //desconectado devido a mudan�a de permissao
 					desconectarDoMapa(mensagem.tipoDesconexao);
 				break;
+				
+				case 11: // adicionar usuario recem-conectado na lista dos users online
+					interfaceUsuario.adicionarUsuarioNaListaUsuarios(mensagem.nomeUsuario);
+				break;
+				case 12: // remover usuario recem-desconectado da lista dos users online
+					interfaceUsuario.removerUsuarioNaListaUsuarios(mensagem.nomeUsuario);
+				break;					
 			}
 		}
 		
